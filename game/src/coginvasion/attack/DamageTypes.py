@@ -1,0 +1,2 @@
+DMG_GENERIC = 0
+DMG_FORCE = 1

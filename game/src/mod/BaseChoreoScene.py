@@ -1,0 +1,3 @@
+
+class BaseChoreoScene:
+    pass
