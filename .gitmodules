@@ -1,0 +1,6 @@
+[submodule "engine"]
+	path = engine
+	url = https://github.com/tt-sp/ttsp-engine
+[submodule "game/resources"]
+	path = game/resources
+	url = https://github.com/tt-sp/ttsp-resources
