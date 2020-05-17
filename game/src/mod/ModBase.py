@@ -52,7 +52,7 @@ class ModBase(CIBase):
         #self.sfxManagerList[0].configureFilters(fprops)
         
     def printTaskMgr(self):
-        print self.taskMgr
+        print(self.taskMgr)
         
     def buildCubemaps(self):
         # Don't render any existing/default cubemaps when building
@@ -96,7 +96,7 @@ class ModBase(CIBase):
         enginePath = os.environ["CIOENGINE"]
         subprocess.Popen([enginePath + "\\python\\ppython", "-B", "-m", "src.mod.ModStartAI"])
         
-        print "Starting client repo"
+        print("Starting client repo")
         from src.mod.distributed.ModClientRepository import ModClientRepository
         self.cr = ModClientRepository(ModGlobals.DCFileNames)
         
@@ -154,16 +154,16 @@ class ModBase(CIBase):
         self.lost = True
         
     def establishConnections(self):
-        print "Now connecting"
+        print("Now connecting")
         self.cr.connect(['http://127.0.0.1:7032'], self.__onClientConnect)
         
     def __onClientConnect(self):
-        print "Sending client hello"
+        print("Sending client hello")
         self.cr.sendClientHello()
         self.acceptOnce('createReady', self.__handleClientReady)
         
     def __handleClientReady(self):
-        print "Client ready"
+        print("Client ready")
         self.start()
         
     def makePlayer(self):
@@ -197,7 +197,7 @@ class ModBase(CIBase):
         self.acceptOnce('gotTimeSync', self.__handleTimeSync)
         
     def __handleTimeSync(self):
-        print "Time is synchronized with server"
+        print("Time is synchronized with server")
         self.cr.setInterestZones([ModGlobals.UberZoneId, ModGlobals.BattleZoneId])
         self.makePlayer()
         self.transitions.fadeScreen(1.0)

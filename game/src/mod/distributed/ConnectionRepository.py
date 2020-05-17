@@ -23,7 +23,7 @@ class ConnectionRepository(
     includes ClientRepository and AIRepository.
 
     Note: This version uses the networksystem library provided by
-    libpandabsp (which internally uses SteamNetworkingSockets).
+    panda3d.bsp (which internally uses SteamNetworkingSockets).
     """
     notify = directNotify.newCategory("ConnectionRepository")
 

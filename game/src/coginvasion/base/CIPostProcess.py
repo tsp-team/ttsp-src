@@ -1,5 +1,5 @@
 from panda3d.core import Shader, PTA_LVecBase3f, Vec3
-from libpandabsp import PostProcess, PostProcessPass, PostProcessEffect, HDREffect, BloomEffect, FXAA_Effect, SSAO_Effect
+from panda3d.bsp import PostProcess, PostProcessPass, PostProcessEffect, HDREffect, BloomEffect, FXAA_Effect, SSAO_Effect
 
 class CIPostProcess(PostProcess):
     

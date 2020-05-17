@@ -14,7 +14,7 @@ from src.coginvasion.globals import CIGlobals
 from direct.gui.DirectGui import DirectFrame, DirectLabel
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from panda3d.core import Vec4
-from libpandabsp import BloomAttrib
+from panda3d.bsp import BloomAttrib
 
 notify = directNotify.newCategory("LaffOMeter")
 

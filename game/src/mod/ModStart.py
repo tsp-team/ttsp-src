@@ -1,7 +1,7 @@
-import __builtin__
+import builtins
 from src.coginvasion.base.Metadata import Metadata
 metadata = Metadata()
-__builtin__.metadata = metadata
+builtins.metadata = metadata
 
 from panda3d.core import loadPrcFile, loadPrcFileData, ConfigVariableString, ConfigVariableDouble
 loadPrcFile('config/Confauto.prc')

@@ -81,11 +81,13 @@ class UserInputStorage(object):
         ctrlClass.current = newInput
         
     def __getattribute__(self, name):
-        if hasattr(self, name):
+        try:
             obj = object.__getattribute__(self, name)
             if isinstance(obj, Control):
                 return obj.current
             return obj
+        except:
+            return None
         
     def getControls(self):
         attributes = inspect.getmembers(UserInputStorage, lambda a:not(inspect.isroutine(a)))

@@ -4,7 +4,7 @@ from src.coginvasion.phys import PhysicsUtils
 from src.coginvasion.globals import CIGlobals
 
 from panda3d.core import TextNode, Vec3
-from libpandabsp import LightingOriginEffect
+from panda3d.bsp import LightingOriginEffect
 
 class KeypadButton(UseableObject):
 

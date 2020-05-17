@@ -9,7 +9,7 @@ Copyright (c) CIO Team. All rights reserved.
 """
 
 from panda3d.bullet import BulletWorld
-from libpandabsp import Py_AI_BSPLoader
+from panda3d.bsp import Py_AI_BSPLoader
 from panda3d.core import Vec3
 
 from p3recastnavigation import RNNavMeshSettings

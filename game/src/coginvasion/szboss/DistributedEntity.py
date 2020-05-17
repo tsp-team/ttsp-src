@@ -16,7 +16,7 @@ class DistributedEntity(DistributedSmoothNode, BasePhysicsObject, Entity):
 
         self.enableThink()
 
-        from libpandabsp import CPointEntity
+        from panda3d.bsp import CPointEntity
         if isinstance(self.cEntity, CPointEntity):
             self.setPos(render, self.cEntity.getOrigin())
             self.setHpr(render, self.cEntity.getAngles())
@@ -28,7 +28,7 @@ class DistributedEntity(DistributedSmoothNode, BasePhysicsObject, Entity):
         
         self.cEntity = base.bspLoader.getCEntity(self.entnum)
         self.preLinkLoad()
-        from libpandabsp import CBrushEntity
+        from panda3d.bsp import CBrushEntity
         if isinstance(self.cEntity, CBrushEntity):
             self.assign(self.cEntity.getModelNp())
             #self.setupBrushEntityPhysics()

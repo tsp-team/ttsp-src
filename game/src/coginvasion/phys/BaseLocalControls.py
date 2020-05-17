@@ -1,5 +1,5 @@
 from panda3d.core import Vec3, VirtualFileSystem, BitMask32
-from libpandabsp import PhysicsCharacterController, MOVEMENTSTATE_GROUND, MOVEMENTSTATE_SWIMMING
+from panda3d.bsp import PhysicsCharacterController, MOVEMENTSTATE_GROUND, MOVEMENTSTATE_SWIMMING
 
 from direct.showbase.InputStateGlobal import inputState
 from direct.showbase.DirectObject import DirectObject

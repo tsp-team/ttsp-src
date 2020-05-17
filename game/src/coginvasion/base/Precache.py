@@ -12,7 +12,7 @@ Copyright (c) CIO Team. All rights reserved.
 """
 
 from panda3d.core import OmniBoundingVolume, NodePathCollection, CardMaker, Point2, NodePath, TextNode
-from libpandabsp import BSPMaterial, BSPFaceAttrib
+from panda3d.bsp import BSPMaterial, BSPFaceAttrib
 
 class Precacheable(object):
     

@@ -1,4 +1,4 @@
 @echo off
 echo Starting TTSP
-%CIOENGINE%\python\python -m src.mod.ModStart
+%CIOENGINE%\python\python.exe -m src.mod.ModStart
 pause

@@ -13,8 +13,8 @@ from panda3d.core import CollisionHandlerFloor, CollisionHandlerQueue, Collision
 from panda3d.core import CollisionTraverser, CullBinManager, LightRampAttrib, Camera, OmniBoundingVolume, Texture, GraphicsOutput, PStatCollector, PerspectiveLens, ModelNode, BitMask32, OrthographicLens
 from panda3d.core import FrameBufferProperties, WindowProperties
 from panda3d.bullet import BulletWorld, BulletDebugNode, BulletRigidBodyNode
-from libpandabsp import Py_CL_BSPLoader, BSPLoader, BSPRender, BSPShaderGenerator, VertexLitGenericSpec, LightmappedGenericSpec, UnlitGenericSpec, UnlitNoMatSpec, CSMRenderSpec, SkyBoxSpec
-from libpandabsp import Audio3DManager, DecalModulateSpec
+from panda3d.bsp import Py_CL_BSPLoader, BSPLoader, BSPRender, BSPShaderGenerator, VertexLitGenericSpec, LightmappedGenericSpec, UnlitGenericSpec, UnlitNoMatSpec, CSMRenderSpec, SkyBoxSpec
+from panda3d.bsp import Audio3DManager, DecalModulateSpec
 
 import sys
 if sys.version_info >= (3, 0):
@@ -76,7 +76,7 @@ class CIBase(ShowBase):
         
         from panda3d.core import RenderAttribRegistry
         from panda3d.core import ShaderAttrib, TransparencyAttrib
-        from libpandabsp import BSPMaterialAttrib
+        from panda3d.bsp import BSPMaterialAttrib
         attribRegistry = RenderAttribRegistry.getGlobalPtr()
         attribRegistry.setSlotSort(BSPMaterialAttrib.getClassSlot(), 0)
         attribRegistry.setSlotSort(ShaderAttrib.getClassSlot(), 1)
@@ -321,8 +321,8 @@ class CIBase(ShowBase):
         base.cr.playGame.hood.loader.geom.hide()
         
     def reportCam(self):
-        print self.camera
-        print self.camera.getNetTransform()
+        #print self.camera
+        #print self.camera.getNetTransform()
         self.camera.setScale(render, 1)
         self.camera.setShear(render, 0)
 
@@ -493,10 +493,10 @@ class CIBase(ShowBase):
         return snd
 
     def physicsReport(self):
-        print "\nThere are {0} total rigid bodies:".format(base.physicsWorld.getNumRigidBodies())
+        print("\nThere are {0} total rigid bodies:".format(base.physicsWorld.getNumRigidBodies()))
         for rb in base.physicsWorld.getRigidBodies():
-            print "\t", NodePath(rb)
-        print "\n"
+            print ("\t", NodePath(rb))
+        print ("\n")
 
     def removeEverything(self):
         for task in self.taskMgr.getTasks():
@@ -531,12 +531,12 @@ class CIBase(ShowBase):
     def doMemReport(self):
         MemoryUsage.showCurrentTypes()
         MemoryUsage.showCurrentAges()
-        print MemoryUsage.getCurrentCppSize()
-        print MemoryUsage.getExternalSize()
-        print MemoryUsage.getTotalSize()
+        #print MemoryUsage.getCurrentCppSize()
+       # print MemoryUsage.getExternalSize()
+        #print MemoryUsage.getTotalSize()
 
     def doPointers(self):
-        print "---------------------------------------------------------------------"
+        #print "---------------------------------------------------------------------"
         data = {}
         mup = MemoryUsagePointers()
         MemoryUsage.getPointers(mup)
@@ -547,10 +547,10 @@ class CIBase(ShowBase):
             else:
                 data[ptr.__class__.__name__] = 1
         
-        print "NodeReferenceCount:", data["NodeReferenceCount"]
-        print "CopyOnWriteObject:", data["CopyOnWriteObject"]
+        #print "NodeReferenceCount:", data["NodeReferenceCount"]
+        #print "CopyOnWriteObject:", data["CopyOnWriteObject"]
         
-        print "---------------------------------------------------------------------"
+        #print "---------------------------------------------------------------------"
         
     def hideMouseCursor(self):
         props = WindowProperties()
@@ -758,7 +758,7 @@ class CIBase(ShowBase):
         self.cl_attackMgr = AttackManager()
         
         if self.DebugShaderQualities:
-            from libpandabsp import SHADERQUALITY_HIGH, SHADERQUALITY_MEDIUM, SHADERQUALITY_LOW
+            from panda3d.bsp import SHADERQUALITY_HIGH, SHADERQUALITY_MEDIUM, SHADERQUALITY_LOW
             self.accept('1', self.shaderGenerator.setShaderQuality, [SHADERQUALITY_LOW])
             self.accept('2', self.shaderGenerator.setShaderQuality, [SHADERQUALITY_MEDIUM])
             self.accept('3', self.shaderGenerator.setShaderQuality, [SHADERQUALITY_HIGH])
@@ -904,7 +904,7 @@ class CIBase(ShowBase):
         from src.coginvasion.base.Precache import Precacheable
         for name, dclass in self.cr.dclassesByName.items():
             if hasattr(dclass.getClassDef(), 'precache'):
-                print "Precaching dclass", dclass.getClassDef(), name
+                print("Precaching dclass", dclass.getClassDef(), name)
                 dclass.getClassDef().precache()
                 
         for cls in self.precacheList:

@@ -1,7 +1,7 @@
 from src.coginvasion.szboss.Entity import Entity
 
 from panda3d.core import CardMaker, ColorBlendAttrib, OmniBoundingVolume
-from libpandabsp import GlowNode, BSPFaceAttrib
+from panda3d.bsp import GlowNode, BSPFaceAttrib
 
 class EnvSun(Entity):
     

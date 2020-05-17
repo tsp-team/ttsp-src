@@ -13,7 +13,7 @@ from src.coginvasion.avatar.ChatTypes import *
 from src.coginvasion.base.Precache import precacheActor, precacheSound, precacheModel, precacheOther
 
 from panda3d.core import Vec3
-from libpandabsp import LightingOriginEffect
+from panda3d.bsp import LightingOriginEffect
 
 class Gear(LinearProjectile):
     

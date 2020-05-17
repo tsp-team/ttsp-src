@@ -4,7 +4,7 @@ from direct.interval.IntervalGlobal import Sequence, LerpPosInterval
 from src.coginvasion.globals import CIGlobals
 
 from panda3d.bullet import BulletSphereShape, BulletGhostNode
-from libpandabsp import BloomAttrib
+from panda3d.bsp import BloomAttrib
 
 class CodeNumberPickup(DistributedEntity):
 

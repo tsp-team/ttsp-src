@@ -7,7 +7,7 @@
 """
 
 from panda3d.core import PerspectiveLens, LensNode, Texture, Point3, Mat4, ModelNode, NodePath, Vec3
-from libpandabsp import CIOLib
+from panda3d.bsp import CIOLib
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.interval.IntervalGlobal import Parallel, Sequence, LerpHprInterval

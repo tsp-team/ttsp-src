@@ -11,7 +11,7 @@ Copyright (c) CIO Team. All rights reserved.
 DATATYPE_TUPLE = tuple
 DATATYPE_LIST = list
 DATATYPE_INT = int
-DATATYPE_STR = unicode
+DATATYPE_STR = str
 DATATYPE_BOOL = bool
 DATATYPE_FLOAT = float
 
@@ -19,9 +19,6 @@ SHOWBASE_PREINIT = 0
 SHOWBASE_POSTINIT = 1
 
 def getVariants(datatype):
-    
-    if datatype == DATATYPE_STR:
-        return (unicode, str)
     
     return (datatype)
     
@@ -78,7 +75,7 @@ class Setting(object):
             vType = value.__class__.__name__ if hasattr(value, '__class__') else type(value)
             
             typeConflict = "{0} expects a value of type {1}, instead it was given a {2}. Reverting to default!".format(self.name, str(self.type), vType)
-            print typeConflict
+            print(typeConflict)
     
     def getValue(self):
         """ Fetches the current value of this Setting """

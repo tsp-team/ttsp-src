@@ -1,6 +1,6 @@
 from panda3d.core import Vec3, Point3, TransformState, GeomNode, CollisionNode, NodePath, BitMask32, NodePathCollection
 from panda3d.bullet import BulletBoxShape, BulletRigidBodyNode, BulletTriangleMesh, BulletTriangleMeshShape, BulletGhostNode
-from libpandabsp import BSPFaceAttrib, BSPMaterialAttrib
+from panda3d.bsp import BSPFaceAttrib, BSPMaterialAttrib
 
 from src.coginvasion.globals import CIGlobals
 
