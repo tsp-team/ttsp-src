@@ -2,9 +2,9 @@ from panda3d.core import Vec3, Point3
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 
-from BaseGagAI import BaseGagAI
-from TNTShared import TNTShared
-from TNTProjectileAI import TNTProjectileAI
+from .BaseGagAI import BaseGagAI
+from .TNTShared import TNTShared
+from .TNTProjectileAI import TNTProjectileAI
 from src.coginvasion.attack.Attacks import ATTACK_GAG_TNT
 from src.coginvasion.phys import PhysicsUtils
 from src.coginvasion.gags import GagGlobals
@@ -15,7 +15,7 @@ class TNT_AI(BaseGagAI, TNTShared):
     Name = GagGlobals.TNT
 
     ThrowPower = 100.0
-    
+
     Cost = 500
 
     def __init__(self):
@@ -26,10 +26,10 @@ class TNT_AI(BaseGagAI, TNTShared):
         self.throwOrigin = Point3(0)
         self.traceOrigin = Point3(0)
         self.traceVector = Vec3(0)
-        
+
     def getBaseDamage(self):
         return 180
-        
+
     def getDamageMaxDistance(self):
         return 10
 
@@ -52,7 +52,7 @@ class TNT_AI(BaseGagAI, TNTShared):
     def onSetAction(self, action):
         if action == self.StateThrow:
             self.takeAmmo(-1)
-            
+
             av = self.getAvatar()
 
             throwVector = PhysicsUtils.getThrowVector(
