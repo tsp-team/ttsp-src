@@ -21,7 +21,7 @@ from src.coginvasion.cog.attacks.MarketCrashAI import MarketCrashAI
 from src.coginvasion.cog.attacks.BiteAI import BiteAI
 from src.coginvasion.gagsnew.SoundAI import SoundAI
 
-from AttackManagerShared import AttackManagerShared
+from .AttackManagerShared import AttackManagerShared
 
 class AttackManagerAI(AttackManagerShared):
 

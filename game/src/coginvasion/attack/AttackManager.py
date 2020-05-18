@@ -21,7 +21,7 @@ from src.coginvasion.cog.attacks.MarketCrash import MarketCrash
 from src.coginvasion.cog.attacks.Bite import Bite
 from src.coginvasion.gagsnew.Sound import Sound
 
-from AttackManagerShared import AttackManagerShared
+from .AttackManagerShared import AttackManagerShared
 
 class AttackManager(AttackManagerShared):
 

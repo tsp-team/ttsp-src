@@ -1,6 +1,6 @@
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
-from Attacks import ATTACK_NONE
+from .Attacks import ATTACK_NONE
 
 from src.coginvasion.globals import CIGlobals
 
@@ -23,7 +23,7 @@ class BaseAttackShared:
     Name = "Base Attack"
 
     Server = False
-    
+
     StateOff = -1
     StateIdle = 0
 
@@ -56,10 +56,10 @@ class BaseAttackShared:
 
     def setLevel(self, level):
         self.level = level
-    
+
     def getLevel(self):
         return self.level
-        
+
     def resetActions(self):
         self.action = self.StateOff
         self.lastAction = self.StateOff
@@ -96,36 +96,36 @@ class BaseAttackShared:
 
     def getAvatar(self):
         return self.avatar
-        
+
     def getActionTime(self):
         return (globalClock.getFrameTime() - self.actionStartTime)
-        
+
     def setNextAction(self, action):
         self.nextAction = action
 
     def getNextAction(self):
         return self.nextAction
-        
+
     def setAction(self, action):
         self.actionStartTime = globalClock.getFrameTime()
         self.lastAction = self.action
         self.action = action
         if not self.isServer() and self.isFirstPerson():
-            
+
             # hack
             if not self.getViewModel().isEmpty():
                 if action == self.StateOff:
                     self.getViewModel().hide()
                 else:
                     self.getViewModel().show()
-                    
+
             self.onSetAction_firstPerson(action)
         else:
             self.onSetAction(action)
-        
+
     def onSetAction(self, action):
         pass
-        
+
     def onSetAction_firstPerson(self, action):
         pass
 
@@ -161,7 +161,7 @@ class BaseAttackShared:
             return False
 
         self.equipped = False
-        
+
         self.resetActions()
 
         if self.thinkTask:
@@ -187,13 +187,13 @@ class BaseAttackShared:
 
     def reloadRelease(self, data = None):
         pass
-        
+
     def setSecondaryAmmo(self, ammo2):
         self.secondaryAmmo = ammo2
 
     def getSecondaryAmmo(self):
         return self.secondaryAmmo
-        
+
     def setSecondaryMaxAmmo(self, maxAmmo2):
         self.secondaryMaxAmmo = maxAmmo2
 
@@ -208,10 +208,10 @@ class BaseAttackShared:
 
     def needsReload(self):
         return self.clip == 0
-        
+
     def setMaxClip(self, maxClip):
         self.maxClip = maxClip
-        
+
     def setClip(self, clip):
         self.clip = clip
 
@@ -249,7 +249,7 @@ class BaseAttackShared:
 
     def hasAmmo(self):
         return self.ammo > 0
-        
+
     def getAmmoValues(self):
         return [self.ammo, self.maxAmmo,
                 self.secondaryAmmo, self.secondaryMaxAmmo,
@@ -260,7 +260,7 @@ class BaseAttackShared:
         Loads any models/sounds/data needed by this attack.
         """
         pass
-        
+
     def doCleanup(self):
         """
         This is separated out so that unEquip() is always called before cleanup().

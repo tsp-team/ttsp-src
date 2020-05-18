@@ -3,7 +3,7 @@ from direct.interval.IntervalGlobal import Sequence, Func
 
 from panda3d.core import Point3
 
-from FlightProjectileInterval import FlightProjectileInterval
+from .FlightProjectileInterval import FlightProjectileInterval
 
 class LobProjectileShared:
 
