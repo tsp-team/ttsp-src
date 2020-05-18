@@ -1,5 +1,5 @@
 from panda3d.core import VirtualFileSystem
-from Precache import precacheSound
+from .Precache import precacheSound
 
 # song name : AudioSound object
 Cache = {}
