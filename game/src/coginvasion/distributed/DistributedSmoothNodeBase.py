@@ -3,7 +3,7 @@
 from direct.distributed.ClockDelta import *
 from direct.task import Task
 from direct.showbase.PythonUtil import randFloat, Enum
-from networksystem import CDistributedSmoothNodeBase
+from .networksystem import CDistributedSmoothNodeBase
 
 class DummyTaskClass:
     def setDelay(self, blah):
@@ -118,4 +118,3 @@ class DistributedSmoothNodeBase:
         if self.d_broadcastPosHpr is None:
             self.cnode.initialize(self, self.dclass, self.doId)
         self.cnode.sendEverything()
-
