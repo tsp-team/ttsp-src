@@ -19,7 +19,7 @@ from src.coginvasion.gagsnew.BaseHitscan import BaseHitscan
 from src.coginvasion.base.Precache import precacheSound
 from src.coginvasion.gui.WaterBar import WaterBar
 from src.coginvasion.phys import PhysicsUtils
-from FireHoseShared import FireHoseShared
+from .FireHoseShared import FireHoseShared
 
 import math
 import random
@@ -52,7 +52,7 @@ class FireHose(BaseHitscan, FireHoseShared):
         self.spraySound.setVolume(0.0)
         self.lastSprayTime = 0.0
         self.spraySoundIval = None
-        
+
         self.waterBar = None
 
         self.hydrant = None
@@ -84,7 +84,7 @@ class FireHose(BaseHitscan, FireHoseShared):
 
     def doSpraySoundIval(self, dir = 0):
         self.stopSpraySoundIval()
-        
+
         if not self.spraySound:
             return
 
@@ -139,9 +139,9 @@ class FireHose(BaseHitscan, FireHoseShared):
     def __updateParticleParent(self):
         if not CIGlobals.isNodePathOk(self.waterStreamParent):
             return
-            
-        time = globalClock.getFrameTime()        
-        
+
+        time = globalClock.getFrameTime()
+
         streamPos = self.waterStreamParent.getPos(render)
         distance = self.sprayParticleDist
 
@@ -179,7 +179,7 @@ class FireHose(BaseHitscan, FireHoseShared):
                 distance = (hitPos - streamPos).length()
 
         self.waterStreamParent.lookAt(render, hitPos)
-        
+
         if self.sprayParticle:
             system = self.sprayParticle.getParticlesNamed('particles-1')
             # Make the particles die off at the hit point.
@@ -317,7 +317,7 @@ class FireHose(BaseHitscan, FireHoseShared):
         if self.sprayParticleRoot:
             self.sprayParticleRoot.removeNode()
         self.sprayParticleRoot = None
-        
+
         self.deleteHoseStuff()
 
         if self.isLocal():

@@ -1,8 +1,8 @@
 from panda3d.core import Vec3
 from direct.interval.IntervalGlobal import ActorInterval, Func
 
-from BaseGag import BaseGag
-from TNTShared import TNTShared
+from .BaseGag import BaseGag
+from .TNTShared import TNTShared
 from src.coginvasion.attack.Attacks import ATTACK_GAG_TNT, ATTACK_HOLD_RIGHT
 from src.coginvasion.gags import GagGlobals
 from src.coginvasion.globals import CIGlobals
@@ -32,11 +32,11 @@ class TNT(BaseGag, TNTShared):
             (0, 0, self.avatar.getHeight() / 2.0) +
             (self.avatar.getQuat().getForward() * (avWidth + tntRadius))
         )
-                       
+
         CIGlobals.putVec3(dg, throwOrigin)
         CIGlobals.putVec3(dg, camera.getPos(render))
         CIGlobals.putVec3(dg, camera.getQuat(render).getForward())
-        
+
     def onSetAction_firstPerson(self, action):
         fpsCam = self.getFPSCam()
         vm = self.getViewModel()
@@ -48,7 +48,7 @@ class TNT(BaseGag, TNTShared):
 
         elif action == self.StateIdle:
             fpsCam.setVMAnimTrack(Func(vm.loop, 'tnt_idle'))
-            
+
         elif action == self.StateThrow:
             vmGag.hide()
             fpsCam.addViewPunch(self.getViewPunch())
@@ -56,7 +56,7 @@ class TNT(BaseGag, TNTShared):
 
     def onSetAction(self, action):
         self.model.show()
-        
+
         if action == self.StateDraw:
             self.doDrawNoHold('toss', 0, 30)
 

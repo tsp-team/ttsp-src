@@ -1,8 +1,8 @@
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 
-from HL2ShotgunShared import HL2ShotgunShared
-from BaseHitscanAI import BaseHitscanAI
+from .HL2ShotgunShared import HL2ShotgunShared
+from .BaseHitscanAI import BaseHitscanAI
 
 from src.coginvasion.globals import CIGlobals
 from src.coginvasion.gags import GagGlobals
@@ -18,7 +18,7 @@ class HL2ShotgunAI(BaseHitscanAI, HL2ShotgunShared):
     FireDelay = 0.5
     FriendlyFire = True
     Cost = 1000
-    
+
     def __init__(self):
         BaseHitscanAI.__init__(self)
         self.actionLengths.update({self.StatePump   :   0.666666666667 / self.Speed,
@@ -33,7 +33,7 @@ class HL2ShotgunAI(BaseHitscanAI, HL2ShotgunShared):
         self.maxClip = 6
         self.clip = 6
         self.needsPump = False
-        
+
     def getBaseDamage(self):
         return 60
 
@@ -41,7 +41,7 @@ class HL2ShotgunAI(BaseHitscanAI, HL2ShotgunShared):
         return ((complete) or
                (not complete and self.action == self.StatePump and
                 self.getActionTime() >= self.FireDelay and self.nextAction == self.StateFire))
-                                   
+
     def determineNextAction(self, completedAction):
         if completedAction in [self.StateFire, self.StateDblFire]:
             if self.clip <= 0 and self.ammo > 0:
@@ -72,17 +72,17 @@ class HL2ShotgunAI(BaseHitscanAI, HL2ShotgunShared):
                 return self.StatePump
             else:
                 return self.StateIdle
-                
+
         return self.StateIdle
-        
+
     def onSetAction(self, action):
         if action in [self.StateFire, self.StateDblFire]:
             self.avatar.emitSound(SOUND_COMBAT, volume = 3.5, duration = 0.25)
-            
+
         if action == self.StateFire:
             self.takeAmmo(-1)
             self.clip -= 1
-            
+
             self.doTraceAndDamage(1)
 
         elif action == self.StateDblFire:
@@ -97,7 +97,7 @@ class HL2ShotgunAI(BaseHitscanAI, HL2ShotgunShared):
                                                                      self.StateBeginReload,
                                                                      self.StateEndReload,
                                                                      self.StatePump]
-            
+
     def canUse(self):
         return self.hasClip() and self.hasAmmo() and self.action in [self.StateReload,
                                                                      self.StateIdle,
@@ -108,10 +108,10 @@ class HL2ShotgunAI(BaseHitscanAI, HL2ShotgunShared):
     def secondaryFirePress(self, data):
         if not self.canUseSecondary():
             return
-            
+
         secondary = self.canUseSecondary()
         primary = self.canUse()
-        
+
         if secondary or primary:
             if secondary:
                 # >= 2 in clip
@@ -123,12 +123,12 @@ class HL2ShotgunAI(BaseHitscanAI, HL2ShotgunShared):
     def reloadPress(self, data):
         if self.action == self.StateIdle and not self.isClipFull() and self.ammo > self.clip:
             self.setNextAction(self.StateBeginReload)
-        
+
     def unEquip(self):
         if not BaseHitscanAI.unEquip(self):
             return False
-            
+
         if self.action == self.StateFire:
             self.needsPump = True
-            
+
         return True

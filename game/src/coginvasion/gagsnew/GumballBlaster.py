@@ -1,6 +1,6 @@
 from panda3d.core import Vec3, VBase4
 
-from BaseHitscan import BaseHitscan
+from .BaseHitscan import BaseHitscan
 from src.coginvasion.attack.Attacks import ATTACK_GUMBALLBLASTER, ATTACK_HOLD_LEFT, ATTACK_HOLD_RIGHT
 from src.coginvasion.gags import GagGlobals
 from src.coginvasion.base.Precache import precacheSound, precacheModel, precacheOther
@@ -16,7 +16,7 @@ class GumballBlaster(BaseHitscan):
     Hold = ATTACK_HOLD_LEFT
 
     ModelPath = "phase_14/models/props/gumballShooter.bam"
-    
+
     ModelOrigin = (-0.57, 1.01, 0.30)
     ModelScale = 0.169
     ModelAngles = (60.0, 0.0, 90.0)
@@ -50,7 +50,7 @@ class GumballBlaster(BaseHitscan):
     def doPrecache(cls):
         super(GumballBlaster, cls).doPrecache()
         precacheSound(cls.FireSoundPath)
-        
+
         precacheOther("GumballProjectile", "src.coginvasion.gagsnew.GumballProjectile")
 
     def think(self):
@@ -63,11 +63,11 @@ class GumballBlaster(BaseHitscan):
 
     def addPrimaryPressData(self, dg):
         BaseHitscan.addPrimaryPressData(self, dg)
-        
+
         model = self.model
         if self.isFirstPerson():
             model = self.specialViewModel
-        
+
         CIGlobals.putVec3(dg, model.find('**/Emitter1').getPos(render))
 
     def primaryFirePress(self, data = None):
@@ -78,7 +78,7 @@ class GumballBlaster(BaseHitscan):
     def primaryFireRelease(self, data = None):
         self.firing = False
         BaseHitscan.primaryFireRelease(self, data)
-        
+
     def load(self):
         BaseHitscan.load(self)
 
@@ -100,13 +100,13 @@ class GumballBlaster(BaseHitscan):
 
         if not BaseHitscan.equip(self):
             return False
-        
+
         base.audio3d.attachSoundToObject(self.fireSound, self.avatar)
-        
+
         self.doDrawAndHold('squirt', 0, 43, 1.0, 43, 43)
-    
+
         return True
-        
+
 
     def unEquip(self):
         if not BaseHitscan.unEquip(self):
@@ -129,7 +129,7 @@ class GumballBlaster(BaseHitscan):
         self.fireSound = None
         self.vmSpinNode = None
         BaseHitscan.cleanup(self)
-        
+
     def onSetAction(self, action):
         if action == self.StateFire:
             self.fireSound.play()

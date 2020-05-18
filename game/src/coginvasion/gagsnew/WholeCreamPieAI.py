@@ -4,9 +4,9 @@ from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 from direct.distributed.ClockDelta import globalClockDelta
 
-from BaseGagAI import BaseGagAI
-from WholeCreamPieShared import WholeCreamPieShared
-from WholeCreamPieProjectileAI import WholeCreamPieProjectileAI
+from .BaseGagAI import BaseGagAI
+from .WholeCreamPieShared import WholeCreamPieShared
+from .WholeCreamPieProjectileAI import WholeCreamPieProjectileAI
 from src.coginvasion.attack.Attacks import ATTACK_GAG_WHOLECREAMPIE
 from src.coginvasion.attack.TakeDamageInfo import TakeDamageInfo
 from src.coginvasion.cog.ai.RelationshipsAI import RELATIONSHIP_FRIEND
@@ -23,10 +23,10 @@ import random
 from src.coginvasion.szboss.DistributedEntityAI import DistributedEntityAI
 
 class PieGibAI(DistributedEntityAI):
-    
+
     def announceGenerate(self):
         DistributedEntityAI.announceGenerate(self)
-        
+
         self.b_setModel("phase_14/models/props/creampie_gib.bam")
         self.setMass(5.0)
         self.setSolid(self.SOLID_MESH)
@@ -36,7 +36,7 @@ class PieGibAI(DistributedEntityAI):
         #self.getPhysNode().setAngularDamping(3.0)
         self.startPosHprBroadcast()
         self.setNextThink(3.0)
-        
+
     def delete(self):
         self.stopPosHprBroadcast()
         DistributedEntityAI.delete(self)
@@ -44,7 +44,7 @@ class PieGibAI(DistributedEntityAI):
     def think(self):
         self.requestDelete()
         self.setNextThink(-1)
-        
+
 #########################################################################
 
 class WholeCreamPieAI(BaseGagAI, WholeCreamPieShared):
@@ -53,11 +53,11 @@ class WholeCreamPieAI(BaseGagAI, WholeCreamPieShared):
     ID = ATTACK_GAG_WHOLECREAMPIE
 
     ThrowPower = 300.0
-    
+
     Cost = 100
-    
+
     NPC_DRAW_TIME = 1.5
-    
+
     HealFriends = True
     HealAmount = 5
 
@@ -76,7 +76,7 @@ class WholeCreamPieAI(BaseGagAI, WholeCreamPieShared):
         self.__projs = []
 
         self.throwTime = 0
-        
+
     def setAvatar(self, avatar):
         BaseGagAI.setAvatar(self, avatar)
         #from src.coginvasion.cog.ai.BaseNPCAI import BaseNPCAI
@@ -138,25 +138,25 @@ class WholeCreamPieAI(BaseGagAI, WholeCreamPieShared):
                                                       self.avatar,
                                                       self.avatar.getBattleZone().getPhysicsWorld())
             endPos = CIGlobals.extrude(self.avatar.getViewOrigin(), self.ThrowPower, throwVector) - (0, 0, 90)
-            
+
             proj = WholeCreamPieProjectileAI(base.air)
             proj.setProjectile(2.5, self.avatar.getViewOrigin(),
                 endPos, 1.07, globalClockDelta.getFrameNetworkTime())
             proj.generateWithRequired(self.avatar.getBattleZone().zoneId)
             proj.addHitCallback(self.onProjectileHit)
             proj.addExclusion(self.avatar)
-            
+
             self.avatar.emitSound(SOUND_COMBAT, self.avatar.getViewOrigin(), duration = 0.5)
 
             self.throwTime = globalClock.getFrameTime()
-            
+
     def canUse(self):
         return self.hasAmmo() and (globalClock.getFrameTime() - self.throwTime >= 0.5)
 
     def primaryFirePress(self, data):
         if not self.canUse():
             return
-        
+
         self.traceVector = self.avatar.getViewVector(1)
         self.b_setAction(self.StateThrow)
 
@@ -168,7 +168,7 @@ class WholeCreamPieAI(BaseGagAI, WholeCreamPieShared):
             target.getViewOrigin() - self.avatar.getViewOrigin()
         ).normalized()
         self.setNextAction(self.StateThrow)
-        
+
         return True
 
     def checkCapable(self, dot, squaredDistance):
