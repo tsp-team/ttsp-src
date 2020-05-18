@@ -6,7 +6,7 @@ Copyright (c) CIO Team. All rights reserved.
 @author Maverick Liberty/Brian Lach
 @date June 15, 2018
 
-This is to get away from the legacy way of having all Toons in the game, including NPCs, 
+This is to get away from the legacy way of having all Toons in the game, including NPCs,
 share the same code.
 
 """
@@ -19,7 +19,7 @@ from src.coginvasion.toon.ToonGlobals import GAG_START_EVENT
 from src.coginvasion.gags.backpack.BackpackAI import BackpackAI
 from src.coginvasion.gags import GagGlobals
 from DistributedPlayerToonShared import DistributedPlayerToonShared
-import ToonDNA
+from . import ToonDNA
 import types
 
 class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
@@ -55,33 +55,33 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
         self.currentGag = -1
         self.trackExperience = dict(GagGlobals.DefaultTrackExperiences)
         return
-        
+
     def getHealth(self):
         return DistributedPlayerToonShared.getHealth(self)
-        
+
     def getMaxHealth(self):
         return DistributedPlayerToonShared.getMaxHealth(self)
-        
+
     def b_setSessionHealth(self, health):
         self.sendUpdate('setSessionHealth', [health])
         self.setSessionHealth(health)
-        
+
     def b_setSessionMaxHealth(self, health):
         self.sendUpdate('setSessionMaxHealth', [health])
         self.setSessionMaxHealth(health)
-        
+
     def b_setHealth(self, hp):
         if self.battleZone and not self.battleZone.getGameRules().useRealHealth():
             self.b_setSessionHealth(hp)
             return
-        
+
         DistributedToonAI.b_setHealth(self, hp)
-        
+
     def b_setMaxHealth(self, hp):
         if self.battleZone and not self.battleZone.getGameRules().useRealHealth():
             self.b_setSessionMaxHealth(hp)
             return
-        
+
         DistributedToonAI.b_setMaxHealth(self, hp)
 
     def reqMakeSewer(self):
@@ -108,7 +108,7 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
     def createObjectForMe(self, dclassNum):
         sender = self.air.getMsgSender()
         accId = self.air.getAccountIdFromSender()
-        
+
         dclass = self.air.dclassesByNumber.get(dclassNum, None)
         if not dclass:
             self.ejectSelf("createObjectForMe: odd dclass number")
@@ -128,24 +128,24 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
         if requester:
             # The requester is only authorized if they have a higher access level than we do.
             authorized = (requester.getAccessLevel() >= self.getAccessLevel())
-        
+
         return authorized
 
     def reqUnlockAllGags(self):
         if self.__requesterAuthorized():
             self.b_setTrackExperience(GagGlobals.trackExperienceToNetString(GagGlobals.MaxedTrackExperiences))
             self.backpack.refillSupply()
-            
+
     def reqRefillLaff(self):
         if self.__requesterAuthorized():
             self.toonUp(self.getMaxHealth())
-        
+
     def reqSetWorldAccess(self, andTP):
         if self.__requesterAuthorized():
             self.b_setHoodsDiscovered(ZoneUtil.Hood2ZoneId.values())
             if andTP:
                 self.b_setTeleportAccess(ZoneUtil.Hood2ZoneId.values())
-        
+
     def reqSetTSAUni(self, flag):
         if self.__requesterAuthorized():
             if flag:
@@ -179,12 +179,12 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
                     self.shirt = ToonDNA.ToonDNA.maleTopDNA2maleTop['00'][0]
                     self.shorts = ToonDNA.ToonDNA.maleBottomDNA2maleBottom['00'][0]
                     self.sleeve = ToonDNA.ToonDNA.Sleeves[ToonDNA.ToonDNA.maleTopDNA2maleTop['00'][1]]
-                                   
+
             self.shirtColor = self.sleeveColor = self.shortColor = ToonDNA.ToonDNA.clothesColorDNA2clothesColor['27']
-                    
+
             self.generateDNAStrandWithCurrentStyle()
             self.d_setDNAStrand(self.getDNAStrand())
-        
+
     def reqSetAccessLevel(self, accessLevel):
         if self.__requesterAuthorized(True):
             self.b_setAccessLevel(accessLevel)
@@ -451,7 +451,7 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
         oldRole = self.role
         self.role = AdminCommands.Roles.get(accessLevel, None)
         AdminCommands.handleRoleChange(self, oldRole, self.role)
-        
+
     def b_setAccessLevel(self, accessLevel):
         self.sendUpdate('setAccessLevel', [accessLevel])
         self.setAccessLevel(accessLevel)
@@ -475,26 +475,26 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
         if self.useBackpack():
             self.backpack.setSupply(gagId, ammo)
         else:
-            
+
             if ammo < 0:
                 ammo = abs(ammo)
             if maxAmmo < 0:
                 maxAmmo = abs(maxAmmo)
-            
+
             DistributedToonAI.updateAttackAmmo(self, gagId, ammo, maxAmmo, ammo2, maxAmmo2, clip, maxClip)
-            
+
     def setupAttacks(self):
         DistributedToonAI.setupAttacks(self)
         # Update the player with the correct ammo numbers.
         for attack in self.attacks.values():
             attack.d_updateAttackAmmo()
-    
+
     def setBackpackAmmo(self, netString):
         data = self.backpack.fromNetString(netString)
-        
+
         for gagId in data.keys():
             supply = data[gagId]
-            
+
             if not gagId in self.getAttackMgr().AttackClasses.keys():
                 # This is like an integrity check making sure that the avatar
                 # only has access to attacks we want them to have access to.
@@ -503,7 +503,7 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
                 # isn't supposed to remain in the code for a long time.
                 self.b_setBackpackAmmo(GagGlobals.getDefaultBackpackNetString(True))
                 break
-            
+
             if not self.backpack.hasGag(gagId):
                 self.backpack.addGag(gagId, curSupply=supply)
             else:
@@ -513,32 +513,32 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
         self.cleanupAttacks()
         self.clearAttackIds()
         self.setBackpackAmmo(self.backpack.netString)
-    
+
     def b_setBackpackAmmo(self, netString):
         self.setBackpackAmmo(netString)
         self.d_setBackpackAmmo(netString)
-        
+
     def d_setBackpackAmmo(self, netString):
         self.sendUpdate('setBackpackAmmo', [netString])
-        
+
     def getBackpackAmmo(self):
         if self.backpack:
             self.backpack.netString
         else:
             defaultBackpack = GagGlobals.getDefaultBackpack(isAI = True)
             return defaultBackpack.toNetString()
-        
+
     def setTrackExperience(self, netString):
         self.trackExperience = GagGlobals.getTrackExperienceFromNetString(netString)
         GagGlobals.processTrackData(self.trackExperience, self.backpack, isAI = True)
-        
+
     def d_setTrackExperience(self, netString):
         self.sendUpdate('setTrackExperience', [netString])
-        
+
     def b_setTrackExperience(self, netString):
         self.setTrackExperience(netString)
         self.d_setTrackExperience(netString)
-        
+
     def getTrackExperience(self):
         return GagGlobals.trackExperienceToNetString(self.trackExperience)
 
@@ -555,7 +555,7 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
         # Instead, let's send out a messenger event so that cogs that are interested
         # in hearing our events get it so we don't hold up the AI by searching.
         messenger.send(self.getGagStartEvent(), [gagId])
-                
+
     def getGagStartEvent(self):
         # This event is sent out just as we start using a gag.
         if hasattr(self, 'doId'):

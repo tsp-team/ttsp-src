@@ -30,13 +30,14 @@ from src.coginvasion.toon.activities.Point import Point
 from src.coginvasion.toon.activities.PressButton import PressButton
 from src.coginvasion.toon.activities.Fall import Fall
 
-import AccessoryGlobals
+from . import AccessoryGlobals
 
 from panda3d.core import VBase3, VBase4, Point3, Vec3, ConfigVariableBool
 from panda3d.core import BitMask32, CollisionHandlerPusher
 from panda3d.core import Material, NodePath, rad2Deg
-import ToonDNA, random, math
-
+from . import ToonDNA
+import random
+import math
 import types
 
 def uniqueName(toon, string):
@@ -120,7 +121,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
             'off', 'off')
         animStateList = self.animFSM.getStates()
         self.animFSM.enterInitialState()
-        
+
         if not hasattr(self, 'uniqueName'):
             self.uniqueName = types.MethodType(uniqueName, self)
 
@@ -132,7 +133,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
                            ACT_TOON_POINT       :   Point(self),
                            ACT_PRESS_BUTTON     :   PressButton(self),
                            ACT_TOON_FALL        :   Fall(self)}
-                           
+
     def setActivity(self, act, timestamp = 0):
         Avatar.Avatar.setActivity(self, act, timestamp)
         if act == ACT_NONE:
@@ -159,10 +160,10 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
     def getEyePoint(self):
         # middle of the head
         return Point3(0, 0, self.getHeight() - (self.getHeadHeight() / 2.0))
-            
+
     def setForceRunSpeed(self, flag):
         self.forceRunSpeed = flag
-            
+
     def resetTorsoRotation(self):
         if not self.isEmpty():
             spine = self.find("**/def_spineB")
@@ -221,7 +222,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         if self.standWalkRunReverse != None:
 
             rotateCutOff = CIGlobals.RotateCutOff if not self.isLocalAvatar() else CIGlobals.WalkCutOff
-        
+
             if strafeSpeed < CIGlobals.StrafeCutOff and strafeSpeed > -CIGlobals.StrafeCutOff:
                 self.resetTorsoRotation()
 
@@ -249,19 +250,19 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
                 movementVec = Vec3(strafeSpeed, forwardSpeed, 0)
                 movementVec.normalize()
                 movementAngle = rad2Deg(math.atan2(movementVec[1], movementVec[0])) - 90.0
-                
+
                 if action == CIGlobals.REVERSE_INDEX:
                     movementAngle -= 180
-                
+
                 spine.setH(-movementAngle)
                 self.getPart('legs').setH(movementAngle)
-            
+
             anim, rate = self.standWalkRunReverse[action]
             if anim != self.playingAnim or rate != self.playingRate or self.forcedTorsoAnim != self.lastForcedTorsoAnim:
                 self.playingAnim = anim
                 self.playingRate = rate
                 self.lastForcedTorsoAnim = self.forcedTorsoAnim
-                
+
                 if self.forcedTorsoAnim is None:
                     self.loop(anim)
                 else:
@@ -337,7 +338,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         self.chatSoundTable[CHAT_MEDIUM] = "medium"
         self.chatSoundTable[CHAT_LONG] = "long"
         self.chatSoundTable[CHAT_HOWL] = "howl"
-        
+
     def __actAsGone(self):
         if self.nametag3d:
             self.nametag3d.hide()
@@ -346,7 +347,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         if self.tokenIcon:
             self.tokenIcon.hide()
         #self.stashBodyCollisions()
-        
+
     def __restoreHide(self):
         if self.tokenIcon:
             self.tokenIcon.show()
@@ -359,7 +360,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
             self.getGeomNode().setAlphaScale(1.0)
             self.getGeomNode().show()
         #self.unstashBodyCollisions()
-        
+
     def handleGhost(self, flag):
         alpha = 1.0 if not flag else 0.25
         local = self == base.localAvatar
@@ -492,7 +493,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
             del self._Actor__commonBundleHandles['torso']
         if 'legs' in self._Actor__commonBundleHandles:
             del self._Actor__commonBundleHandles['legs']
-        
+
         self.deleteShadow()
         self.removePart('head')
         self.removePart('torso')
@@ -502,23 +503,23 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         self.flush()
 
     def setAdminToken(self, tokenInstance):
-        
+
         if tokenInstance:
             matPath = tokenInstance.getMaterialPath()
             self.tokenIcon = loader.loadModel("phase_3/models/props/staffIcon.bam")
             self.tokenIcon.reparentTo(self)
             self.tokenIcon.setScale(0.75)
             self.tokenIcon.setShaderAuto()
-            
+
             # Let's update the material.
             self.tokenIcon.setBSPMaterial(matPath, 1)
-            
+
             # Let's position the icon above the nametag.
             x, y, z = self.nametag3d.getPos()
             self.tokenIcon.setPos(Vec3(x, y, z + self.tokenIcon.getSz()))
-            
+
             r, g, b, _ = tokenInstance.getColor()
-            
+
             # Let's add the glow.
             glow = loader.loadModel('phase_4/models/minigames/particleGlow.bam')
             glow.reparentTo(self.tokenIcon)
@@ -528,7 +529,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
             glow.setDepthWrite(False, 1)
             glow.setShaderAuto()
             glow.setTwoSided(1)
-            
+
             self.tokenIconIval = Sequence(LerpHprInterval(self.tokenIcon, duration = 3.0, hpr = Vec3(360, 0, 0), startHpr = Vec3(0, 0, 0)))
             self.tokenIconIval.loop()
         else:
@@ -598,7 +599,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         self.makeSubpart("torso-top", ["def_spineB"], parent = "torso")
 
         Avatar.Avatar.initShadow(self)
-        
+
         self.updateChatSoundDict()
         self.setBlend(frameBlend = True)
 
@@ -612,7 +613,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         # the separate pieces. After this point, the separate pieces of the toon are no
         # longer manipulatable, such as arms, sleeves, shirt, etc. If this needs to be done,
         # the toon will have to be regenerated.
-        
+
         # Don't do it in Make-A-Toon though, as we have to be constantly modifying the pieces.
         if not self.mat:
             self.optimize()
@@ -623,7 +624,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
             self.showAvId()
 
         self.loop('neutral')
-        
+
     def optimize(self):
         self.getPart('legs').flattenStrong()
         self.postFlatten()
@@ -647,7 +648,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         self.getPart('head').reparentTo(self.getGeomNode())
         self.getPart('torso').reparentTo(self.getGeomNode())
         self.getPart('legs').reparentTo(self.getGeomNode())
-        
+
     def getHeadHeight(self):
         animal = self.getAnimal()
         headScale = ToonGlobals.HeadScales[animal][2]
@@ -904,13 +905,13 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
             name = self.uniqueName('enterTeleportOut')
         else:
             name = 'enterTeleportOut'
-            
-        self.track = Sequence(Wait(0.4), 
-            Func(self.teleportOutSfx), 
+
+        self.track = Sequence(Wait(0.4),
+            Func(self.teleportOutSfx),
             Wait(1.3),
-            Func(self.throwPortal), 
-            Wait(1.1), 
-            Func(self.__actAsGone), 
+            Func(self.throwPortal),
+            Wait(1.1),
+            Func(self.__actAsGone),
             Wait(1.5),
         name = name)
 
@@ -976,7 +977,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
 
         holeTrack.append(Func(restorePortal, portal))
         toonTrack = Sequence(
-            Wait(0.3), 
+            Wait(0.3),
             Func(self.__restoreHide),
             ActorInterval(self, 'happy', startTime = 0.45))
 
@@ -1051,7 +1052,7 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
 
         toon = self.getGeomNode()
         toon.setP(-89.0)
-        
+
         if self.shadow:
             self.shadow.hide()
 
@@ -1074,25 +1075,25 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
         self.playingAnim = 'neutral'
 
     def enterDied(self, ts = 0, callback = None, extraArgs = []):
-        
+
         def shouldDisableGags():
             if hasattr(self, 'disableGags'):
                 self.disableGags()
             if hasattr(self, 'setEquippedAttack'):
                 self.setEquippedAttack(-1)
-        
+
         self.playingAnim = 'lose'
         self.isdying = True
         self.play("lose")
         self.track = Sequence(
             Func(self.clearForcedTorsoAnim),
             Func(shouldDisableGags),
-            Wait(2.2), 
-            Func(self.dieSfx), 
-            Wait(2.8), 
-            self.getGeomNode().scaleInterval(2, 
-                Point3(0.01), 
-            startScale=(self.getGeomNode().getScale())), 
+            Wait(2.2),
+            Func(self.dieSfx),
+            Wait(2.8),
+            self.getGeomNode().scaleInterval(2,
+                Point3(0.01),
+            startScale=(self.getGeomNode().getScale())),
             Func(self.delToon),
         name = self.uniqueName('enterDied'))
         self.track.setDoneEvent(self.track.getName())
@@ -1128,11 +1129,11 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
 
         self.rescaleToon()
         self.playingAnim = 'neutral'
-        
+
     def enterBow(self, ts = 0, callback = None, extraArgs = []):
         self.play("bow")
         self.playingAnim = 'bow'
-        
+
     def exitBow(self):
         self.exitGeneral()
         self.playingAnim = 'neutral'
@@ -1164,4 +1165,3 @@ class Toon(Avatar.Avatar, ToonHead, ToonDNA.ToonDNA):
 
     def exitConked(self):
         self.exitGeneral()
-

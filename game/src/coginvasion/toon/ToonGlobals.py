@@ -11,7 +11,7 @@ Copyright (c) CIO Team. All rights reserved.
 from src.coginvasion.globals import CIGlobals
 from panda3d.core import Point3
 
-from ToonDNA import ToonDNA
+from .ToonDNA import ToonDNA
 
 EyeStateClosed = 0
 EyeStateOpened = 1
@@ -89,7 +89,7 @@ ANIMATIONS = {
     "righthand-start"   :   [3.5, "right-hand-start"],
     "rightpoint"    :   [3.5, 'right-point'],
     'rightpoint-start'  :   [3.5, 'right-point-start']
-    
+
 }
 
 HeadScales = {
@@ -142,7 +142,7 @@ LegHeightDict = {
     'dgl': 2.75
 }
 
-DogHeads = ['dgs_shorts', 'dgl_shorts', 'dgm_shorts', 'dgm_skirt']    
+DogHeads = ['dgs_shorts', 'dgl_shorts', 'dgm_shorts', 'dgm_skirt']
 
 def generateBodyPart(toon, bodyPart, partType, partPhase, pantType):
     partAnimations = {}
@@ -181,36 +181,36 @@ def generateBodyPart(toon, bodyPart, partType, partPhase, pantType):
         partAnimations[animName] = animPath
 
     toon.loadAnims(partAnimations, bodyPart)
-    
+
 def precacheToons():
     """
     Precaches all Toon models and animations!
     """
-    
+
     from src.coginvasion.base.Precache import precacheActor, precacheModel
     from direct.actor.Actor import Actor
-    
+
     for legType in LegHeightDict.keys():
         toon = Actor()
         generateBodyPart(toon, 'legs', legType, 3, 'shorts')
         precacheActor(toon)
         toon.cleanup()
         toon.removeNode()
-        
+
     for torsoType in TorsoHeightDict.keys():
         toon = Actor()
         generateBodyPart(toon, 'torso', torsoType, 3, '')
         precacheActor(toon)
         toon.cleanup()
         toon.removeNode()
-        
+
     for animal in HeadScales.keys():
         if animal != "dog":
             precacheModel("phase_3/models/char/%s-heads-1000.bam" % animal)
         else:
             for headType in DogHeads:
                 # precache all dog head models and animations
-                
+
                 mdl = "phase_3/models/char/tt_a_chr_%s_head_1000.bam" % headType
                 partAnimations = {}
 
@@ -235,14 +235,14 @@ def precacheToons():
 
                     partAnimations[animName] = animPath
                 precacheActor([mdl, partAnimations])
-                
+
 def generateGuiHead(dnaStrand):
     if isinstance(dnaStrand, str):
         dna = ToonDNA()
         dna.setDNAStrand(dnaStrand)
     elif isinstance(dnaStrand, ToonDNA):
         dna = dnaStrand
-    
+
     from ToonHead import ToonHead
     head = ToonHead(base.cr)
     head.generateHead(dna.gender, dna.animal, dna.head, 1)
@@ -250,5 +250,5 @@ def generateGuiHead(dnaStrand):
     head.setDepthWrite(1)
     head.setDepthTest(1)
     head.setH(180)
-    
+
     return head

@@ -20,25 +20,25 @@ from src.coginvasion.avatar.DistributedAvatarAI import DistributedAvatarAI
 from src.coginvasion.avatar.AvatarTypes import *
 from src.coginvasion.cog.ai.RelationshipsAI import *
 from src.coginvasion.globals import CIGlobals
-import ToonGlobals
-import ToonDNA
+from . import ToonGlobals
+from . import ToonDNA
 
 import random
 
 class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
     notify = directNotify.newCategory('DistributedToonAI')
-    
+
     LMHead = 0
     LMCage = 1
     LMOff = 2
-    
+
     AvatarType = AVATAR_TOON
     Relationships = {
         AVATAR_TOON     :   RELATIONSHIP_FRIEND,
         AVATAR_SUIT     :   RELATIONSHIP_HATE,
         AVATAR_CCHAR    :   RELATIONSHIP_FRIEND
     }
-    
+
     ClosedDuration = 0.15
     MaxPupilLook = 0.7 # dot
     EyeLookType_Auto = 0
@@ -54,9 +54,9 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
         ToonDNA.ToonDNA.__init__(self)
         self.avatarType = CIGlobals.Toon
         self.anim = "Happy"
-        
+
         self.lookMode = 2 # LMOff
-        
+
         # Eyes stuff
         self.eyeLensNP = None
         self.eyeTarget = None
@@ -77,38 +77,38 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
                            ACT_PRESS_BUTTON: 10.0, ACT_TOON_FALL: 2.5}
 
         return
-        
+
     def onActivityFinish(self):
         self.b_setAnimState("Happy")
-        
+
     def b_setAnimState(self, anim):
         self.sendUpdate('setAnimState', [anim, globalClockDelta.getFrameNetworkTime()])
         self.anim = anim
-        
+
     def b_setLookMode(self, mode):
         self.setLookMode(mode)
         self.sendUpdate('setLookMode', [mode])
-        
+
     def setDNAStrand(self, strand):
         ToonDNA.ToonDNA.setDNAStrand(self, strand)
-        
+
         animal = self.getAnimal()
         bodyScale = ToonGlobals.BodyScales[animal]
         headScale = ToonGlobals.HeadScales[animal][2]
         shoulderHeight = ToonGlobals.LegHeightDict[self.getLegs()] * bodyScale + ToonGlobals.TorsoHeightDict[self.getTorso()] * bodyScale
-        
+
         self.setHitboxData(0, 1, shoulderHeight + ToonGlobals.HeadHeightDict[self.getHead()] * headScale)
-        
+
         if self.arePhysicsSetup():
             self.setupPhysics()
-            
+
         if self.eyeLensNP:
             self.eyeLensNP.setZ(self.getHeight() * 0.85)
 
     def b_setDNAStrand(self, strand):
         self.d_setDNAStrand(strand)
         self.setDNAStrand(strand)
-        
+
     def d_setDNAStrand(self, strand):
         self.sendUpdate('setDNAStrand', [strand])
 
@@ -126,7 +126,7 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
 
     def announceGenerate(self):
         DistributedAvatarAI.announceGenerate(self)
-        
+
         if not self.eyeLensNP:
             lens = PerspectiveLens()
             lens.setMinFov(180.0 / (4./3.))
@@ -135,9 +135,9 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
             self.eyeLensNP = self.attachNewNode(node)
             self.eyeLensNP.setZ(self.getHeight() - 0.5)
             self.eyeLensNP.setY(-1)
-            
+
         self.setEyesOpenDuration()
-        
+
         taskMgr.add(self.__eyesLookTask, self.taskName("eyesLookTask"))
 
     def delete(self):
@@ -147,60 +147,60 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
         self.eyeLensNP = None
         self.anim = None
         self.eyeLookType = None
-        
+
         DistributedAvatarAI.delete(self)
-        
+
     ##########################################################################################
     # Eyes look-around stuff
-    
+
     def hasEyeTarget(self):
         if isinstance(self.eyeTarget, NodePath):
             return CIGlobals.isNodePathOk(self.eyeTarget)
-            
+
         return self.eyeTarget is not None
-        
+
     def getDotToPupilTarget(self, target = None):
         if not target:
             target = self.eyeTarget
-            
+
         if isinstance(target, NodePath):
             toTarget = (target.getPos(render) - self.eyeLensNP.getPos(render)).normalized()
         else:
             return 1.0
         fwd = self.eyeLensNP.getQuat(render).getForward()
-        
+
         return fwd.dot(toTarget)
-        
+
     def setEyesOpenDuration(self):
         self.eyesOpenDuration = random.uniform(0.5, 7.0)
-        
+
     def setEyeState(self, state):
         self.eyeState = state
         self.eyeStateTime = globalClock.getFrameTime()
         self.sendUpdate('setEyeState', [state])
-        
+
     def getEyeState(self):
         return self.eyeState
-        
+
     def openEyes(self):
         self.setEyeState(ToonGlobals.EyeStateOpened) # opened
-        
+
     def blink(self):
         self.setEyeState(ToonGlobals.EyeStateClosed) # closed
-        
+
     def d_lookPupilsMiddle(self):
         self.sendUpdate('lookPupilsMiddle')
-        
+
     def clearEyeTarget(self):
         self.lastEyeTarget = self.eyeTarget
         self.eyeTarget = None
         self.eyeTargetTime = 0
         self.eyeTargetLastMove = 0
         self.eyeTargetLastPos = Point3(0)
-        
+
     def setEyeLookType(self, elt):
         self.eyeLookType = elt
-        
+
     def setEyeTarget(self, target):
         self.lastEyeTarget = self.eyeTarget
         self.targetIsNew = True
@@ -213,32 +213,32 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
             self.eyeTargetLastPos = target
         # How long until we get bored of this eye target?
         self.eyeTargetBoredTime = random.uniform(6.0, 10.0)
-        
+
         # Blink when we get a new eye target, so our eyes don't strangely teleport
         self.blink()
         if isinstance(target, DistributedNodeAI):
             self.sendUpdate('lookEyesAtObject', [target.doId])
         else:
             self.sendUpdate('lookEyesAt', [[target[0], target[1], target[2]]])
-        
+
     def __eyesLookTask(self, task):
-        
+
         ##########################
         # Hack for mod
         from src.mod import ModGlobals
         if self.doId == ModGlobals.LocalAvatarID:
             return task.done
         ##########################
-                  
+
         now = globalClock.getFrameTime()
-        
+
         eyeStateElapsed = now - self.eyeStateTime
         # Should we blink?
         if self.eyeState == ToonGlobals.EyeStateClosed and eyeStateElapsed >= self.ClosedDuration:
             self.openEyes()
         elif self.eyeState == ToonGlobals.EyeStateOpened and eyeStateElapsed >= self.eyesOpenDuration:
             self.blink()
-           
+
         if self.hasEyeTarget():
             if self.targetIsNew:
                 self.d_lookPupilsMiddle()
@@ -255,13 +255,13 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
                 targetIsPoint = True
                 boredTime = self.eyeTargetBoredTime * 0.5
                 currTargetPos = self.eyeTarget
-            
+
             if pDot < self.MaxPupilLook or not self.eyeLensNP.node().isInView(currTargetPos):
                 # Target no longer in line-of-sight
                 if self.eyeLookType == self.EyeLookType_Auto:
                     self.clearEyeTarget()
                 return task.cont
-            
+
             if self.eyeLookType == self.EyeLookType_Auto:
                 if not targetIsPoint:
                     if (currTargetPos - self.eyeTargetLastPos).lengthSquared() > 0.01:
@@ -270,7 +270,7 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
                         # We get bored twice as fast if our eye target is not moving
                         self.clearEyeTarget()
                         return task.cont
-                    
+
                 if (now - self.eyeTargetTime) > boredTime:
                     self.clearEyeTarget()
                     return task.cont
@@ -279,7 +279,7 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
         else:
             # find a new eye target
             target = None
-            
+
             avOrPoint = random.randint(0, 1)
             if avOrPoint == 0:
                 visible = []
@@ -293,7 +293,7 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
                         visible.append(avatar)
                 if len(visible):
                     target = random.choice(visible)
-                
+
             if not target:
                 target = random.choice([Vec3(0, 25, 0),
                                         Vec3(10, 25, 0),
@@ -304,7 +304,7 @@ class DistributedToonAI(DistributedAvatarAI, ToonDNA.ToonDNA):
                                         Vec3(-10, 25, 10),
                                         Vec3(-10, 25, 0),
                                         Vec3(10, 25, -10)])
-                                        
+
             self.setEyeTarget(target)
-            
+
         return task.cont
