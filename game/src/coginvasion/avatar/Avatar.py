@@ -25,7 +25,7 @@ from src.coginvasion.base.Wake import Wake
 from src.coginvasion.base.Splash import Splash
 from src.coginvasion.avatar.AvatarShared import AvatarShared
 import random
-from ChatTypes import *
+from .ChatTypes import *
 
 notify = directNotify.newCategory("Avatar")
 
