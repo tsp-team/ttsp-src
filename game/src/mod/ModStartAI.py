@@ -1,10 +1,10 @@
-import __builtin__
+import builtins
 import sys
 sys.dont_write_bytecode = True
 
 from src.coginvasion.base.Metadata import Metadata
 metadata = Metadata()
-__builtin__.metadata = metadata
+builtins.metadata = metadata
 metadata.PROCESS = 'server'
 metadata.DEDICATED_SERVER = True
 
