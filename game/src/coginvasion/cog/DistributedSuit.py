@@ -36,7 +36,7 @@ class DistributedSuit(Suit, DistributedAvatar, DelayDeletable):
         self.dept = None
         self.variant = None
         self.suitPlan = None
-        self.level = None
+        self.level = 0
         self.moveIval = None
         self.hpFlash = None
 
