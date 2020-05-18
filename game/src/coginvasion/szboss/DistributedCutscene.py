@@ -1,4 +1,4 @@
-from DistributedEntity import DistributedEntity
+from .DistributedEntity import DistributedEntity
 from src.coginvasion.gui.CutsceneGUI import CutsceneGUI
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, Parallel, LerpPosInterval, LerpHprInterval, LerpPosHprInterval, ActorInterval
