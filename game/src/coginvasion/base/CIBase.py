@@ -317,28 +317,28 @@ class CIBase(ShowBase):
         base.cr.playGame.hood.loader.geom.hide()
 
     def reportCam(self):
-        #print self.camera
-        #print self.camera.getNetTransform()
+        #print(self.camera)
+        #print(self.camera.getNetTransform())
         self.camera.setScale(render, 1)
         self.camera.setShear(render, 0)
 
         """
-        print 'TPM START'
+        print('TPM START')
         tpMgr = TextPropertiesManager.getGlobalPtr()
-        print 'PROPERTIES GET'
+        print('PROPERTIES GET')
         tpRed = TextProperties()
         tpRed.setTextColor(1, 0, 0, 1)
         tpSlant = TextProperties()
         tpSlant.setSlant(0.3)
-        print 'RED AND SLANT GENERATED'
+        print('RED AND SLANT GENERATED')
         tpMgr.setProperties('red', tpRed)
-        print 'RED SET'
+        print('RED SET')
         try:
             tpMgr.setProperties('slant', tpSlant)
         except Exception:
-            print 'AN EXCEPTION OCCURRED'
-        print 'SLANT SET'
-        print 'TPM END'
+            print('AN EXCEPTION OCCURRED')
+        print('SLANT SET')
+        print('TPM END')
         """
 
     def convertHammerAngles(self, angles):
@@ -491,8 +491,8 @@ class CIBase(ShowBase):
     def physicsReport(self):
         print("\nThere are {0} total rigid bodies:".format(base.physicsWorld.getNumRigidBodies()))
         for rb in base.physicsWorld.getRigidBodies():
-            print ("\t", NodePath(rb))
-        print ("\n")
+            print("\t", NodePath(rb))
+        print("\n")
 
     def removeEverything(self):
         for task in self.taskMgr.getTasks():
@@ -527,9 +527,9 @@ class CIBase(ShowBase):
     def doMemReport(self):
         MemoryUsage.showCurrentTypes()
         MemoryUsage.showCurrentAges()
-        #print MemoryUsage.getCurrentCppSize()
-       # print MemoryUsage.getExternalSize()
-        #print MemoryUsage.getTotalSize()
+        #print(MemoryUsage.getCurrentCppSize())
+       # print(MemoryUsage.getExternalSize())
+        #print(MemoryUsage.getTotalSize())
 
     def doPointers(self):
         #print("---------------------------------------------------------------------")
@@ -707,7 +707,7 @@ class CIBase(ShowBase):
         self.shaderGenerator.addShader(skb)
         self.shaderGenerator.addShader(dcm)
 
-        #print self.shaderGenerator.getPlanarReflections().getReflectionTexture()
+        #print(self.shaderGenerator.getPlanarReflections().getReflectionTexture())
         #OnscreenImage(image = self.shaderGenerator.getPlanarReflections().getReflectionTexture(), scale = 0.3, pos = (0, 0, -0.7))
 
         self.shaderGenerator.setShaderQuality(CIGlobals.getSettingsMgr().getSetting("shaderquality").getValue())

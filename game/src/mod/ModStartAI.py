@@ -71,7 +71,7 @@ def __handleAIReady():
         from src.mod.ModBattleZoneAI import ModBattleZoneAI
         bZone = ModBattleZoneAI(base.air)
         bZone.generateWithRequiredAndId(ModGlobals.BattleZoneDoID, 0, ModGlobals.BattleZoneId)
-        print base.air.doId2do
+        print(base.air.doId2do)
         bZone.setAvatars([ModGlobals.LocalAvatarID])
         plyr = base.air.doId2do.get(ModGlobals.LocalAvatarID)
         plyr.bspLoader = bZone.bspLoader

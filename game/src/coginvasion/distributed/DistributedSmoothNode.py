@@ -117,7 +117,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         smoothed position.  This may be overridden by a derived class
         to specialize the behavior.
         """
-        
+
         if self.fullyStopped:
             return
 
@@ -349,7 +349,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         # client.  This is because the component functions, above,
         # call this function explicitly instead of setComponentT().
 
-        #print 'setComponentTLive: %s' % timestamp
+        #print('setComponentTLive: %s' % timestamp)
 
         if timestamp is None:
             # if no timestamp, re-use the most recent timestamp to keep things
@@ -427,7 +427,7 @@ class DistributedSmoothNode(DistributedNode.DistributedNode,
         # automatically reset the smoothing position when we call it.
         if self.smoothStarted:
             if self._smoothWrtReparents:
-                #print self.getParent(), parent, self.getParent().getPos(parent)
+                #print(self.getParent(), parent, self.getParent().getPos(parent))
                 self.smoother.handleWrtReparent(self.getParent(), parent)
                 NodePath.wrtReparentTo(self, parent)
             else:

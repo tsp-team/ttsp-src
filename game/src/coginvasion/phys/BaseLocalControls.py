@@ -362,16 +362,16 @@ class BaseLocalControls(DirectObject):
         base.localAvatar.assign(self.controller.getMovementParent())
         base.cr.doId2do[base.localAvatar.doId] = base.localAvatar
 
-        print taskMgr
+        print(taskMgr)
 
         self.setControlScheme(self.SDefault)
 
     def __handleEventEnter(self, np):
-        print 'enter' + np.getName()
+        print('enter' + np.getName())
         messenger.send('enter' + np.getName(), [np])
 
     def __handleEventExit(self, np):
-        print 'exit' + np.getName()
+        print('exit' + np.getName())
         messenger.send('exit' + np.getName(), [np])
 
     def releaseMovementInputs(self):

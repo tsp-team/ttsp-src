@@ -47,7 +47,7 @@ class AmbientGenericAI(DistributedEntityAI):
 
     def announceGenerate(self):
         DistributedEntityAI.announceGenerate(self)
-        print self.getEntityValueBool("playnow")
+        print(self.getEntityValueBool("playnow"))
         if self.getEntityValueBool("playnow"):
             print("Play now!")
             self.Play()

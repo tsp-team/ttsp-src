@@ -298,8 +298,8 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         self.makeScheduleNames()
 
-        #print self.schedules
-        #print self.scheduleNames
+        #print(self.schedules)
+        #print(self.scheduleNames)
 
         self.idealYaw = 0.0
         self.yawSpeed = 9.0
@@ -446,7 +446,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         current = CIGlobals.angleMod(self.getYaw())
         ideal = self.idealYaw
-        #print current, ideal
+        #print(current, ideal)
         if current != ideal:
             speed = yawSpeed * globalClock.getDt() * 10
             move = ideal - current
@@ -774,7 +774,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         for i in range(len(attacks)):
             attack = attacks[i]
             if attack.checkCapable(dot, distSqr) and attack.hasAmmo() and not attack.isCoolingDown():
-                #print attack, "is capable"
+                #print(attack, "is capable")
                 self.capableAttacks.append(attack.getID())
 
         if len(self.capableAttacks) > 0:
@@ -787,7 +787,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         if self.hasConditions(COND_SEE_HATE | COND_SEE_DISLIKE):
             #print("we see hate or dislike")
             target, relationship = self.getBestVisibleTarget()
-            #print target, relationship
+            #print(target, relationship)
             if ((self.target is None or target != self.target.entity) and target is not None and target.takesDamage()):
                 if ((self.schedule and ((self.schedule.interruptMask & COND_NEW_TARGET) != 0)) or
                     not self.schedule):

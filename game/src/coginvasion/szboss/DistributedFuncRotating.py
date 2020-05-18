@@ -65,7 +65,7 @@ class DistributedFuncRotating(DistributedEntity, FSM):
             self.spinTrack = None
 
     def enterRotating(self):
-        print self.__getRot()
+        print(self.__getRot())
         print("We are rotating")
         self.spinTrack = LerpHprInterval(self.cEntity.getModelNp(), 60.0 / self.speed, self.__getRot(), startHpr = (0, 0, 0))
         self.spinTrack.loop()

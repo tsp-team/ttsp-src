@@ -131,7 +131,7 @@ class DistributedEntityAI(DistributedSmoothNodeAI, BasePhysicsObjectAI, Entity):
         #    PhysicsUtils.makeBulletCollFromGeoms(self.cEntity.getModelNp(), world=self.dispatch.physicsWorld))
         #PhysicsUtils.attachBulletNodes(self.cEntity.getModelNp(), self.dispatch.physicsWorld)
 
-        #print self.dispatch.brushCollisionMaterialData
+        #print(self.dispatch.brushCollisionMaterialData)
         pass
 
     def load(self):

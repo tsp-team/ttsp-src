@@ -86,9 +86,9 @@ def makeLoadingScreen(firstTime = False):
     global LoadingScreen
     if firstTime:
         base.transitions.fadeScreen(1.0)
-        
+
     from direct.gui.DirectGui import OnscreenText, DGG, OnscreenImage
-    
+
     if not firstTime:
         # Freeze the current frame
         ss = base.win.getScreenshot()
@@ -97,14 +97,14 @@ def makeLoadingScreen(firstTime = False):
         base.transitions.fadeScreen(0.5)
     else:
         img = None
-    
+
     txt = OnscreenText(text = "Loading...", fg = (1, 1, 1, 1), mayChange = False)
     txt.reparentTo(aspect2d, DGG.NO_FADE_SORT_INDEX)
-    
+
     base.renderFrames()
-    
+
     LoadingScreen = (img, txt)
-    
+
 def clearLoadingScreen():
     global LoadingScreen
     base.transitions.noTransitions()
@@ -125,7 +125,7 @@ def vec3LinearToGamma(vec):
     vec[1] = math.pow(vec[1], 1.0 / 2.2)
     vec[2] = math.pow(vec[2], 1.0 / 2.2)
     return vec
-    
+
 def vec3GammaToLinear(vec):
     import math
     vec[0] = math.pow(vec[0], 2.2)
@@ -138,7 +138,7 @@ def getZoneId(obj):
         return obj.getZoneId()
     else:
         return obj.zoneId
-        
+
 def getDoId(obj):
     if hasattr(obj, 'getDoId'):
         return obj.getDoId()
@@ -194,7 +194,7 @@ def makeSprite(name, texture, scale, add = False):
         ts.setMode(TextureStage.MAdd)
     np.setTexture(ts, texture)
     np.setTexGen(ts, TexGenAttrib.MPointSprite)
-    
+
     np.setDepthWrite(False)
     np.setDepthOffset(1)
     np.setTransparency(True)
@@ -211,7 +211,7 @@ def getDGIForBlob(blob):
     dg = PyDatagram(blob)
     dgi = PyDatagramIterator(dg)
     return dgi
-    
+
 def reflect(dir, normal):
     return dir - (normal * (dir.dot(normal) * 2.0))
 
@@ -286,9 +286,9 @@ def getVec3(dgi):
 def remapVal(val, A, B, C, D):
     if A == B:
         return D if val >= B else C
-        
+
     return C + (D - C) * (val - A) / (B - A)
-    
+
 def clamp(val, A, B):
     return max(A, min(B, val))
 
@@ -309,28 +309,28 @@ def replaceDecalEffectsWithDepthOffsetAttrib(node):
         if np.hasEffect(DecalEffect.getClassType()):
             np.clearEffect(DecalEffect.getClassType())
             np.setDepthOffset(1)
-            
+
 def moveNodes(fromNode, search, node):
     for np in fromNode.findAllMatches("**/" + search):
         np.wrtReparentTo(node)
-        
+
 def moveChildren(fromNode, toNode, removeFrom = False):
     for np in fromNode.getChildren():
         np.wrtReparentTo(toNode)
     if removeFrom:
         fromNode.removeNode()
-        
+
 def removeDNACodes(node):
     for np in node.findAllMatches("**"):
         np.clearTag("DNACode")
         np.clearTag("DNARoot")
         np.clearTag("cam")
-        
+
 def flattenModelNodes(node):
     for np in node.findAllMatches("**"):
         if np.node().isOfType(ModelNode.getClassType()):
             np.flattenStrong()
-            
+
 def clearModelNodesBelow(node):
     for np in node.getChildren():
         np.clearModelNodes()
@@ -338,7 +338,7 @@ def clearModelNodesBelow(node):
 def isAvatar(obj):
     from src.coginvasion.avatar.AvatarShared import AvatarShared
     return isinstance(obj, AvatarShared)
-    
+
 def avatarsAreFriends(av1, av2):
     from src.coginvasion.cog.ai.RelationshipsAI import RELATIONSHIP_FRIEND
     return av1.getRelationshipTo(av2) == RELATIONSHIP_FRIEND
@@ -377,7 +377,7 @@ def acceptWithModifiers(acceptor, event, callback = None, extraArgs = []):
 def acceptOnceWithModifiers(acceptor, event, callback = None, extraArgs = []):
     for pattern in patterns:
         acceptor.acceptOnce(pattern % event, callback, extraArgs)
-    
+
 def ignoreWithModifiers(acceptor, event):
     for pattern in patterns:
         acceptor.ignore(pattern % event)
@@ -394,7 +394,7 @@ def doSceneCleanup():
     TransformState.clearCache()
     TransformState.garbageCollect()
     GeomCacheManager.getGlobalPtr().flush()
-        
+
     base.graphicsEngine.renderFrame()
 
 def lerpWithRatio(goal, val, ratio):
@@ -446,7 +446,7 @@ def castShadows(node):
     if ShadowTexStage:
         node.setTextureOff(ShadowTexStage)
     ShadowCasters.append(node)
-    
+
 def uncastShadows(node):
     global ShadowCasters
     node.hide(ShadowCameraBitmask)
@@ -470,7 +470,7 @@ def makeDropShadow(scale):
 def makeSingular(noun):
     """ Makes a plural noun singular. """
     pluralSuffixes = ['ies', 'es', 's']
-    
+
     for suffix in pluralSuffixes:
         if noun.endswith(suffix):
             return noun[:-len(suffix)]
@@ -480,16 +480,16 @@ def makeSingular(noun):
 def makePlural(noun):
     """ Makes a noun string plural. Follows grammar rules with nouns ending in 'y' and 's'. Assumes noun is singular beforehand. """
     withoutLast = noun[:-1]
-    
+
     if noun.endswith('y'):
         return '{0}ies'.format(withoutLast)
     elif noun.endswith('s'):
         return '{0}es'.format(withoutLast)
     else:
         return '{0}s'.format(noun)
-    
+
 def makePastTense(noun):
-    """ Makes a noun string past tense. """    
+    """ Makes a noun string past tense. """
     withoutLast = noun[:-1]
     secondToLast = noun[-2:]
     lastChar = noun[-1:]
@@ -501,22 +501,22 @@ def makePastTense(noun):
         return '{0}{1}ed'.format(noun, secondToLast)
     else:
         return '{0}ed'.format(noun)
-    
+
 def getVowels():
     """ Returns a list of vowels """
     return ['a', 'e', 'i', 'o', 'u']
 
 def getConsonants():
     """ Returns a list of consonants """
-    return ['b', 'c', 'd', 'f', 'g', 
-            'h', 'j', 'k', 'l', 'm', 
-            'n', 'p', 'q', 'r', 's', 
-            't', 'v', 'w', 'x', 'y', 
+    return ['b', 'c', 'd', 'f', 'g',
+            'h', 'j', 'k', 'l', 'm',
+            'n', 'p', 'q', 'r', 's',
+            't', 'v', 'w', 'x', 'y',
     'z']
 
 def getAmountString(noun, amount):
     """ Returns a grammatically correct string stating the amount of something. E.g: An elephant horn, 5 packages, etc. """
-    
+
     if amount > 1:
         return "{0} {1}".format(amount, makePlural(noun))
     else:
@@ -525,9 +525,9 @@ def getAmountString(noun, amount):
         if firstChar in getVowels():
             # If the noun begins with a vowel, we use 'an'.
             return 'An {0}'.format(noun)
-        
+
         return 'A {0}'.format(noun)
-    
+
 def isEmptyString(string):
     """ Returns whether or not a string is empty. """
     return not (string and string.strip())
@@ -540,7 +540,7 @@ def getSplat():
     return Actor("phase_3.5/models/props/splat-mod.bam", {"chan": "phase_3.5/models/props/splat-chan.bam"})
 
 def makeSplat(pos, color, scale, sound = None):
-    
+
     from direct.interval.IntervalGlobal import ActorInterval
     from panda3d.core import AudioSound
 
@@ -563,11 +563,11 @@ def makeSplat(pos, color, scale, sound = None):
 
     seq = Sequence(ActorInterval(splat, "chan"), Func(splat.cleanup), Func(splat.removeNode))
     seq.start()
-    
+
 def makeSplash(pos, color, scale, sound = True):
     from direct.interval.IntervalGlobal import Sequence, Wait, Func
     from src.coginvasion.base.Splash import Splash
-    
+
     splashEffect = Splash(render, tint = color)
     splashEffect.reparentTo(render)
     splashEffect.setPos(pos)
@@ -576,11 +576,11 @@ def makeSplash(pos, color, scale, sound = True):
         splashSound = base.loadSfxOnNode("phase_5.5/audio/sfx/AV_jump_in_water.ogg", splashEffect)
         splashSound.play()
     splashEffect.play()
-    
-    length = 1.5#splashEffect.track.getDuration()
-    #print length
+
+    length = 1.5 #splashEffect.track.getDuration()
+    #print(length)
     Sequence(Wait(length), Func(splashEffect.destroy)).start()
-    
+
 ParticleRender = None
 def getParticleRender():
     global ParticleRender
@@ -590,7 +590,7 @@ def getParticleRender():
         ParticleRender.setDepthWrite(False, 1)
         ParticleRender.hide(ShadowCameraBitmask|ReflectionCameraBitmask)
     return ParticleRender
-    
+
 def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1)):
     import random
     from panda3d.core import Quat, Point3
@@ -598,10 +598,10 @@ def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1)):
     quat = Quat()
     quat.setHpr(hpr)
     forward = quat.getForward()
-    
+
     scale = random.uniform(scale-0.25, scale+0.25)
     #scale = clamp(scale, 0.5, 8.0)
-    
+
     for i in range(1, 9):
         offset = Point3(pos) + (forward * (i*(2 / 16.0)*scale))
         size = (random.uniform(6 / 16.0, 9 / 16.0) * (12-(i))/9) * scale
@@ -626,7 +626,7 @@ def makeExplosion(pos = (0, 0, 0), scale = 1, sound = True, shakeCam = True, dur
     fps = 24.0
     duration = frames / fps
     explosion.find("**/+SequenceNode").node().play()
-    
+
     if smoke:
         from src.coginvasion.toon import ParticleLoader
         smoke = ParticleLoader.loadParticleEffect("phase_14/etc/explosion_smoke.ptf")
@@ -634,7 +634,7 @@ def makeExplosion(pos = (0, 0, 0), scale = 1, sound = True, shakeCam = True, dur
         smoke.setScale(scale * 0.25)
         smoke.setPos(pos)
         smoke.start(render, getParticleRender())
-    
+
     track = Parallel()
 
     if sound:
@@ -648,7 +648,7 @@ def makeExplosion(pos = (0, 0, 0), scale = 1, sound = True, shakeCam = True, dur
             snd = base.audio3d.loadSfx("phase_3.5/audio/sfx/ENC_cogfall_apart.ogg")
 
         base.audio3d.attachSoundToObject(snd, explosion)
-        
+
         # explosion aftermaths
         debChoice = random.randint(1, 4)
         if debChoice <= 3:
@@ -656,7 +656,7 @@ def makeExplosion(pos = (0, 0, 0), scale = 1, sound = True, shakeCam = True, dur
         else:
             debris = base.audio3d.loadSfx("phase_4/audio/sfx/MG_crash_whizz.ogg")
         base.audio3d.attachSoundToObject(debris, explosion)
-        
+
         track.append(SoundInterval(snd, volume = soundVol))
         wait = 0.0791 if not hlsounds else 0.0
         track.append(Sequence(Wait(wait), SoundInterval(debris, volume = soundVol)))
@@ -667,17 +667,17 @@ def makeExplosion(pos = (0, 0, 0), scale = 1, sound = True, shakeCam = True, dur
         maxIntense = 1.4 * scale
         if dist <= maxDist:
             base.doCamShake(maxIntense - (maxIntense * (dist / maxDist)), duration)
-    
+
     track.append(Sequence(Wait(duration), Func(explosion.removeNode)))
     if smoke:
         track.append(Sequence(Wait(duration), Func(smoke.softStop)))
     track.start()
-    
+
     if decal:
         base.bspLoader.traceDecal("materials/scorch1.mat", 20 * scale, 0, pos, pos + (0, 0, -8), (1, 1, 1, 0.5))
 
 def makeDustCloud(pos, scale = 0.15, sound = None, color = (1, 1, 1, 1)):
-    
+
     dust = loader.loadModel("phase_3.5/models/props/dust_cloud.bam")
     dust.setColorScale(color, 1)
     dust.setScale(scale)
@@ -693,9 +693,9 @@ def makeDustCloud(pos, scale = 0.15, sound = None, color = (1, 1, 1, 1)):
     if sound:
         base.audio3d.attachSoundToObject(sound, dust)
         sound.play()
-    
+
     #return # UNDONE: this is horribly unoptimized and I'm turning it off
-    
+
     """
     from direct.actor.Actor import Actor
     dust = Actor('phase_5/models/props/dust-mod.bam', {'chan' : 'phase_5/models/props/dust-chan.bam'})
@@ -713,11 +713,11 @@ def makeDustCloud(pos, scale = 0.15, sound = None, color = (1, 1, 1, 1)):
     dust.reparentTo(render)
     dust.setPos(pos)
     dust.flattenStrong()
-    
+
     if sound:
         base.audio3d.attachSoundToObject(sound, dust)
         sound.play()
-    
+
     dustTrack = Sequence(ActorInterval(dust, "chan"), Func(dust.cleanup))
     dustTrack.start()
     """
@@ -755,7 +755,7 @@ def calcAttackDamage(distance, baseDmg, maxDist = 40.0):
 def colorFromRGBScalar255(color):
     """Takes in a tuple of (r, g, b, scalar) (0-255) and returns a
     linear (0-1) color with the scalar applied."""
-    
+
     scalar = color[3]
     return VBase4(color[0] * (scalar / 255.0) / 255.0,
                   color[1] * (scalar / 255.0) / 255.0,
@@ -782,7 +782,7 @@ def makeDirectionalLight(name, color, angle):
         #dir.showFrustum()
         #dir.getLens().setFilmSize(60, 60)
         #dir.getLens().setNearFar(0.1, 10000)
-        
+
     return directional
 
 def makePointLight(name, color, pos, falloff = 1.0):
@@ -847,7 +847,7 @@ def showWaitForOthers():
 def hideWaitForOthers():
     if WaitForOthersLbl:
         WaitForOthersLbl.hide()
-                         
+
 ThemeSong = None
 holidayTheme = None
 
@@ -857,12 +857,12 @@ def getThemeSong():
         ThemeSong = 'ciotheme_shortmellow'
         #themeList = ['ci_theme0', 'ci_theme5']#, 'ci_theme1', 'ci_theme2', 'ci_theme3', 'ci_theme4']
         #import random
-        
+
         #if random.random() < 0.3:
         #    ThemeSong = themeList[1]
         #else:
         #    ThemeSong = themeList[0]
-        
+
         #ThemeSong = random.choice(themeList)
 
     return ThemeSong
@@ -878,7 +878,7 @@ def areFacingEachOther(obj1, obj2):
     h1 = obj1.getH(render) % 360
     h2 = obj2.getH(render) % 360
     return not (-90.0 <= (h1 - h2) <= 90.0)
-    
+
 def fixGrayscaleTextures(np):
     for tex in np.findAllTextures():
         if (tex.getFormat() == Texture.F_luminance):
@@ -887,7 +887,7 @@ def fixGrayscaleTextures(np):
             tex.store(img)
             img.makeRgb()
             tex.load(img)
-            
+
 def getLogoFont(font):
     # Returns a dynamic font in the style of the text from the new logo.
     # Same color as the logo text and has the same outline.
@@ -899,7 +899,7 @@ def getLogoFont(font):
     font.setOutline((0 / 255.0, 0 / 255.0, 0 / 255.0, 1.0), 0.85, 0.175)
     font.setScaleFactor(1)
     return font
-   
+
 ToonLogoFont = None
 MinnieLogoFont = None
 
@@ -908,19 +908,19 @@ def getToonLogoFont():
     if not ToonLogoFont:
         ToonLogoFont = getLogoFont("phase_3/models/fonts/ImpressBT.ttf")
     return ToonLogoFont
-    
+
 def getMinnieLogoFont():
     global MinnieLogoFont
     if not MinnieLogoFont:
         MinnieLogoFont = getLogoFont("phase_3/models/fonts/MinnieFont.TTF")
     return MinnieLogoFont
-    
+
 def getLogoImage(parent = None, size = 1, pos = (0, 0, 0)):
     from direct.gui.DirectGui import OnscreenImage
-    
+
     if not parent:
         parent = aspect2d
-    
+
     logo = loader.loadTexture("phase_3/maps/CogInvasion_Logo.png")
     logoNode = parent.attachNewNode('logoNode')
     logoNode.setScale(size)
@@ -928,7 +928,7 @@ def getLogoImage(parent = None, size = 1, pos = (0, 0, 0)):
     factor = 0.315
     logoImg = OnscreenImage(image = logo, scale = (1.920 * factor, 0, 1.080 * factor), parent = logoNode)
     logoImg.setTransparency(1)
-    
+
     return [logoNode, logoImg]
 
 FloorBitmask = BitMask32(2)
@@ -999,7 +999,7 @@ def getHeadsUpDistance(fromNP, to):
     fromNP.setHpr(_oldHpr)
     _distance = (_newHpr.getXy() - _oldHpr.getXy()).length()
     return _distance
-    
+
 def getHeadsUpDistanceSquared(fromNP, to):
     _oldHpr = fromNP.getHpr()
     fromNP.headsUp(to)
@@ -1300,7 +1300,7 @@ def makeDefaultBtn(text = "", text_pos = (0, -0.015), text_scale = 0.045, geom_s
 
     if not font:
         font = getToonFont()
-    
+
     if geom_sx is not None:
         geom_scale = (geom_sx, geom_scale[1], geom_scale[2])
     if geom_sy is not None:
@@ -1329,7 +1329,7 @@ def getExitButton(cmd = None, extraArgs = [], pos = (0, 0, 0)):
                               scale = 0.15, command = cmd, extraArgs = extraArgs,
                               image_color = (1, 0, 0, 1))
     return exitButton
-    
+
 def makeDeltaTextEffect(delta, parent, pos):
     from direct.gui.DirectGui import OnscreenText
     text = OnscreenText(text = "", font = getMickeyFont())
@@ -1344,7 +1344,7 @@ def makeDeltaTextEffect(delta, parent, pos):
     text.reparentTo(parent)
     text.setPos(pos[0], pos[2])
     text.setTransparency(True, 1)
-    
+
     from panda3d.core import Point3
     from direct.interval.IntervalGlobal import Sequence, LerpPosInterval, LerpColorScaleInterval, Wait, Parallel
     seq = Parallel()

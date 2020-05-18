@@ -267,7 +267,7 @@ class ModBattleZoneAI(DistributedBattleZoneAI):
             for i in range(len(keypads)):
                 keypad = keypads[i]
                 self.numbers.append(list(keypad.code))
-            print self.numbers
+            print(self.numbers)
 
     def addAvatar(self, avId, andUpdateAvatars = 0):
         DistributedBattleZoneAI.addAvatar(self, avId, andUpdateAvatars)

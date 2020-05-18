@@ -83,7 +83,7 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
         duration = (posDelta.length() * 16.0) / self.speed
 
         data = [posDelta, openPos, closedPos, self.origin]
-        print data
+        print(data)
 
         return [posDelta, openPos, closedPos, duration]
 
