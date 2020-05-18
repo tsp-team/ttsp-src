@@ -94,7 +94,7 @@ class ModBase(CIBase):
         # TODO: Production case
         import os
         enginePath = os.environ["CIOENGINE"]
-        subprocess.Popen([enginePath + "\\python\\ppython", "-B", "-m", "src.mod.ModStartAI"])
+        subprocess.Popen([enginePath + "\\python\\python", "-B", "-m", "src.mod.ModStartAI"])
 
         print("Starting client repo")
         from src.mod.distributed.ModClientRepository import ModClientRepository
