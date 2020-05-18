@@ -17,10 +17,6 @@ from panda3d.bsp import Py_CL_BSPLoader, BSPLoader, BSPRender, BSPShaderGenerato
 from panda3d.bsp import Audio3DManager, DecalModulateSpec
 
 import sys
-if sys.version_info >= (3, 0):
-    import builtins
-else:
-    import __builtin__ as builtins
 
 #from p3recastnavigation import RNNavMeshManager
 
@@ -46,7 +42,7 @@ from .ShakeCamera import ShakeCamera
 from .WaterReflectionManager import WaterReflectionManager
 from src.coginvasion.phys import PhysicsUtils
 
-import __builtin__
+import builtins
 import random
 import os
 
@@ -69,7 +65,7 @@ class CIBase(ShowBase):
             ShowBase.__init__(self)
             self.loader.destroy()
             self.loader = CogInvasionLoader(self)
-            __builtin__.loader = self.loader
+            builtins.loader = self.loader
             self.graphicsEngine.setDefaultLoader(self.loader.loader)
 
         self.cam.node().getDisplayRegion(0).setClearDepthActive(1)
@@ -113,7 +109,7 @@ class CIBase(ShowBase):
         self.camNode.setCameraMask(CIGlobals.MainCameraBitmask)
 
         from direct.distributed.ClockDelta import globalClockDelta
-        __builtin__.globalClockDelta = globalClockDelta
+        builtins.globalClockDelta = globalClockDelta
 
         # Any ComputeNodes should be parented to this node, not render.
         # We isolate ComputeNodes to avoid traversing the same ComputeNodes
@@ -204,8 +200,8 @@ class CIBase(ShowBase):
         uis = UserInputStorage()
         self.inputStore = uis
         self.userInputStorage = uis
-        __builtin__.inputStore = uis
-        __builtin__.userInputStorage = uis
+        builtins.inputStore = uis
+        builtins.userInputStorage = uis
 
         self.credits2d = self.render2d.attachNewNode(PGTop("credits2d"))
         self.credits2d.setScale(1.0 / self.getAspectRatio(), 1.0, 1.0)
@@ -228,7 +224,7 @@ class CIBase(ShowBase):
 
         wrm = WaterReflectionManager()
         self.waterReflectionMgr = wrm
-        __builtin__.waterReflectionMgr = wrm
+        builtins.waterReflectionMgr = wrm
 
         # Let's setup our margins
         base.marginManager = MarginManager()
