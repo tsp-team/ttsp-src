@@ -76,7 +76,7 @@ class GravityWalker(DirectObject.DirectObject):
         assert self.notify.debugStateCall(self)
         if not self.wantDebugIndicator:
             return
-        from pandac.PandaModules import *
+        from panda3d.core import *
         from direct.interval.IntervalGlobal import *
         from toontown.coghq import MovingPlatform
 

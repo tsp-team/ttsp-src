@@ -29,47 +29,47 @@ class Task_FireHealAttack(BaseTaskAI):
         return SCHED_COMPLETE
 
 class Task_GetPathToFollowTarget(BaseTaskAI):
-    
+
     def runTask(self):
         if not CIGlobals.isNodePathOk(self.npc.followTarget):
             return SCHED_FAILED
-            
+
         path = self.npc.getBattleZone().planPath(self.npc.getPos(), self.npc.followTarget.getPos())
         if len(path) < 2:
             return SCHED_FAILED
 
         self.npc.getMotor().setWaypoints(path)
-        
+
         return SCHED_COMPLETE
-        
+
 class Task_FaceFollowTarget(BaseTaskAI):
-    
+
     def runTask(self):
         if not CIGlobals.isNodePathOk(self.npc.followTarget):
             return SCHED_FAILED
-        
+
         self.npc.makeIdealYaw(self.npc.followTarget.getPos())
-        
+
         if self.npc.isFacingIdeal():
             return SCHED_COMPLETE
-            
+
         self.npc.changeYaw()
-        
+
         return SCHED_CONTINUE
-        
+
 class Task_RunToFollowTarget(BaseTaskAI):
-    
+
     def runTask(self):
         if not CIGlobals.isNodePathOk(self.npc.followTarget):
             return SCHED_FAILED
-        
+
         if len(self.npc.getMotor().waypoints) == 1 and self.npc.getDistance(self.npc.followTarget) <= 5:
             return SCHED_COMPLETE
-            
+
         return SCHED_CONTINUE
 
 class Task_FindBestHPBarrel(BaseTaskAI):
-    
+
     def runTask(self):
         barrels = self.npc.dispatch.bspLoader.findAllEntities("item_laffbarrel")
         closestBarrel = None
@@ -84,43 +84,43 @@ class Task_FindBestHPBarrel(BaseTaskAI):
         if closestBarrel:
             self.npc.hpBarrel = closestBarrel
             return SCHED_COMPLETE
-            
+
         return SCHED_FAILED
-        
+
 class Task_GetPathToHPBarrel(BaseTaskAI):
-    
+
     def runTask(self):
         if not self.npc.hpBarrel:
             return SCHED_FAILED
-            
+
         path = self.npc.getBattleZone().planPath(self.npc.getPos(), self.npc.hpBarrel.getPos())
         if len(path) < 2:
             return SCHED_FAILED
 
         self.npc.getMotor().setWaypoints(path)
         return SCHED_COMPLETE
-        
+
 class Task_GrabHPBarrel(BaseTaskAI):
-    
+
     def runTask(self):
         if not self.npc.hpBarrel:
             return SCHED_FAILED
-            
+
         self.npc.hpBarrel.requestGrab(self.npc.doId)
         return SCHED_COMPLETE
-        
+
 class Task_ClearHPBarrel(BaseTaskAI):
-    
+
     def runTask(self):
         self.npc.hpBarrel = None
         return SCHED_COMPLETE
-        
+
 class Task_MaintainFollowTarget(BaseTaskAI):
-    
+
     def runTask(self):
         if not CIGlobals.isNodePathOk(self.npc.followTarget):
             return SCHED_FAILED
-            
+
         wps = self.npc.getMotor().getWaypoints()
         if len(wps) >= 0:
             if len(wps) > 0:
@@ -139,16 +139,16 @@ class Task_MaintainFollowTarget(BaseTaskAI):
                 # Do we need to stop and heal our friend?
                 if self.npc.followTarget.getHealth() < self.npc.followTarget.getMaxHealth():
                     return SCHED_COMPLETE
-            
+
         self.npc.makeIdealYaw(self.npc.followTarget.getPos())
         if not self.npc.isFacingIdeal():
             self.npc.changeYaw()
-            
+
         return SCHED_CONTINUE
 
 class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
     notify = directNotify.newCategory("NPCToonAI")
-    
+
     RulesAndResponses = {
         "HealedByFriend"    :   [["Thanks!", "Thanks a million!", "Tee Hee", "Ha Ha Ha"], 0.5],
         "VPJumping"         :   ["Jump!", 0.5]
@@ -164,13 +164,13 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
         self.attackIds = [ATTACK_GAG_WHOLECREAMPIE]
 
         self.died = False
-        
+
         self.hpBarrel = None
-        
+
         self.followTarget = None
-        
+
         self.schedules.update({
-        
+
             "HEAL_FOLLOW_TARGET"    :   Schedule(
                 [
                     Task_StopMoving(self),
@@ -182,7 +182,7 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 ],
                 interruptMask = COND_SCHEDULE_DONE|COND_TASK_FAILED|COND_LIGHT_DAMAGE|COND_HEAVY_DAMAGE|COND_NEW_TARGET|COND_VP_JUMPING
             ),
-        
+
             "GET_HP_FROM_BARREL"    :   Schedule(
                 [
                     Task_StopMoving(self),
@@ -199,7 +199,7 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 ],
                 interruptMask = COND_VP_JUMPING|COND_HEAVY_DAMAGE |COND_IN_WALL
             ),
-            
+
             "RUN_TO_FOLLOW_TARGET"   :   Schedule(
                 [
                     Task_StopAttack(self),
@@ -211,7 +211,7 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 ],
                 interruptMask = COND_NEW_TARGET|COND_SCHEDULE_DONE|COND_TASK_FAILED|COND_IN_WALL
             ),
-            
+
             "FOLLOW_TARGET_FACE"    :   Schedule(
                 [
                     Task_StopAttack(self),
@@ -220,7 +220,7 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 ],
                 interruptMask = COND_NEW_TARGET|COND_SCHEDULE_DONE|COND_TASK_FAILED
             ),
-            
+
             "MAINTAIN_FOLLOW_TARGET"    :   Schedule(
                 [
                     Task_StopAttack(self),
@@ -229,7 +229,7 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 ],
                 interruptMask = COND_VP_JUMPING|COND_SEE_FEAR|COND_NEW_TARGET|COND_LIGHT_DAMAGE|COND_HEAVY_DAMAGE|COND_HEAR_DANGER|COND_HEAR_HATE|COND_FRIEND_IN_WAY|COND_HEAR_SOMETHING|COND_IN_WALL
             ),
-            
+
             "VP_JUMP_DODGE" :   Schedule(
                 [
                     Task_StopAttack(self),
@@ -240,7 +240,7 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 ],
                 interruptMask = COND_SCHEDULE_DONE|COND_TASK_FAILED
             ),
-            
+
             "VP_JUMP_REACT" :   Schedule(
                 [
                     Task_StopAttack(self),
@@ -250,13 +250,13 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 ],
                 interruptMask = COND_SCHEDULE_DONE|COND_TASK_FAILED
             ),
-        
+
         })
-        
+
         self.schedules["YIELD_TO_FRIEND"].prependTask(
             Task_Speak(self, 0.4, ["Sorry.", "Let me get out of your way.", "Excuse me."])
         )
-        
+
         self.schedules["IDLE_STAND"].interruptMask |= COND_VP_JUMPING
         self.schedules["COMBAT_FACE"].interruptMask |= COND_VP_JUMPING
         self.schedules["TAKE_COVER_FROM_ORIGIN"].interruptMask |= COND_VP_JUMPING
@@ -266,10 +266,10 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
         self.schedules["MAKE_ATTACK_LOS"].interruptMask |= COND_VP_JUMPING
         self.schedules["ALERT_FACE"].interruptMask |= COND_VP_JUMPING
         self.schedules["RETURN_TO_MEMORY_POSITION"].interruptMask |= COND_VP_JUMPING
-        
+
     def onHitByVPJump(self):
         self.changeSchedule(self.getScheduleByName("VP_JUMP_REACT"))
-        
+
     def use(self):
         if not self.isDead():
             avId = self.air.getAvatarIdFromSender()
@@ -281,7 +281,7 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                 else:
                     print("now following", av)
                     self.followTarget = av
-                    
+
     def setFollowTarget(self, tgt):
         self.followTarget = tgt
 
@@ -305,14 +305,14 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
         taskMgr.remove(self.uniqueName('npcToonDie'))
         BaseNPCAI.delete(self)
         DistributedToonAI.delete(self)
-        
+
     def getSchedule(self):
-        
+
         if self.npcState in [STATE_DEAD, STATE_NONE]:
             return BaseNPCAI.getSchedule(self)
-            
+
         if self.hasConditions(COND_VP_JUMPING):
-            return self.getScheduleByName("VP_JUMP_DODGE")    
+            return self.getScheduleByName("VP_JUMP_DODGE")
 
         if self.npcState == STATE_COMBAT:
             if self.hasConditions(COND_TARGET_DEAD):
@@ -321,35 +321,35 @@ class DistributedSZBossToonAI(DistributedToonAI, BaseNPCAI):
                                                     "Piece of cake!",
                                                     "That's going to leave a mark!",
                                                     "Rock and roll!"]))
-        
+
         if (self.getHealthPercentage() <= self.LOW_HP_PERCT):
             # we need some health
             return self.getScheduleByName("GET_HP_FROM_BARREL")
-            
+
         if self.hasConditions(COND_SEE_FEAR):
             return self.getScheduleByName("TAKE_COVER_FROM_ORIGIN")
-            
+
         if self.npcState in [STATE_IDLE, STATE_ALERT]:
-            
+
             if self.hasConditions(COND_LIGHT_DAMAGE|COND_HEAVY_DAMAGE):
                 return self.getScheduleByName("TAKE_COVER_FROM_ORIGIN")
             elif self.hasConditions(COND_HEAR_SOMETHING):
                 return self.getScheduleByName("ALERT_FACE")
-            
+
             sched = self.getScheduleByName("MAINTAIN_FOLLOW_TARGET")
             if CIGlobals.isNodePathOk(self.followTarget) and not self.followTarget.isDead():
                 if self.getDistance(self.followTarget) <= 15.0 and self.followTarget.getHealth() < self.followTarget.getMaxHealth():
                     return self.getScheduleByName("HEAL_FOLLOW_TARGET")
                 if not self.hasConditions(sched.interruptMask):
                     return sched
-        
+
         return BaseNPCAI.getSchedule(self)
-        
+
     def look(self):
         BaseNPCAI.look(self)
-        
+
         self.clearConditions(COND_SEE_FEAR)
-        
+
         for av in self.avatarsInSight:
             if av.__class__.__name__ == 'NPC_VPAI':
                 if self.isPlayerInVisionCone_FromPlayer(av) and av.getActivity()[0] == ACT_VP_THROW:
