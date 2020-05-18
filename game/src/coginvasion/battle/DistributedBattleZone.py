@@ -166,7 +166,7 @@ class DistributedBattleZone(DistributedObject):
 
     def clearAvatarDebris(self, avId):
         if avId in self.debris.values():
-            for debris, creatorId in self.debris.iteritems():
+            for debris, creatorId in self.debris.items():
                 if creatorId == avId:
                     self.removeDebris(debris, silently = 0)
 

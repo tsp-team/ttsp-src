@@ -576,7 +576,7 @@ class NPC_VPAI(DistributedAvatarAI, BaseNPCAI):
             else:
                 self.currStunDamage = max(0, self.currStunDamage - (self.StunDecayRate * dt))
 
-        print(self.currStunDamage)
+        #print(self.currStunDamage)
 
         now = globalClock.getFrameTime()
         if (now - self.lastSpawnTime >= self.spawnIval and

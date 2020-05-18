@@ -360,7 +360,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         damages = []
 
         for hitData in data:
-            for track, damage in hitData.iteritems():
+            for track, damage in hitData.items():
                 tracks.append(track)
                 damages.append(damage)
 

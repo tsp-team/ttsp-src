@@ -3521,7 +3521,7 @@ class ToonDNA:
 
     def getDNAIDFromColor(self, color):
         dnaID = None
-        for _id, dnaColor in self.colorDNA2color.iteritems():
+        for _id, dnaColor in self.colorDNA2color.items():
             if dnaColor == color:
                 dnaID = _id
         return dnaID
