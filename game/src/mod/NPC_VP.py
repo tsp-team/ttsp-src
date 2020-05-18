@@ -16,10 +16,10 @@ from panda3d.core import Vec3
 from panda3d.bsp import LightingOriginEffect
 
 class Gear(LinearProjectile):
-    
+
     ModelPath = "phase_9/models/char/gearProp.bam"
     ModelScale = 0.15
-    
+
     def announceGenerate(self):
         LinearProjectile.announceGenerate(self)
         vec = (Vec3(*self.linearEnd) - Vec3(*self.linearStart)).normalized()
@@ -27,7 +27,7 @@ class Gear(LinearProjectile):
         for i in range(5):
             newGear = self.model.copyTo(self)
             models.append(newGear)
-        
+
         import random
         for i in range(len(models)):
             gear = models[i]
@@ -38,32 +38,32 @@ class Gear(LinearProjectile):
             #    gear.posInterval(self.linearDuration, (, 0, 0), (0, 0, 0), other = gear).start()
             gear.hprInterval(0.5, (360, 0, 0), (0, 0, 0), other = gear).loop()
         #self.flattenStrong()
-        
+
 class VPSuit(DistributedSuit):
     pass
-    
+
 class VPGoon(NPC_Goon):
     pass
 
 class IdleActivity(BaseActivity):
-    
+
     def doActivity(self):
         return Sequence(Func(self.avatar.loop, "neutral"))
-        
+
 class ThrowActivity(BaseActivity):
-    
+
     def doActivity(self):
-        
+
         return Parallel(ActorInterval(self.avatar, "throw"), Func(self.avatar.throwGearsSnd.play))
-        
+
 class DamageReact(BaseActivity):
-    
+
     def doActivity(self):
         return Sequence(Func(self.avatar.playSound, "stun"), ActorInterval(self.avatar, "stun"), Func(self.avatar.playSound, "raise"),
                         ActorInterval(self.avatar, "raise"))
-                        
+
 class Stun(BaseActivity):
-    
+
     def doActivity(self):
         stunDur = self.avatar.getDuration("stun")
         raiseDur = self.avatar.getDuration("raise")
@@ -72,16 +72,16 @@ class Stun(BaseActivity):
                         ActorInterval(self.avatar, "stun"), Func(self.avatar.loop, "downNeutral"),
                         Wait(waitDur), Func(self.avatar.stopSound, "chirp"), Func(self.avatar.playSound, "raise"),
                         ActorInterval(self.avatar, "raise")),
-                        
+
                         SuitGlobals.createStunInterval(self.avatar, 0, stunDur + waitDur, pos = (2, 0, 0), hpr = (0, 0, 90), scale = 2.5))
-                        
+
 class Die(BaseActivity):
-    
+
     def doActivity(self):
         return Sequence(Func(self.avatar.playSound, "stun"), ActorInterval(self.avatar, "stun"), Func(self.avatar.hide))
-        
+
 class Jump(BaseActivity):
-    
+
     def doActivity(self):
         return Sequence(Func(self.avatar.playSound, "jumpStart"),
                         ActorInterval(self.avatar, "jump", endFrame = 29),
@@ -89,7 +89,7 @@ class Jump(BaseActivity):
                         ActorInterval(self.avatar, "jump", startFrame = 30))
 
 class NPC_VP(DistributedAvatar):
-    
+
     StunSoundPath = "phase_5/audio/sfx/AA_sound_aoogah.ogg"
     ChirpSoundPath = "phase_4/audio/sfx/SZ_TC_bird1.ogg"
     RaiseSoundPath = "phase_9/audio/sfx/CHQ_VP_raise_up.ogg"
@@ -101,7 +101,7 @@ class NPC_VP(DistributedAvatar):
     GruntSoundPath = "phase_9/audio/sfx/Boss_COG_VO_grunt.ogg"
     DoorOpenSoundPath = "phase_9/audio/sfx/CHQ_VP_door_open.ogg"
     DoorCloseSoundPath = "phase_9/audio/sfx/CHQ_VP_door_close.ogg"
-    
+
     LegsActorDef = ["phase_9/models/char/bossCog-legs-zero.bam",
                        {"neutral": "phase_9/models/char/bossCog-legs-Fb_neutral.bam",
                         "downNeutral": "phase_9/models/char/bossCog-legs-Fb_downNeutral.bam",
@@ -123,12 +123,12 @@ class NPC_VP(DistributedAvatar):
                         "stun":    "phase_9/models/char/bossCog-head-Fb_firstHit.bam",
                         "raise":    "phase_9/models/char/bossCog-head-Fb_down2Up.bam",
                         "jump":     "phase_9/models/char/bossCog-head-Fb_jump.bam"}]
-                        
+
     TreadsModel = "phase_9/models/char/bossCog-treads.bam"
 
     def __init__(self, cr):
         DistributedAvatar.__init__(self, cr)
-        
+
         self.activities = {ACT_NONE: IdleActivity(self),
                            ACT_IDLE:    IdleActivity(self),
                            ACT_VP_THROW: ThrowActivity(self),
@@ -136,18 +136,18 @@ class NPC_VP(DistributedAvatar):
                            ACT_VP_DAMAGE_REACT: DamageReact(self),
                            ACT_DIE:     Die(self),
                            ACT_RANGE_ATTACK2:   Jump(self)}
-                           
+
         self.frontDoorIval = None
         self.rearDoorIval = None
         self.throwGearsSnd = None
         self.treads = None
-        
+
         self.addSound("stun", self.StunSoundPath)
         self.addSound("raise", self.RaiseSoundPath)
         self.addSound("jumpStart", self.JumpStartSoundPath)
         self.addSound("jumpEnd", self.JumpEndSoundPath)
         self.addSound("chirp", self.ChirpSoundPath)
-        
+
         self.addSound("statement", self.StatementSoundPath)
         self.addSound("question", self.QuestionSoundPath)
         self.addSound("grunt", self.GruntSoundPath)
@@ -157,7 +157,7 @@ class NPC_VP(DistributedAvatar):
         self.chatSoundTable[CHAT_EXCLAIM] = "statement"
         self.chatSoundTable[CHAT_QUESTION] = "question"
         self.chatSoundTable[CHAT_HOWL] = "statement"
-        
+
     @classmethod
     def doPrecache(cls):
         super(NPC_VP, cls).doPrecache()
@@ -176,54 +176,54 @@ class NPC_VP(DistributedAvatar):
         precacheSound(cls.JumpStartSoundPath)
         precacheSound(cls.JumpEndSoundPath)
         precacheSound(cls.ChirpSoundPath)
-        
+
     def clearFrontDoorIval(self):
         if self.frontDoorIval:
             self.frontDoorIval.finish()
         self.frontDoorIval = None
-        
+
     def clearRearDoorIval(self):
         if self.rearDoorIval:
             self.rearDoorIval.finish()
         self.rearDoorIval = None
-                           
+
     def openFrontDoor(self):
         self.clearFrontDoorIval()
-        
+
         self.frontDoorIval = Parallel(SoundInterval(self.frontDoorOpenSnd),
                                       LerpHprInterval(self.frontDoor, 1, (-90, 0, 0), (-90, 0, -80), blendType = 'easeInOut'))
         self.frontDoorIval.start()
-        
+
     def closeFrontDoor(self):
         self.clearFrontDoorIval()
-        
+
         self.frontDoorIval = Parallel(SoundInterval(self.frontDoorCloseSnd),
                                       LerpHprInterval(self.frontDoor, 1, (-90, 0, -80), (-90, 0, 0), blendType = 'easeInOut'))
         self.frontDoorIval.start()
-        
+
     def openRearDoor(self):
         self.clearRearDoorIval()
-        
+
         self.rearDoorIval = Parallel(SoundInterval(self.rearDoorOpenSnd),
                                       LerpHprInterval(self.rearDoor, 1, (90, 0, 165), (90, 0, 80), blendType = 'easeInOut'))
         self.rearDoorIval.start()
-        
+
     def closeRearDoor(self):
         self.clearRearDoorIval()
-        
+
         self.rearDoorIval = Parallel(SoundInterval(self.rearDoorCloseSnd),
                                       LerpHprInterval(self.rearDoor, 1, (90, 0, 80), (90, 0, 165), blendType = 'easeInOut'))
         self.rearDoorIval.start()
-        
+
     def setupPhysics(self, radius = None, height = None):
-        from NPC_VPShared import makeVPPhysics
+        from .NPC_VPShared import makeVPPhysics
         bodyNode = makeVPPhysics()
         bodyNode.setPythonTag("avatar", self)
 
         BasePhysicsObject.setupPhysics(self, bodyNode, True)
-        
+
         self.stopWaterCheck()
-        
+
     def announceGenerate(self):
         self.loadModel(self.LegsActorDef[0], "legs")
         self.loadModel(self.TorsoActorDef[0], "torso")
@@ -231,19 +231,19 @@ class NPC_VP(DistributedAvatar):
         self.treads = loader.loadModel(self.TreadsModel)
         self.treads.clearModelNodes()
         self.treads.flattenStrong()
-        
+
         self.loadAnims(self.LegsActorDef[1], "legs")
         self.loadAnims(self.TorsoActorDef[1], "torso")
         self.loadAnims(self.HeadActorDef[1], "head")
         self.headModel = self.getPart("head")
         self.loop("neutral")
-        
+
         self.attach("head", "torso", "joint34")
         self.attach("torso", "legs", "joint_legs")
         self.treads.reparentTo(self.find("**/joint_axle"))
-        
+
         self.throwGearsSnd = base.loadSfxOnNode(self.ThrowGearsSoundPath, self)
-        
+
         self.frontDoor = self.controlJoint(None, "legs", "joint_doorFront")
         self.rearDoor = self.controlJoint(None, "legs", "joint_doorRear")
         self.frontDoor.setR(-80)
@@ -252,19 +252,19 @@ class NPC_VP(DistributedAvatar):
         self.rearDoorCloseSnd = base.loadSfxOnNode(self.DoorCloseSoundPath, self.rearDoor)
         self.frontDoorOpenSnd = base.loadSfxOnNode(self.DoorOpenSoundPath, self.frontDoor)
         self.frontDoorCloseSnd = base.loadSfxOnNode(self.DoorCloseSoundPath, self.frontDoor)
-        
+
         self.setupNameTag()
-        
+
         # Make sure the VP is in the sun
         self.setEffect(LightingOriginEffect.make((0, 5, 0)))
-        
+
         self.setupPhysics()
         self.nametag3d.setZ(25)
         self.nametag.nametag3d.SCALING_FACTOR = 0.125
 
         self.startSmooth()
         self.reparentTo(render)
-        
+
     def disable(self):
         self.stopSmooth()
         self.clearFrontDoorIval()
