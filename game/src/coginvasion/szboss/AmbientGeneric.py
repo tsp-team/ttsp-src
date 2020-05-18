@@ -6,13 +6,13 @@ import random
 import fnmatch
 
 class AmbientGeneric(DistributedEntity):
-    
+
     StateStopped = 0
     StatePlaying = 1
-    
+
     # Spawn flags
     SF_PlayEverywhere = 1 << 0
-    
+
     def __init__(self, cr):
         DistributedEntity.__init__(self, cr)
         self.assign(NodePath(ModelNode('ambientGeneric')))
@@ -21,30 +21,30 @@ class AmbientGeneric(DistributedEntity):
         self.sndFile = ""
         self.looping = False
         self.volume = 1.0
-        
+
         self.numWildcardSounds = 0
-        
+
     def fadeIn(self, time):
         self.setEntityState(self.StatePlaying)
         for snd in self.sounds.values():
             base.fadeAudio(time, snd, 0.0, self.volume)
-            
+
     def fadeOut(self, time):
         for snd in self.sounds.values():
             base.fadeAudio(time, snd, self.volume, 0.0)
-        
+
     def setSoundFile(self, sndfile):
         self.sndFile = sndfile
-        
+
     def setLooping(self, looping):
         self.looping = (looping == 1)
-        
+
     def setVolume(self, volume):
         self.volume = volume
-        
+
     def soundHasWildcard(self):
         return "*" in self.sndFile
-        
+
     def announceGenerate(self):
         DistributedEntity.announceGenerate(self)
 
@@ -63,15 +63,15 @@ class AmbientGeneric(DistributedEntity):
                 self.addSound("sound{0}".format(i), soundfname.getFullpath(), not self.hasSpawnFlags(self.SF_PlayEverywhere))
         else:
             self.addSound("sound", self.sndFile, not self.hasSpawnFlags(self.SF_PlayEverywhere))
-            
+
         # Now that we have the sounds, reset the state in case we are currently playing
         self.setEntityState(self.entState)
-        
+
     def setEntityState(self, state):
         self.stopAllSounds()
-        
+
         if state == self.StatePlaying:
-            print "SetEntityState: play sound!"
+            print("SetEntityState: play sound!")
             idx = ""
             if self.soundHasWildcard():
                 idx = random.randint(0, self.numWildcardSounds - 1)

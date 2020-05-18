@@ -35,7 +35,7 @@ import math
 STATE_STUNNED = BASENPC_STATE_LAST + 1
 
 class Task_GetFlyDownPath(BaseTaskAI):
-    
+
     def runTask(self):
         maxFly = 20.0
         groundPos = self.npc.getPos()
@@ -51,7 +51,7 @@ class Task_GetFlyDownPath(BaseTaskAI):
 
 class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
     notify = directNotify.newCategory('DistributedSuitAI')
-    
+
     AvatarType = AVATAR_SUIT
     Relationships = {
         AVATAR_SUIT     :   RELATIONSHIP_FRIEND,
@@ -67,7 +67,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         self.variant = Variant.NORMAL
         self.level = 0
         self.animStateChangeEvent = SuitGlobals.animStateChangeEvent
-        
+
         self.surfaceProp = "metal"
 
         # This is for handling death.
@@ -83,10 +83,10 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         self.comboDataTaskName = None
         self.clearComboDataTime = 3
         self.showComboDamageTime = 0.75
-        
+
         # These variables are for handling gag weaknesses.
         self.showWeaknessBonusDamageTime = 0.50
-        
+
         # The variable that stores the special sequence that handles tactical attacks.
         self.tacticalSeq = None
 
@@ -99,7 +99,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         from src.coginvasion.attack.Attacks import ATTACK_CLIPONTIE, ATTACK_BOMB, ATTACK_PICKPOCKET, ATTACK_FIRED, ATTACK_HALF_WINDSOR
         from src.coginvasion.attack.Attacks import ATTACK_EVIL_EYE, ATTACK_RED_TAPE, ATTACK_SACKED, ATTACK_HARDBALL, ATTACK_MARKET_CRASH
         from src.coginvasion.attack.Attacks import ATTACK_BITE
-        
+
         self.attackIds = [ATTACK_RED_TAPE, ATTACK_CLIPONTIE,
                           ATTACK_PICKPOCKET, ATTACK_EVIL_EYE, ATTACK_SACKED,
                           ATTACK_HARDBALL, ATTACK_MARKET_CRASH, ATTACK_HALF_WINDSOR, ATTACK_BITE]
@@ -111,9 +111,9 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
                            ACT_COG_FLY_DOWN :   6.834,
                            ACT_SIT          :   -1,
                            ACT_STUN         :   10}
-                           
+
         self.schedules.update({
-        
+
             "VICTORY_TAUNT" :   Schedule(
                 [
                     Task_StopMoving(self),
@@ -126,7 +126,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
                 ],
                 interruptMask = COND_LIGHT_DAMAGE|COND_HEAVY_DAMAGE
             ),
-            
+
             "SUPA_FLY_IN_MOVE"    :   Schedule(
                 [
                     Task_StopMoving(self),
@@ -140,7 +140,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
                 ],
                 interruptMask = COND_SCHEDULE_DONE|COND_TASK_FAILED
             ),
-            
+
             "STUN"  :   Schedule(
                 [
                     Task_StopMoving(self),
@@ -151,15 +151,15 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
                 ],
                 interruptMask = COND_SCHEDULE_DONE|COND_TASK_FAILED
             )
-        
+
         })
-        
+
         self.makeScheduleNames()
-        
+
     def npcStun(self):
         self.setNPCState(STATE_STUNNED)
         self.changeSchedule(self.getScheduleByName("STUN"))
-        
+
     def shouldYield(self, av):
         if isinstance(av, DistributedSuitAI):
             #theirClass = av.suitPlan.getCogClass()
@@ -170,12 +170,12 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
             #elif theirClass == myClass and av.getLevel() < self.getLevel():
             #    # Same class, but lower level. Don't yield
             #    return False
-            
+
             if av.getLevel() < self.getLevel():
                 return False
-                
+
         return BaseNPCAI.shouldYield(self, av)
-            
+
 
     def setNPCState(self, state, makeIdeal = True):
         if state != self.npcState:
@@ -186,14 +186,14 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
                                                        "Toon spotted!",
                                                        "Cogs, catch that Toon!"]))
         BaseNPCAI.setNPCState(self, state, makeIdeal)
-        
+
     def getSchedule(self):
         if self.npcState == STATE_STUNNED:
             return self.getScheduleByName("STUN")
         if self.npcState == STATE_COMBAT:
             if self.hasConditions(COND_TARGET_DEAD):
                 return self.getScheduleByName("VICTORY_TAUNT")
-                
+
         return BaseNPCAI.getSchedule(self)
 
     def d_setWalkPath(self, path):
@@ -237,10 +237,10 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         if self.level == 0:
             self.maxHealth = 1
             self.health = self.maxHealth
-            
+
         self.setMaxHealth(self.maxHealth)
         self.setHealth(self.health)
-        
+
         # Let's add type specific attacks
         if self.suitPlan.getSuitType() == SuitType.C:
             from src.coginvasion.attack.Attacks import ATTACK_WATER_COOLER
@@ -251,7 +251,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
     def getSuit(self):
         if isinstance(self.suitPlan, int):
             return tuple((self.suitPlan, self.variant))
-            
+
         return tuple((SuitBank.getIdFromSuit(self.suitPlan), self.variant))
 
     def setLevel(self, level):
@@ -281,9 +281,9 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         return task.cont
 
         """
-        
+
         This was legacy code that held the suit on its last animation before it died.
-        
+
         currentAnim = SuitGlobals.getAnimByName(self.anim)
         if currentAnim:
             if not self.deathAnim:
@@ -306,13 +306,13 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
 
         task.delayTime = self.clearComboDataTime
         return task.again
-            
+
     def __handleTacticalAttacks(self, avId, gagName, gagData, damageInfo, isPlayer):
         # Gets the damage and the damage offset.
         baseDmg, dmgOffset = self.__getGagEffectOnMe(avId, gagName, gagData, damageInfo, isPlayer)
 
         self.tacticalSeq = Sequence()
-        
+
         # Let's handle combos.
         isCombo, comboDamage = self.__handleCombos(avId, (baseDmg + dmgOffset), gagData.get('track'))
 
@@ -331,16 +331,16 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
             # Show the opposite of the dmgOffset because a negative damage offset means less damage the gag does,
             # meaning adding health to the cog. Vice-versa
             self.tacticalSeq.append(Func(self.d_announceHealth, 3, -dmgOffset, 2))
-            
+
         if isCombo and comboDamage > 0:
             # Great job, team! We just did a combo attack!
             self.tacticalSeq.append(Wait(self.showComboDamageTime))
             self.tacticalSeq.append(Func(self.d_announceHealth, 2, -comboDamage, 1))
-        
+
         self.tacticalSeq.start()
 
         return finalDmg
-        
+
     def __getGagEffectOnMe(self, avId, gagName, gagData, damageInfo, isPlayer):
         """ Returns the base damage and the damage offset a specified gag name used by "avId" has on this Cog """
         weaknessFactor = self.suitPlan.getGagWeaknesses().get(gagName, 1.0)
@@ -358,7 +358,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         data = self.comboData.values()
         tracks = []
         damages = []
-        
+
         for hitData in data:
             for track, damage in hitData.iteritems():
                 tracks.append(track)
@@ -390,7 +390,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
             self.b_setHealth(self.getHealth() - comboDamage)
             self.comboData.clear()
             taskMgr.remove(self.comboDataTaskName)
-            
+
         return isCombo, comboDamage
 
     def __getAnimForGag(self, track, gagName):
@@ -406,7 +406,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
                 return 'soak'
             else:
                 return 'squirt-small'
-        
+
         # Do the pie flail by default
         return 'pie'
 
@@ -427,7 +427,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         avId = damageInfo.damager.doId
         avatar = damageInfo.damager
         gagName = self.air.attackMgr.getAttackName(gagId)
-        
+
         dataRef = GagGlobals.getGagData(gagName)
         if dataRef:
             data = dict(dataRef)
@@ -442,19 +442,19 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
             damage = self.__handleTacticalAttacks(avatar.doId, gagName, data, damageInfo, isPlayer)
 
             self.setDamageConditions(damage)
-            
+
             if isPlayer and self.battleZone:
                 # We only want to award credit when Toons use gags that are less than or at the level of the Cog
                 # they're using them on.
                 gagLevel = GagGlobals.TrackGagNamesByTrackName.get(data.get('track')).index(gagName)
-                
+
                 if gagLevel <= self.level:
                     self.battleZone.handleGagUse(gagId, avId)
-                    
+
             # Mod hack
             if avatar.__class__.__name__ == "ModPlayerAI":
                 self.battleZone.playerDealDamage(damage, avId)
-            
+
             if isPlayer and not avId in self.damagers:
                 self.damagers.append(avId)
 
@@ -476,12 +476,12 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
                 #self.b_setAnimState(deathAnim, 0)
 
                 #self.stopAI()
-                
+
                 # Let's give everyone credit who damaged me.
                 if self.battleZone:
                     for damager in self.damagers:
                         self.battleZone.handleCogDeath(self, damager)
-                        
+
                 self.firstTimeDead = False
 
             elif gagName in GagGlobals.Stunnables and not self.stunned:
@@ -526,7 +526,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         if self.level > 0 and self.health <= 0:
             self.allowHits = False
             #self.b_setAnimState('die')
-            #print "Setting death activity"
+            #print("Setting death activity")
             #self.b_setActivity(ACT_DIE)
             self.clearTrack()
             self.track = Sequence(Wait(8.5), Func(self.closeSuit))
@@ -548,7 +548,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
 
     def generate(self):
         DistributedAvatarAI.generate(self)
-        
+
     def spawnGeneric(self):
         #self.b_setParent(CIGlobals.SPRender)
         taskMgr.add(self.monitorHealth, self.uniqueName('monitorHealth'))
@@ -556,7 +556,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
     def announceGenerate(self):
         DistributedAvatarAI.announceGenerate(self)
         self.clearTrack()
-        
+
         self.startAI()
 
         # Let's set the combo data task name and start the task.
@@ -605,7 +605,7 @@ class DistributedSuitAI(DistributedAvatarAI, BaseNPCAI):
         self.showWeaknessBonusDamageTime = None
         self.stunned = None
         self.damagers = []
-        
+
         self.DELETED = True
         del self.suitPlan
         del self.variant

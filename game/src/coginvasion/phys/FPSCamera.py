@@ -16,42 +16,42 @@ from src.coginvasion.toon.ToonDNA import ToonDNA
 import math, random
 
 class FPSCamera(DirectObject):
-    
+
     MaxP = 90.0
     MinP = -90.0
     PitchUpdateEpsilon = 0.1
     ViewModelFOV = 70.0
-    
+
     BobCycleMin = 1.0
     BobCycleMax = 0.45
     Bob = 0.002
     BobUp = 0.5
-    
+
     PunchDamping = 9.0
     PunchSpring = 65.0
-    
+
     PrintAnimLengths = False
 
     def __init__(self):
         DirectObject.__init__(self)
-        
+
         self.mouseEnabled = False
-        
+
         self.lastCamRoot2Quat = Quat(Quat.identQuat())
-        
+
         self.punchAngleVel = Vec3(0)
         self.punchAngle = Vec3(0)
 
         self.lastFacing = Vec3(0)
-        
+
         self.lastMousePos = Point2(0)
         self.currMousePos = Point2(0)
-        
+
         self.bobTime = 0
         self.lastBobTime = 0
 
         self.lastVMPos = Point3(0)
-        
+
         self.camRoot = NodePath("camRoot")
         self.camRoot2 = self.camRoot.attachNewNode("camRoot2")
         self.lastPitch = 0
@@ -75,10 +75,10 @@ class FPSCamera(DirectObject):
                                 "sg_shoot_begin": "phase_14/models/char/v_toon_arms-shoot_begin.egg",
                                 "sg_shoot_loop": "phase_14/models/char/v_toon_arms-shoot_loop.egg",
                                 "sg_shoot_end": "phase_14/models/char/v_toon_arms-shoot_end.egg",
-                                
+
                                 "pie_draw": "phase_14/models/char/v_toon_arms-pie_draw.egg",
                                 "pie_idle": "phase_14/models/char/v_toon_arms-pie_idle.egg",
-                                
+
                                 "button_draw": "phase_14/models/char/v_toon_arms-button_draw.egg",
                                 "button_idle": "phase_14/models/char/v_toon_arms-button_idle.egg",
                                 "button_press": "phase_14/models/char/v_toon_arms-button_press.egg",
@@ -86,30 +86,30 @@ class FPSCamera(DirectObject):
                                 "gumball_draw": "phase_14/models/char/v_toon_arms-gumball_draw.egg",
 				                "gumball_idle": "phase_14/models/char/v_toon_arms-gumball_idle.egg",
 				                "gumball_fire": "phase_14/models/char/v_toon_arms-gumball_fire.egg",
-                                
+
                                 "hose_draw": "phase_14/models/char/v_toon_arms-hose_draw.egg",
                                 "hose_idle": "phase_14/models/char/v_toon_arms-hose_idle.egg",
                                 "hose_shoot_begin": "phase_14/models/char/v_toon_arms-hose_shoot_begin.egg",
                                 "hose_shoot_loop": "phase_14/models/char/v_toon_arms-hose_shoot_loop.egg",
                                 "hose_shoot_end": "phase_14/models/char/v_toon_arms-hose_shoot_end.egg",
-                                
+
                                 "tnt_draw": "phase_14/models/char/v_toon_arms-tnt_draw.egg",
                                 "tnt_idle": "phase_14/models/char/v_toon_arms-tnt_idle.egg",
                                 "tnt_throw": "phase_14/models/char/v_toon_arms-tnt_throw.egg",
-                                
+
                                 "slap_idle": "phase_14/models/char/v_toon_arms-slap_idle.egg",
                                 "slap_hit": "phase_14/models/char/v_toon_arms-slap_hit.egg",
-                                
+
                                 "sound": "phase_14/models/char/v_toon_arms-sound.egg"})
         self.viewModel.setBlend(frameBlend = base.config.GetBool("interpolate-frames", False))
         self.viewModel.reparentTo(self.vmRoot2)
         self.viewModel.find("**/hands").setTwoSided(True)
         self.viewModel.hide()
         self.viewModel.hide(CIGlobals.ReflectionCameraBitmask)
-        
+
         self.defaultViewModel = self.viewModel
         self.idealFov = self.ViewModelFOV
-        
+
         precacheActor(self.viewModel)
         #self.viewModel.clearMaterial()
         #self.viewModel.setMaterial(CIGlobals.getCharacterMaterial(specular = (0, 0, 0, 1)), 1)
@@ -131,15 +131,15 @@ class FPSCamera(DirectObject):
         self.dmgFade.setTransparency(1)
         self.dmgFade.setColorScale(1, 1, 1, 0)
         self.dmgFadeIval = None
-        
+
         #self.accept('v', self.vmRender.ls)
 
         #base.bspLoader.addDynamicNode(self.vmRoot)
-        
+
         if self.PrintAnimLengths:
-            print "v_toon_arms animation lengths:"
+            print("v_toon_arms animation lengths:")
             for anim in self.viewModel.getAnimNames():
-                print "\t{0}\t:\t{1}".format(anim, self.viewModel.getDuration(anim))
+                print("\t{0}\t:\t{1}".format(anim, self.viewModel.getDuration(anim)))
 
         taskMgr.add(self.__vpDebugTask, "vpdebutask", sort = -100)
 
@@ -148,68 +148,68 @@ class FPSCamera(DirectObject):
 
     def restoreViewModelFOV(self):
         self.idealFov = self.ViewModelFOV
-        
+
     def swapViewModel(self, newViewModel, fov = 70.0):
         if newViewModel.isEmpty():
             return
-            
+
         isHidden = False
         if not self.viewModel.isEmpty():
             self.viewModel.reparentTo(hidden)
             isHidden = self.viewModel.isHidden()
-            
+
         self.viewModel = newViewModel
         self.viewModel.reparentTo(self.vmRoot2)
         if isHidden:
             self.viewModel.hide()
         else:
             self.viewModel.show()
-            
+
         self.setViewModelFOV(fov)
-        
+
     def restoreViewModel(self):
         isHidden = False
         if not self.viewModel.isEmpty():
             self.viewModel.reparentTo(hidden)
             isHidden = self.viewModel.isHidden()
-            
+
         self.viewModel = self.defaultViewModel
         self.viewModel.reparentTo(self.vmRoot2)
         if isHidden:
             self.viewModel.hide()
         else:
             self.viewModel.show()
-            
+
         self.restoreViewModelFOV()
-        
+
     def addViewPunch(self, punch):
         self.punchAngleVel += punch * 20
-        
+
     def resetViewPunch(self, tolerance = 0.0):
         if tolerance != 0.0:
             tolerance *= tolerance
             check = self.punchAngleVel.lengthSquared() + self.punchAngle.lengthSquared()
             if check > tolerance:
                 return
-                
+
         self.punchAngle = Vec3(0)
         self.punchAngleVel = Vec3(0)
-        
+
     def decayPunchAngle(self):
         if self.punchAngle.lengthSquared() > 0.001 or self.punchAngleVel.lengthSquared() > 0.001:
             dt = globalClock.getDt()
             self.punchAngle += self.punchAngleVel * dt
             damping = 1 - (self.PunchDamping * dt)
-            
+
             if damping < 0:
                 damping = 0
             self.punchAngleVel *= damping
-            
+
             # Torsional spring
             springForceMag = self.PunchSpring * dt
             springForceMag = CIGlobals.clamp(springForceMag, 0.0, 2.0)
             self.punchAngleVel -= self.punchAngle * springForceMag
-            
+
             # Don't wrap around
             self.punchAngle.set(CIGlobals.clamp(self.punchAngle[0], -179, 179),
                                 CIGlobals.clamp(self.punchAngle[1], -89, 89),
@@ -231,7 +231,7 @@ class FPSCamera(DirectObject):
         #if self.vmRender.getState() != render.getState():
         #    # pretend like the view model is part of the main scene
         #self.vmRender.setState(render.getState())
-            
+
         self.viewportLens.setAspectRatio(base.getAspectRatio())
         self.viewportLens.setMinFov(self.idealFov / (4. / 3.))
         self.vmRoot.setTransform(render, self.camRoot.getTransform(render))
@@ -246,7 +246,7 @@ class FPSCamera(DirectObject):
         return task.cont
 
     def handleSuitAttack(self, attack):
-        print "FPSCamera handleSuitAttack:", attack
+        print("FPSCamera handleSuitAttack:", attack)
 
     def doDamageFade(self, r, g, b, severity = 1.0):
         #if self.dmgFadeIval:
@@ -257,7 +257,7 @@ class FPSCamera(DirectObject):
         #                            Wait(1.0),
         #                            LerpColorScaleInterval(self.dmgFade, 2.0, (r, g, b, 0), (r, g, b, severity), blendType = 'easeInOut'))
         #self.dmgFadeIval.start()
-        
+
         self.resetViewPunch()
         self.addViewPunch(Vec3(0, 1, 0))
 
@@ -300,7 +300,7 @@ class FPSCamera(DirectObject):
                 self.vmGag.cleanup()
             self.vmGag.removeNode()
             self.vmGag = None
-        
+
     def setup(self):
         try:
             # Match the arm color with the torso color of local avatar
@@ -321,20 +321,20 @@ class FPSCamera(DirectObject):
                 self.camRoot.setPos(0, 0, max(base.localAvatar.getHeight(), 3.0))
             self.camRoot.setHpr(0, 0, 0)
             self.camRoot2.setPosHpr(0, 0, 0, 0, 0, 0)
-            
+
         base.camera.reparentTo(self.camRoot2)
 
         if base.localAvatar.isFirstPerson():
             base.camera.setPosHpr(0, 0, 0, 0, 0, 0)
-        elif base.localAvatar.isThirdPerson():            
+        elif base.localAvatar.isThirdPerson():
             pos, lookAt = self.getThirdPersonBattleCam()
             base.localAvatar.smartCamera.setIdealCameraPos(pos)
             base.localAvatar.smartCamera.setLookAtPoint(lookAt)
-            
+
     def getThirdPersonBattleCam(self):
         camHeight = max(base.localAvatar.getHeight(), 3.0)
         heightScaleFactor = camHeight * 0.3333333333
-        
+
         return ((1, -5 * heightScaleFactor, 0), (1, 10, 0))
 
     def getViewModelLeftHand(self):
@@ -351,7 +351,7 @@ class FPSCamera(DirectObject):
 
     def ignoreEngageKeys(self):
         self.ignore("escape")
-        
+
     def enableMouseMovement(self):
         props = WindowProperties()
         props.setMouseMode(WindowProperties.MConfined)
@@ -361,26 +361,26 @@ class FPSCamera(DirectObject):
         self.attachCamera(False)
         if base.localAvatar.isFirstPerson():
             base.localAvatar.getGeomNode().hide()
-        
+
         base.win.movePointer(0, base.win.getXSize() / 2, base.win.getYSize() / 2)
-        
+
         base.taskMgr.add(self.__updateTask, "mouseUpdateFPSCamera", sort = -40)
         self.acceptEngageKeys()
-        
+
         self.mouseEnabled = True
-        
+
         base.localAvatar.enableGagKeys()
-        
+
     def disableMouseMovement(self, allowEnable = False, showAvatar = True):
         props = WindowProperties()
         props.setMouseMode(WindowProperties.MAbsolute)
         props.setCursorHidden(False)
         base.win.requestProperties(props)
-        
+
         base.taskMgr.remove("mouseUpdateFPSCamera")
-        
+
         base.localAvatar.disableGagKeys()
-        
+
         if allowEnable:
             self.acceptEngageKeys()
         else:
@@ -389,22 +389,22 @@ class FPSCamera(DirectObject):
                 base.localAvatar.getGeomNode().show()
             else:
                 base.localAvatar.getGeomNode().hide()
-            
+
         self.mouseEnabled = False
-            
+
     def __handleEscapeKey(self):
         if self.mouseEnabled:
             self.disableMouseMovement(True)
         else:
             self.enableMouseMovement()
-            
+
     #def doCameraJolt(self, amplitude, horizRange = [-1, 1], vertRange = [1]):
         #h = random.choice(horizRange) * amplitude
         #p = random.choice(vertRange) * amplitude
         #nquat = Quat(Quat.identQuat())
         #nquat.setHpr((h, p, 0))
         #self.lastCamRoot2Quat = self.lastCamRoot2Quat + nquat
-        
+
         #Effects.createPBounce(self.camRoot2, 3, self.camRoot2.getHpr(), 1, amplitude).start()
         #Effects.createHBounce(self.camRoot2, 3, self.camRoot2.getHpr(), 1, amplitude).start()
 
@@ -414,11 +414,11 @@ class FPSCamera(DirectObject):
         up = Parallel(LerpPosInterval(base.cam, 0.7, (0, 0, 0), (-0.1, 0, -0.2), blendType = 'easeInOut'),
                       LerpHprInterval(base.cam, 0.7, (0, 0, 0), (0, 0, -2.5), blendType = 'easeInOut'))
         Sequence(down, up).start()
-            
+
     def __updateTask(self, task):
         # TODO -- This function does a lot of math, I measured it to take .5 ms on my laptop
         #         That's a lot of time for something miniscule like sway and bob.
-        
+
         dt = globalClock.getDt()
         time = globalClock.getFrameTime()
 
@@ -428,9 +428,9 @@ class FPSCamera(DirectObject):
                 eyePoint[2] = eyePoint[2] / 2.0
             eyePoint[2] = CIGlobals.lerpWithRatio(eyePoint[2], self.lastEyeHeight, 0.4)
             self.lastEyeHeight = eyePoint[2]
-            
+
         camRootAngles = Vec3(0)
-        
+
         # Mouse look around
         mw = base.mouseWatcherNode
         if mw.hasMouse():
@@ -441,37 +441,37 @@ class FPSCamera(DirectObject):
             yDist = md.getY() - center.getY()
 
             sens = self.__getMouseSensitivity()
-            
+
             angular = -(xDist * sens)
             base.localAvatar.walkControls.controller.setAngularMovement(angular)
             camRootAngles.setY(self.lastPitch - yDist * sens)
-            
+
             if camRootAngles.getY() > FPSCamera.MaxP:
                 camRootAngles.setY(FPSCamera.MaxP)
                 yDist = 0
             elif camRootAngles.getY() < FPSCamera.MinP:
                 yDist = 0
                 camRootAngles.setY(FPSCamera.MinP)
-                
+
             base.win.movePointer(0, int(center.getX()), int(center.getY()))
-        
+
         if base.localAvatar.isFirstPerson():
             # Camera / viewmodel bobbing
             vmBob = Point3(0)
             vmAngles = Vec3(0)
             vmRaise = Point3(0)
             camBob = Point3(0)
-            
+
             maxSpeed = base.localAvatar.walkControls.getHighestSpeed() * 16.0
-            
+
             speed = base.localAvatar.walkControls.speeds.length() * 16.0
             speed = max(-maxSpeed, min(maxSpeed, speed))
-            
+
             bobOffset = CIGlobals.remapVal(speed, 0, maxSpeed, 0.0, 1.0)
-            
+
             self.bobTime += (time - self.lastBobTime) * bobOffset
             self.lastBobTime = time
-            
+
             # Calculate the vertical bob
             cycle = self.bobTime - int(self.bobTime / self.BobCycleMax)*self.BobCycleMax
             cycle /= self.BobCycleMax
@@ -479,12 +479,12 @@ class FPSCamera(DirectObject):
                 cycle = math.pi * cycle / self.BobUp
             else:
                 cycle = math.pi + math.pi*(cycle-self.BobUp)/(1.0 - self.BobUp)
-                
+
             verticalBob = speed * 0.005
             verticalBob = verticalBob*0.3 + verticalBob*0.7*math.sin(cycle)
             verticalBob = max(-7.0, min(4.0, verticalBob))
             verticalBob /= 16.0
-            
+
             # Calculate the lateral bob
             cycle = self.bobTime - int(self.bobTime / self.BobCycleMax*2)*self.BobCycleMax*2
             cycle /= self.BobCycleMax*2
@@ -492,7 +492,7 @@ class FPSCamera(DirectObject):
                 cycle = math.pi * cycle / self.BobUp
             else:
                 cycle = math.pi + math.pi*(cycle-self.BobUp)/(1.0 - self.BobUp)
-                
+
             lateralBob = speed * 0.005
             lateralBob = lateralBob*0.3 + lateralBob*0.7*math.sin(cycle)
             lateralBob = max(-7.0, min(4.0, lateralBob))
@@ -509,7 +509,7 @@ class FPSCamera(DirectObject):
 
             # ================================================================
             # Viewmodel lag/sway
-            
+
             angles = self.camRoot.getHpr(render)
             quat = Quat()
             quat.setHpr(angles)
@@ -542,7 +542,7 @@ class FPSCamera(DirectObject):
             vmBob = CIGlobals.extrude(vmBob, pitch * (0.02 / 16), Vec3.up())
 
             # ================================================================
-            
+
             vmRaise.set(0, 0, 0)#(0, abs(camRootAngles.getY()) * -0.002, camRootAngles.getY() * 0.002)
             camBob.set(0, 0, 0)
 
@@ -563,19 +563,19 @@ class FPSCamera(DirectObject):
                 base.localAvatar.b_setLookPitch(headPitch)
 
         self.lastPitch = newPitch
-        
+
         if base.localAvatar.isFirstPerson():
             # Apply punch angle
             self.decayPunchAngle()
             camRootAngles += self.punchAngle
-            
+
         self.camRoot.setHpr(camRootAngles)
-            
+
         return task.cont
-    
+
     def __getMouseSensitivity(self):
         return CIGlobals.getSettingsMgr().getSetting('fpmgms').getValue()
-        
+
     def cleanup(self):
         taskMgr.remove("vpdebutask")
         self.disableMouseMovement(False, False)
@@ -591,7 +591,7 @@ class FPSCamera(DirectObject):
         self.vmRoot = None
         self.vmRoot2 = None
         self.viewportLens = None
-        
+
         if self.viewportCam:
             base.filters.removeCamera(self.viewportCam)
             self.viewportCam.removeNode()

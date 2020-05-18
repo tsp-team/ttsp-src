@@ -22,8 +22,8 @@ class DistributedCutsceneAI(DistributedEntityAI):
     def DoCutscene(self):
         if self.inProgress:
             return
-            
-        print "DoCutscene", self.length
+
+        print("DoCutscene", self.length)
 
         self.sendUpdate('doCutscene', [self.cutsceneId])
         self.dispatchOutput("OnBegin")

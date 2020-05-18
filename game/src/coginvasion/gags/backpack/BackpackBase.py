@@ -27,16 +27,16 @@ class BackpackBase:
     but reads and manipulates the `attacks` dictionary on an avatar. It kinds of acts
     as a wrapper layer around the attacks system to maintain compatibility with the old system code.
     """
-    
+
     def __init__(self, avatar):
         # Must pass the avatar this backpack is associated with.
         self.avatar = avatar
-        
+
         self.netString = ""
 
         # A list of gags immediately available in the avatar's loadout.
         self.loadout = []
-    
+
     # Adds a gag to the backpack if it already isn't in it.
     # When a max supply isn't specified, the default is located and assigned from GagGlobals.
     # The current supply is assigned to the max supply if both the max supply and current supply is 0.
@@ -55,7 +55,7 @@ class BackpackBase:
                 maxSupply = GagGlobals.calculateMaxSupply(self.avatar,
                     gagName,
                 GagGlobals.getGagData(gagName))
-                
+
             # Sets the current supply to the max supply if current supply isn't
             # specified.
             if curSupply is None:
@@ -69,31 +69,31 @@ class BackpackBase:
                 attack.setAvatar(self.avatar)
                 attack.setMaxAmmo(maxSupply)
                 attack.setAmmo(curSupply)
-                
+
                 # ============================================================ #
                 # Horrible hack until we start determining damage
                 # based on the Gag's level.
-                
+
                 import types
-                
+
                 baseDamage = GagGlobals.calcBaseDamage(self.avatar, self.avatar.getAttackMgr().getAttackName(gagId), gagData)
                 def getBaseDamage(self):
                     return baseDamage
                 attack.getBaseDamage = types.MethodType(getBaseDamage, attack)
-                
+
                 damageMaxDistance = float(gagData.get('distance', 10))
                 def getDamageMaxDistance(self):
                     return damageMaxDistance
                 attack.getDamageMaxDistance = types.MethodType(getDamageMaxDistance, attack)
-                
+
                 # ============================================================ #
-                
+
                 attack.load()
                 self.avatar.attacks[gagId] = attack
                 return True
 
         return False
-        
+
     def setLoadout(self, gagIds):
         self.loadout = gagIds
 
@@ -109,7 +109,7 @@ class BackpackBase:
             return True
 
         return False
-    
+
     # Returns the max supply of a gag in the backpack or
     # -1 if the gag isn't in the backpack.
     def getMaxSupply(self, gagId):
@@ -118,11 +118,11 @@ class BackpackBase:
         if self.hasGag(gagId):
             return self.avatar.attacks[gagId].getMaxAmmo()
         return -1
-    
+
     # Returns the default max supply of a gag.
     def getDefaultMaxSupply(self, gagId):
         data = GagGlobals.getGagData(gagId)
-        
+
         if 'minMaxSupply' in data.keys():
             return data.get('minMaxSupply')
         else:
@@ -146,7 +146,7 @@ class BackpackBase:
             return True
 
         return False
-    
+
     # Returns the supply of a gag in the backpack by gagId.
     # If gagId is not in the backpack, -1 is returned.
     def getSupply(self, gagId):
@@ -155,51 +155,50 @@ class BackpackBase:
         if self.hasGag(gagId):
             return self.avatar.attacks[gagId].getAmmo()
         return -1
-        
+
     # Returns true or false depending on if the gag
     # is in the backpack.
     def hasGag(self, gagId):
         if isinstance(gagId, str):
             gagId = self.avatar.getAttackMgr().getAttackIDByName(gagId)
         return gagId in self.avatar.attacks.keys()
-        
+
     def getNetString(self):
         return self.netString
-        
+
     # Converts out backpack to a blob for storing.
     # Returns a blob of bytes.
     def toNetString(self):
         dg = PyDatagram()
-        
+
         for gagId in self.avatar.attacks.keys():
             supply = self.avatar.attacks[gagId].getAmmo()
-            
+
             if supply < 0:
-                print "Gag ID {0} is about to cause a cause with supply: {1}".format(str(gagId), str(supply))
+                print("Gag ID {0} is about to cause a cause with supply: {1}".format(str(gagId), str(supply)))
                 supply = 0
-            
+
             dg.addUint8(gagId)
             dg.addUint8(supply)
 
         return dg.getMessage()
-    
+
     # Converts a net string blob back to data that we can handle.
     # Returns a dictionary of {gagIds : supply}
     def fromNetString(self, netString):
         self.netString = netString
-        
+
         dg = PyDatagram(netString)
         dgi = PyDatagramIterator(dg)
         dictionary = {}
-        
+
         while dgi.getRemainingSize() > 0:
             gagId = dgi.getUint8()
             supply = dgi.getUint8()
             dictionary[gagId] = supply
         return dictionary
-        
+
     def cleanup(self):
         del self.netString
         del self.loadout
         del self.avatar
-        

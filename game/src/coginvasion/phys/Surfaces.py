@@ -13,22 +13,22 @@ class SurfaceProperties:
         self.softImpacts = softImpacts
         self.footsteps = footsteps
         self.impactDecals = impactDecals
-        
+
     def getImpactDecals(self):
         return self.impactDecals
-        
+
     def getFootsteps(self):
         return self.footsteps
-        
+
     def getHardImpacts(self):
         return self.hardImpacts
-        
+
     def getSoftImpacts(self):
         return self.softImpacts
-        
+
     def getBulletImpacts(self):
         return self.bulletImpacts
-        
+
 Surfaces = {
     "default"   :   SurfaceProperties(impactDecals = ["materials/decals/concrete/shot1.mat",
                                                       "materials/decals/concrete/shot2.mat",
@@ -39,7 +39,7 @@ Surfaces = {
                                                        "sound/physics/concrete/concrete_impact_bullet2.wav",
                                                        "sound/physics/concrete/concrete_impact_bullet3.wav",
                                                        "sound/physics/concrete/concrete_impact_bullet4.wav"]),
-                                                       
+
     "glass" :   SurfaceProperties(impactDecals = ["materials/decals/glass/shot1.mat",
                                                   "materials/decals/glass/shot2.mat",
                                                   "materials/decals/glass/shot3.mat",
@@ -49,7 +49,7 @@ Surfaces = {
                                                    "sound/physics/glass/glass_impact_bullet2.wav",
                                                    "sound/physics/glass/glass_impact_bullet3.wav",
                                                    "sound/physics/glass/glass_impact_bullet4.wav"]),
-    
+
     "metal" :   SurfaceProperties(bulletImpacts = ["phase_14/audio/sfx/metal_solid_impact_bullet1.wav",
                                                    "phase_14/audio/sfx/metal_solid_impact_bullet2.wav",
                                                    "phase_14/audio/sfx/metal_solid_impact_bullet3.wav",
@@ -59,7 +59,7 @@ Surfaces = {
                                                   "materials/decals/metal/shot3.mat",
                                                   "materials/decals/metal/shot4.mat",
                                                   "materials/decals/metal/shot5.mat"]),
-                                                  
+
     "wood"  :   SurfaceProperties(bulletImpacts = ["sound/physics/wood/wood_solid_impact_bullet1.wav",
                                                    "sound/physics/wood/wood_solid_impact_bullet2.wav",
                                                    "sound/physics/wood/wood_solid_impact_bullet3.wav",
@@ -70,7 +70,7 @@ Surfaces = {
                                                   "materials/decals/wood/shot3.mat",
                                                   "materials/decals/wood/shot4.mat",
                                                   "materials/decals/wood/shot5.mat"]),
-                                                   
+
     "tossable"  :   SurfaceProperties(hardImpacts = ["phase_4/audio/sfx/Golf_Hit_Barrier_2.ogg"],
                                       softImpacts = ["phase_4/audio/sfx/Golf_Hit_Barrier_1.ogg"])
 }
@@ -83,40 +83,40 @@ def getSurfaceName(surf):
 def getSurfaceFromContact(contact, battleZone = None):
     if not battleZone:
         battleZone = base
-    
+
     hitNode = contact.getNode()
-    
+
     if not isinstance(hitNode, BulletRigidBodyNode):
         return Surfaces["default"]
-    
+
     if hasattr(contact, 'getTriangleIndex'):
         triangleIdx = contact.getTriangleIndex()
         if battleZone.bspLoader.hasBrushCollisionNode(hitNode):
             if battleZone.bspLoader.hasBrushCollisionTriangle(hitNode, triangleIdx):
                 surfaceProp = battleZone.bspLoader.getBrushTriangleMaterial(hitNode, triangleIdx)
                 return Surfaces.get(surfaceProp, Surfaces["default"])
-            
+
     hitNp = NodePath(hitNode)
     return Surfaces.get(hitNp.getSurfaceProp(), Surfaces["default"])
 
 def getSurface(name):
     return Surfaces.get(name, Surfaces["default"])
-    
+
 def precacheSurfaces():
     for name, surf in Surfaces.items():
-        print "Precaching surface", name
-        
+        print("Precaching surface", name)
+
         for bulletImpact in surf.bulletImpacts:
             precacheSound(bulletImpact)
-            
+
         for impactDecal in surf.impactDecals:
             precacheMaterial(impactDecal)
-            
+
         for footstep in surf.footsteps:
             precacheSound(footstep)
-            
+
         for hardImpact in surf.hardImpacts:
             precacheSound(hardImpact)
-            
+
         for softImpact in surf.softImpacts:
             precacheSound(softImpact)

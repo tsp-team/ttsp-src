@@ -13,8 +13,8 @@ class EnvFogAI(DistributedEntityAI):
 
     def EnableFog(self):
         self.b_setEntityState(1)
-        print "Enabling fog!"
+        print("Enabling fog!")
 
     def DisableFog(self):
         self.b_setEntityState(0)
-        print "Disabling fog!"
+        print("Disabling fog!")

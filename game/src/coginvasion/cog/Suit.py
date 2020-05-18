@@ -118,7 +118,7 @@ class Suit(Avatar):
             State('squirt-small', self.enterSquirtSmall, self.exitSquirtSmall)
         ], 'off', 'off')
         self.animFSM.enterInitialState()
-        
+
     def getRightHandNode(self):
         return self.find("**/joint_Rhold")
 
@@ -169,7 +169,7 @@ class Suit(Avatar):
 
     def enterStunned(self, animB4Stun, ts = 0):
         self.show()
-        
+
         if isinstance(animB4Stun, int):
             animB4Stun = SuitGlobals.getAnimById(animB4Stun).getName()
 
@@ -181,7 +181,7 @@ class Suit(Avatar):
                                              Func(self.loop, 'stunned')),
                                     SuitGlobals.createStunInterval(self, 0, 100))
         self.stunnedIval.start()
-        
+
     def clearStunnedIval(self):
         if hasattr(self, 'stunnedSound'):
             self.stunnedSound.stop()
@@ -193,10 +193,10 @@ class Suit(Avatar):
     def exitStunned(self):
         self.clearStunnedIval()
         self.stop()
-        
+
     def getLeftHand(self):
         return self.find("**/joint_Lhold")
-        
+
     def getRightHand(self):
         return self.find("**/joint_Rhold")
 
@@ -388,7 +388,7 @@ class Suit(Avatar):
         singleGear.setDepthWrite(False)
         smallGearExplosion.setDepthWrite(False)
         bigGearExplosion.setDepthWrite(False)
-        
+
         gearPoint = self.getPos(render) + (0, 0, self.getHeight() - 0.2)
 
         self.smallGears = smallGears
@@ -464,7 +464,7 @@ class Suit(Avatar):
 
     def generateSuit(self, suitPlan, variant, voice = None, hideFirst = False):
         startTime = globalClock.getRealTime()
-        
+
         self.suitPlan = suitPlan
         self.suit = suitPlan.getSuitType()
         self.head = suitPlan.getHead()
@@ -476,7 +476,7 @@ class Suit(Avatar):
 
         mat = CIGlobals.getCharacterMaterial(shininess = 50.0, specular = (0.4, 0.4, 0.4, 1))
         self.setMaterial(mat)
-        
+
         #ts = TextureStage('shiny')
         #ts.setMode(TextureStage.MAdd)
         #ts.setRgbScale(2)
@@ -484,16 +484,16 @@ class Suit(Avatar):
         #tex = loader.loadTexture('phase_14/maps/envmap001a_cog.png')
         #self.setTexGen(ts, TexGenAttrib.MEyeSphereMap)
         #self.setTexture(ts, tex)
-        
+
         self.initializeBodyCollisions()
 
         if hideFirst:
             self.hide()
         else:
             self.show()
-            
+
         endTime = globalClock.getRealTime()
-        print "generateSuit took {0} ms".format((endTime - startTime) * 1000)
+        print("generateSuit took {0} ms".format((endTime - startTime) * 1000))
 
     def __blinkRed(self, task):
         self.healthBar.setColor(SuitGlobals.healthColors[3], 1)
@@ -599,9 +599,9 @@ class Suit(Avatar):
 
     def generateCog(self, isLose = 0, nameTag = True):
         #startTime = globalClock.getRealTime()
-        
+
         generateCollector.start()
-        
+
         cleanupCollector.start()
         self.cleanup()
         cleanupCollector.stop()
@@ -613,7 +613,7 @@ class Suit(Avatar):
             else:
                 setup = SuitBank.SuitSetup()
                 SuitBank.suitSetups[self.suitPlan] = setup
-            
+
             if not self.variant in setup.actor:
                 setupActor = Actor()
                 if self.variant == Variant.SKELETON or self.variant == Variant.ZOMBIE:
@@ -628,16 +628,16 @@ class Suit(Avatar):
                     path = 'phase_%s/models/char/suit%s-%s.bam' % (anim.getPhase(), self.suit, anim.getFile())
                     anims[anim.getName()] = path
                 setupActor.loadAnims(anims, 'body')
-                setup.actor[self.variant] = setupActor    
-            
+                setup.actor[self.variant] = setupActor
+
             actorCollector.start()
             self.copyActor(setup.actor[self.variant])
             actorCollector.stop()
-            
+
             healthBarCollector.start()
             self.generateHealthBar()
             healthBarCollector.stop()
-            
+
             footstepCollector.start()
             if self.suitPlan.suitType == SuitType.A:
                 self.footstepSound = base.audio3d.loadSfx("phase_5/audio/sfx/ENC_cogafssm.ogg")
@@ -651,14 +651,14 @@ class Suit(Avatar):
                 self.footstepSound.setLoop(True)
                 self.footstepSound.play()
             footstepCollector.stop()
-            
+
         else:
             if self.variant == Variant.SKELETON or self.variant == Variant.ZOMBIE:
                 self.loadModel('phase_5/models/char/cog%s_robot-lose-mod.bam' % (str(self.suit)), 'body')
             else:
                 self.loadModel('phase_4/models/char/suit%s-lose-mod.bam' % (str(self.suit)), 'body')
             self.loadAnims({'lose' : 'phase_4/models/char/suit%s-lose.bam' % (str(self.suit))}, 'body')
-        
+
         genHeadCollector.start()
         if self.variant != Variant.SKELETON:
             self.headModel = self.head.generate()
@@ -683,7 +683,7 @@ class Suit(Avatar):
         classScale = 1.0#self.suitPlan.getCogClassAttrs().scaleMod
         self.setAvatarScale((self.suitPlan.getScale() / SuitGlobals.scaleFactors[self.suit]) * classScale)
         self.setHeight(self.suitPlan.getHeight())
-        
+
         nametagCollector.start()
         if nameTag:
             self.setupNameTag()
@@ -698,10 +698,10 @@ class Suit(Avatar):
             self.headModel.flattenStrong()
             if isinstance(self.headModel, Actor):
                 self.headModel.postFlatten()
-                
+
         #endTime = globalClock.getRealTime()
-        #print "GenerateCog took {0} seconds".format(endTime - startTime)
-        
+        #print("GenerateCog took {0} seconds".format(endTime - startTime))
+
         generateCollector.stop()
 
     def cleanup(self):
@@ -748,18 +748,18 @@ class Suit(Avatar):
                 self.voice = Voice.NORMAL
         else:
             self.voice = voice
-            
+
         if self.variant == Variant.SKELETON:
             head = self
         else:
             head = self.headModel
-            
+
         self.addSound("statement", self.voice.getSoundFile('statement'), node = head)
         self.addSound("grunt", self.voice.getSoundFile('grunt'), node = head)
         self.addSound("question", self.voice.getSoundFile('question'), node = head)
         if self.voice == Voice.NORMAL:
             self.addSound("question2", self.voice.getSoundFile('question_2'), node = head)
-        
+
         self.chatSoundTable[CHAT_SHORT] = "statement"
         self.chatSoundTable[CHAT_MEDIUM] = "statement"
         self.chatSoundTable[CHAT_LONG] = "statement"
@@ -772,7 +772,7 @@ class Suit(Avatar):
 
     def setClothes(self):
         setClothesCollector.start()
-        
+
         if self.variant == Variant.SKELETON:
             parts = self.findAllMatches('**/pPlane*')
             for partNum in range(0, parts.getNumPaths()):
@@ -793,7 +793,7 @@ class Suit(Avatar):
             #legTex = prefix % 'leg'
             #armTex = prefix % 'sleeve'
             #blazTex = prefix % 'blazer'
-                
+
             #texs = [legTex, armTex, blazTex]
 
             #for texture in texs:
@@ -803,19 +803,19 @@ class Suit(Avatar):
             #self.find('**/legs').setBSPMaterial(legTex, 1)
             #self.find('**/arms').setBSPMaterial(armTex, 1)
             #self.find('**/torso').setBSPMaterial(blazTex, 1)
-            
+
             #self.find('**/hands').setBSPMaterial("phase_3.5/maps/tt_t_ene_sellbotRental_hand.mat", 1)
-            
+
             body = self.getPart('body')
             for child in body.getChildren():
                 if isinstance(child.node(), GeomNode):
                     child.setBSPMaterial(texture, 1)
-            
+
             if not self.variant == Variant.CORRODED:
                 self.find('**/hands').setColor(self.handColor)
             else:
                 self.find('**/hands').setColor(Variant.CORRODED_HAND_COLOR)
-                
+
         setClothesCollector.stop()
 
     def startFootsteps(self):
@@ -833,21 +833,21 @@ class Suit(Avatar):
             return
 
         self.footstepSound.stop()
-        
+
     def setSpeed(self, forwardSpeed, rotateSpeed, strafeSpeed = 0.0):
         Avatar.setSpeed(self, forwardSpeed, rotateSpeed, strafeSpeed)
-        
+
         currSpeed = self.currentSpeed
         if self.doingActivity:
             currSpeed = 0
-            
+
         if self.footstepSound and self.standWalkRunReverse is not None:
             action = self.getMoveAction(forwardSpeed, rotateSpeed, strafeSpeed)
             minSpeed = self.standWalkRunReverse[action][2]
             maxSpeed = self.standWalkRunReverse[action][3]
             self.footstepSound.setVolume(CIGlobals.clamp(CIGlobals.remapVal(currSpeed, minSpeed, maxSpeed, 0, 1), 0, 1))
             self.footstepSound.setPlayRate(max(1, currSpeed / maxSpeed))
-        
+
 
     def setName(self, nameString, charName):
         Avatar.setName(self, nameString, charName = charName, createNow = 1)

@@ -99,7 +99,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
         self.pickerRayNode = None
         self.pickerHandler = None
         self.rolledOverTag = None
-        
+
         self.clickToonCallback = None
 
         self.inTutorial = False
@@ -108,13 +108,13 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
         self.lastAction = None
 
         self.jumpHardLandIval = None
-        
+
         # This is used by CutsceneGUI
         self.allowA2dToggle = True
-        
+
         # This is used by the animation traverser.
         self.__traverseGUI = None
-            
+
     def primaryFirePress(self):
         if not self.canUseGag():
             return
@@ -130,7 +130,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
     def secondaryFirePress(self):
         if not self.canUseGag():
             return
-        
+
         DistributedPlayerToon.secondaryFirePress(self)
 
     def secondaryFireRelease(self):
@@ -148,7 +148,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
         self.hideFriendButton()
 
         BaseLocalAvatar.stopPlay(self)
-        
+
         self.stopTrackAnimToSpeed()
 
     def startPlay(self, gags = False, book = False, friends = False, laff = False, chat = False, wantMouse = 1):
@@ -164,13 +164,13 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
             self.createChatInput()
 
         self.startTrackAnimToSpeed()
-        
+
         BaseLocalAvatar.startPlay(self, gags, laff, wantMouse)
 
     def handleSuitAttack(self, attack):
         if self.isFirstPerson():
             self.getFPSCam().handleSuitAttack(attack)
-            
+
     def areGagsAllowed(self):
         return (
             BaseLocalAvatar.areGagsAllowed(self) and
@@ -195,7 +195,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
 
     def _handleCameOutTunnel(self):
         self.wrtReparentTo(render)
-        
+
         self.cr.playGame.getPlace().fsm.request(self.cr.playGame.getPlace().nextState)
 
     def handleClickedWhisper(self, senderName, fromId, isPlayer, openPanel = False):
@@ -374,7 +374,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
         if self.anim != anim:
             self.d_setAnimState(anim)
             DistributedPlayerToon.setAnimState(self, anim, callback = callback, extraArgs = extraArgs)
-            
+
             camTransitionStates = ['teleportIn', 'teleportOut', 'died']
             if anim in camTransitionStates and not NO_TRANSITION in extraArgs:
                 self.doFirstPersonCameraTransition()
@@ -620,7 +620,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
                 self.b_setAnimState("neutral")
             elif self.animFSM.getCurrentState().getName() == 'deadWalk':
                 self.b_setAnimState("run")
-        
+
         BaseLocalAvatar.handleHealthChange(self, hp, oldHp)
 
         DistributedPlayerToon.handleHealthChange(self, hp, oldHp)
@@ -639,7 +639,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
     def wrtReparentTo(self, parent):
         self.notify.debug("Local toon wrtReparent to {0}".format(parent.node().getName()))
         DistributedPlayerToon.wrtReparentTo(self, parent)
-        
+
     def loadAvatar(self):
         DistributedPlayerToon.loadAvatar(self)
         base.avatars.remove(self)
@@ -675,12 +675,12 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
                 'wantLaffMeter': 1,
                 'how': 'teleportIn'}
         self.cr.playGame.getPlace().fsm.request('teleportOut', [requestStatus])
-        
+
     def setQuests(self, dataStr):
         oldDataStr = self.quests
         DistributedPlayerToon.setQuests(self, dataStr)
         self.questManager.makeQuestsFromData()
-    
+
         # Let's send our quest data update event.
         messenger.send(QUEST_DATA_UPDATE_EVENT, [oldDataStr, dataStr])
 
@@ -702,28 +702,28 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
                 base.aspect2d.show()
             else:
                 base.aspect2d.hide()
-                
+
     def startTraverseAnimationControls(self, animName):
         if not self.__traverseGUI:
             if not self.getNumFrames(animName) is None:
                 frame = self.getCurrentFrame(animName)
-                
+
                 if frame is None:
                     frame = 0
                     self.pose(animName, 0)
-                
+
                 self.accept('h', self.__traverseAnimation, extraArgs = [animName, -1])
                 self.accept('j', self.__traverseAnimation, extraArgs = [animName, 1])
-                
+
                 self.__traverseGUI = OnscreenText(text = 'Current Frame: {0}\n\'H\' Decrease Frame, \'J\' Increase Frame'.format(str(frame)),
                     pos = (0, -0.75), font = CIGlobals.getToonFont(), fg = (1, 1, 1, 1),
                     shadow = (0, 0, 0, 1))
             else:
                 self.notify.info('Tried to traverse unknown animation: {0}'.format(animName))
-            
+
     def __traverseAnimation(self, animName, delta):
         frame = self.getCurrentFrame(animName)
-        if frame is None: 
+        if frame is None:
             frame = 0
 
         if (frame + delta) < 0:
@@ -734,11 +734,11 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
             frame += delta
         self.pose(animName, frame)
         self.__traverseGUI.setText('Current Frame: {0}\n\'H\' Decrease Frame, \'J\' Increase Frame'.format(str(frame)))
-            
+
     def endTraverseAnimationControls(self):
         self.ignore('h')
         self.ignore('j')
-        
+
         if self.__traverseGUI:
             self.__traverseGUI.destroy()
             self.__traverseGUI = None
@@ -816,7 +816,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
         DistributedPlayerToon.delete(self)
         del base.localAvatar
         del __builtins__['localAvatar']
-        print "Local avatar finally deleted"
+        print("Local avatar finally deleted")
 
     def sewerHeadOff(self, zoneId):
         # TEMPORARY
@@ -837,7 +837,7 @@ class LocalToon(DistributedPlayerToon, BaseLocalAvatar):
         self.accept("gotLookSpot", self.handleLookSpot)
         self.accept("clickedWhisper", self.handleClickedSentWhisper)
         self.accept(base.inputStore.ToggleAspect2D, self.toggleAspect2d)
-        
+
         if not metadata.IS_PRODUCTION:
             self.acceptOnce('m', self.sendUpdate, ['reqMakeSewer'])
             self.accept('l', render.ls)

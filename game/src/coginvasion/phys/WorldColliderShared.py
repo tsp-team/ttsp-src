@@ -32,11 +32,11 @@ class WorldColliderShared(NodePath):
         if not world and hasattr(base, 'physicsWorld') and not self.IsAI:
             world = base.physicsWorld
         self.world = world
-        
+
         self.initialPos = Point3(0)
         self.lastPos = Point3(0)
         self.lastPosTime = 0.0
-        
+
         self.hitCallbacks = []
 
         sphere = BulletSphereShape(radius)
@@ -56,9 +56,9 @@ class WorldColliderShared(NodePath):
         return (self.getPos(render) - self.lastPos) / (now - self.lastPosTime)
 
     def addExclusion(self, excl):
-        #print "Add exclusion", self, id(self), self.__exclusions, id(self.__exclusions)
+        #print("Add exclusion", self, id(self), self.__exclusions, id(self.__exclusions))
         self.__exclusions.append(excl)
-            
+
     def addHitCallback(self, cbk):
         self.hitCallbacks.append(cbk)
 
@@ -73,10 +73,10 @@ class WorldColliderShared(NodePath):
     def start(self):
         if self.isEmpty():
             return
-            
+
         self.initialPos = self.getPos(render)
         self.lastPos = self.initialPos
-            
+
         self.world.attach(self.node())
         self.task = taskMgr.add(self.tick, "WorldCollider.collisionTick" + str(id(self)))
 
@@ -88,10 +88,10 @@ class WorldColliderShared(NodePath):
         if hasattr(self, 'initialPos'):
             del self.initialPos
             del self.lastPos
-            
+
         if self.isEmpty():
             return
-            
+
         self.world.remove(self.node())
 
     def removeNode(self):
@@ -108,30 +108,30 @@ class WorldColliderShared(NodePath):
     def tick(self, task):
         if self.isEmpty():
             return task.done
-            
+
         currPos = self.getPos(render)
-        
+
         intoNode = None
-        
+
         if self.useSweep:
-            #print "From", self.lastPos, "to", currPos
-            #print "Exclusions", self.__exclusions
+            #print("From", self.lastPos, "to", currPos)
+            #print("Exclusions", self.__exclusions)
             # Sweep test ensures no slip-throughs, but is a bit more expensive.
             result = self.world.sweepTestClosest(self.node().getShape(0), TransformState.makePos(self.lastPos),
                                                  TransformState.makePos(currPos), self.mask)
             if result.hasHit():
-                #print "has hit"
+                #print("has hit")
                 intoNode = result.getNode()
                 for excl in self.__exclusions:
                     if excl.isEmpty():
                         continue
                     if excl.isAncestorOf(NodePath(intoNode)) or excl == NodePath(intoNode):
-                        #print "Collided with exclusion", excl
+                        #print("Collided with exclusion", excl)
                         intoNode = None
                         break
                 contact = result
             #else:
-                #print "no hit"
+                #print("no hit")
         else:
             result = self.world.contactTest(self.node())
             for contact in result.getContacts():
@@ -149,18 +149,18 @@ class WorldColliderShared(NodePath):
                         break
                 if isExcluded:
                     continue
-                    
+
                 intoNode = node
                 break
-        
-        
-        
+
+
+
         if intoNode is None:
             if currPos != self.lastPos:
                 self.lastPos = currPos
                 self.lastPosTime = globalClock.getFrameTime()
             return task.cont
-        
+
         mask = intoNode.getIntoCollideMask()
         if self.bitsIntersecting(mask, self.mask):
             args = [NodePath(intoNode)]
@@ -174,9 +174,9 @@ class WorldColliderShared(NodePath):
             for clbk in self.hitCallbacks:
                 clbk(*args)
             return task.done
-            
+
         if currPos != self.lastPos:
             self.lastPos = currPos
             self.lastPosTime = globalClock.getFrameTime()
-            
+
         return task.cont

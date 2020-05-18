@@ -54,7 +54,7 @@ LoadSfxCollector = PStatCollector("App:Show Code:Load SFX")
 
 class CIBase(ShowBase):
     notify = directNotify.newCategory("CIBase")
-    
+
     DebugShaderQualities = False
 
     def __init__(self):
@@ -66,14 +66,14 @@ class CIBase(ShowBase):
             self.pipeline = RenderPipeline()
             self.pipeline.create(self)
         else:
-            ShowBase.__init__(self)            
+            ShowBase.__init__(self)
             self.loader.destroy()
             self.loader = CogInvasionLoader(self)
             __builtin__.loader = self.loader
             self.graphicsEngine.setDefaultLoader(self.loader.loader)
 
         self.cam.node().getDisplayRegion(0).setClearDepthActive(1)
-        
+
         from panda3d.core import RenderAttribRegistry
         from panda3d.core import ShaderAttrib, TransparencyAttrib
         from panda3d.bsp import BSPMaterialAttrib
@@ -81,16 +81,16 @@ class CIBase(ShowBase):
         attribRegistry.setSlotSort(BSPMaterialAttrib.getClassSlot(), 0)
         attribRegistry.setSlotSort(ShaderAttrib.getClassSlot(), 1)
         attribRegistry.setSlotSort(TransparencyAttrib.getClassSlot(), 2)
-            
+
         gsg = self.win.getGsg()
-            
+
         # Let's print out the Graphics information.
         self.notify.info('Graphics Information:\n\tVendor: {0}\n\tRenderer: {1}\n\tVersion: {2}\n\tSupports Cube Maps: {3}\n\tSupports 3D Textures: {4}\n\tSupports Compute Shaders: {5}'
-                         .format(gsg.getDriverVendor(), 
-                                 gsg.getDriverRenderer(), 
-                                 gsg.getDriverVersion(), 
-                                 str(gsg.getSupportsCubeMap()), 
-                                 str(gsg.getSupports3dTexture()), 
+                         .format(gsg.getDriverVendor(),
+                                 gsg.getDriverRenderer(),
+                                 gsg.getDriverVersion(),
+                                 str(gsg.getSupportsCubeMap()),
+                                 str(gsg.getSupports3dTexture()),
                                  str(gsg.getSupportsComputeShaders())))
 
         # Enable shader generation on all of the main scenes
@@ -102,14 +102,14 @@ class CIBase(ShowBase):
             # I don't know how this could be possible
             self.notify.error("GLSL shaders unsupported by graphics driver.")
             return
-        
+
         # Let's disable fog on Intel graphics
         if gsg.getDriverVendor() == "Intel":
             metadata.NO_FOG = 1
             self.notify.info('Applied Intel-specific graphical fix.')
-            
+
         self.win.disableClears()
-        
+
         self.camNode.setCameraMask(CIGlobals.MainCameraBitmask)
 
         from direct.distributed.ClockDelta import globalClockDelta
@@ -124,7 +124,7 @@ class CIBase(ShowBase):
         self.computeCam.node().setCullBounds(OmniBoundingVolume())
         self.computeCam.node().setFinal(True)
         self.computeCam.reparentTo(self.computeRoot)
-        
+
         # Initialized in initStuff()
         self.shaderGenerator = None
 
@@ -144,14 +144,14 @@ class CIBase(ShowBase):
         self.physicsWorld.setGroupCollisionFlag(7, 8, True)
 
         self.taskMgr.add(self.__physicsUpdate, "physicsUpdate", sort = 30)
-        
+
         debugNode = BulletDebugNode('Debug')
         self.debugNP = render.attachNewNode(debugNode)
         self.physicsWorld.setDebugNode(self.debugNP.node())
 
         self.physicsDbgFlag = False
         self.setPhysicsDebug(self.config.GetBool('physics-debug', False))
-            
+
         #self.shadowCaster = ShadowCaster(Vec3(163, -67, 0))
         #self.shadowCaster.enable()
 
@@ -171,9 +171,9 @@ class CIBase(ShowBase):
         self.brushCollisionMaterialData = {}
         self.skyBox = None
         self.skyBoxUtil = None
-        
+
         self.linkClientSideBSPEntities()
-        
+
         #self.nmMgr = RNNavMeshManager.get_global_ptr()
         #self.nmMgr.set_root_node_path(self.render)
         #self.nmMgr.get_reference_node_path().reparentTo(self.render)
@@ -197,9 +197,9 @@ class CIBase(ShowBase):
         base.lightingCfg = None
 
         self.cl_attackMgr = None
-        
+
         #self.accept('/', self.projectShadows)
-        
+
         # Let's setup the user input storage system
         uis = UserInputStorage()
         self.inputStore = uis
@@ -223,13 +223,13 @@ class CIBase(ShowBase):
         self.currSongName = None
 
         render.show(CIGlobals.ShadowCameraBitmask)
-        
+
         self.avatars = []
-        
+
         wrm = WaterReflectionManager()
         self.waterReflectionMgr = wrm
         __builtin__.waterReflectionMgr = wrm
-        
+
         # Let's setup our margins
         base.marginManager = MarginManager()
         base.margins = aspect2d.attachNewNode(base.marginManager, DirectGuiGlobals.MIDGROUND_SORT_INDEX + 1)
@@ -249,12 +249,12 @@ class CIBase(ShowBase):
             base.marginManager.addCell(-0.1, -1.0, base.a2dTopRight),
             base.marginManager.addCell(-0.1, -1.4, base.a2dTopRight)
         ]
-        
+
         base.mouseWatcherNode.setEnterPattern('mouse-enter-%r')
         base.mouseWatcherNode.setLeavePattern('mouse-leave-%r')
         base.mouseWatcherNode.setButtonDownPattern('button-down-%r')
         base.mouseWatcherNode.setButtonUpPattern('button-up-%r')
-        
+
         cbm = CullBinManager.getGlobalPtr()
         cbm.addBin('ground', CullBinManager.BTUnsorted, 18)
         # The portal uses the shadow bin by default,
@@ -275,23 +275,23 @@ class CIBase(ShowBase):
         base.transitions.FadeModelName = "phase_3/models/misc/fade.bam"
 
         self.accept(self.inputStore.TakeScreenshot, ScreenshotHandler.takeScreenshot)
-        
+
         #self.accept('u', render.setShaderOff)
         #self.accept('i', render.setShaderOff, [1])
         #self.accept('o', render.setShaderOff, [2])
-        
+
         # Disabled oobe culling
         #self.accept('o', self.oobeCull)
         #self.accept('c', self.reportCam)
 
         self.taskMgr.add(self.__updateShadersAndPostProcess, 'CIBase.updateShadersAndPostProcess', 47)
         self.taskMgr.add(self.__update3DAudio, 'CIBase.update3DAudio', 48)
-        
+
     def windowEvent(self, win):
         ShowBase.windowEvent(self, win)
         if hasattr(self, 'filters'):
             self.filters.windowEvent()
-        
+
     def __update3DAudio(self, task):
         self.audio3d.update()
         return task.cont
@@ -302,7 +302,7 @@ class CIBase(ShowBase):
         if hasattr(self, 'filters'):
             self.filters.update()
         return task.cont
-        
+
     def linkClientSideBSPEntities(self):
         from src.coginvasion.szboss import FuncWater, Ropes, InfoPlayerRelocate, EnvLightGlow, PointSpotlight, EnvSun, PointDevshotCamera
         self.bspLoader.linkEntityToClass("func_water", FuncWater.FuncWater)
@@ -316,10 +316,10 @@ class CIBase(ShowBase):
 
     def addPrecacheClass(self, cls):
         self.precacheList.append(cls)
-        
+
     def hideHood(self):
         base.cr.playGame.hood.loader.geom.hide()
-        
+
     def reportCam(self):
         #print self.camera
         #print self.camera.getNetTransform()
@@ -344,7 +344,7 @@ class CIBase(ShowBase):
         print 'SLANT SET'
         print 'TPM END'
         """
-        
+
     def convertHammerAngles(self, angles):
         """
         (pitch, yaw + 90, roll) -> (yaw, pitch, roll)
@@ -353,7 +353,7 @@ class CIBase(ShowBase):
         angles[0] = angles[1] - 90
         angles[1] = temp
         return angles
-        
+
     def planPath(self, startPos, endPos):
         """Uses recast/detour to find a path from the generated nav mesh from the BSP file."""
 
@@ -364,14 +364,14 @@ class CIBase(ShowBase):
         for i in xrange(valueList.get_num_values()):
             result.append(valueList.get_value(i))
         return result
-        
+
     def getBSPLevelLightEnvironmentData(self):
         #    [has data, angles, color]
         data = [0, Vec3(0), Vec4(0)]
-        
+
         if not self.bspLoader.hasActiveLevel():
             return data
-        
+
         for i in xrange(self.bspLoader.getNumEntities()):
             classname = self.bspLoader.getEntityValue(i, "classname")
             if classname == "light_environment":
@@ -380,7 +380,7 @@ class CIBase(ShowBase):
                     self.bspLoader.getEntityValueVector(i, "angles"))
                 data[2] = self.bspLoader.getEntityValueColor(i, "_light")
                 break
-                
+
         return data
 
     def cleanupSkyBox(self):
@@ -391,7 +391,7 @@ class CIBase(ShowBase):
         if self.skyBox:
             self.skyBox.removeNode()
             self.skyBox = None
-        
+
     def cleanupBSPLevel(self):
         self.cleanupSkyBox()
         #self.cleanupNavMesh()
@@ -402,24 +402,24 @@ class CIBase(ShowBase):
             self.bspLevel = None
         self.bspLoader.cleanup()
         base.brushCollisionMaterialData = {}
-        
+
     #def cleanupNavMesh(self):
     #    if self.navMeshNp:
     #        self.navMeshNp.removeNode()
     #        self.navMeshNp = None
-        
+
     #def setupNavMesh(self, node):
     #    self.cleanupNavMesh()
-        
+
     #    nmMgr = RNNavMeshManager.get_global_ptr()
     #    self.navMeshNp = nmMgr.create_nav_mesh()
     #    self.navMeshNp.node().set_owner_node_path(node)
     #    self.navMeshNp.node().setup()
-        
+
     #    if 0:
     #        self.navMeshNp.node().enable_debug_drawing(self.camera)
     #        self.navMeshNp.node().toggle_debug_drawing(True)
-        
+
     def setupRender(self):
         """
         Creates the render scene graph, the primary scene graph for
@@ -445,10 +445,10 @@ class CIBase(ShowBase):
             self.skyBox.setZ(-350)
             self.skyBoxUtil = SkyUtil()
             self.skyBoxUtil.startSky(self.skyBox)
-        
+
     def loadBSPLevel(self, mapFile):
         self.cleanupBSPLevel()
-        
+
         base.bspLoader.read(mapFile)
         base.bspLevel = base.bspLoader.getResult()
         base.bspLoader.doOptimizations()
@@ -456,7 +456,7 @@ class CIBase(ShowBase):
         for prop in base.bspLevel.findAllMatches("**/+BSPProp"):
             base.createAndEnablePhysicsNodes(prop)
         #base.setupNavMesh(base.bspLevel.find("**/model-0"))
-        
+
         try:
             skyType = self.cr.playGame.hood.olc.skyType
         except:
@@ -464,11 +464,11 @@ class CIBase(ShowBase):
                 skyType = int(self.bspLoader.getCEntity(0).getEntityValue("skytype"))
             except:
                 skyType = 1
-        
+
         if skyType != OutdoorLightingConfig.STNone:
             skyCubemap = loader.loadCubeMap(OutdoorLightingConfig.SkyData[skyType][2])
             self.shaderGenerator.setIdentityCubemap(skyCubemap)
-            
+
         CIGlobals.preRenderScene(render)
 
     def doNextFrame(self, func, extraArgs = []):
@@ -485,7 +485,7 @@ class CIBase(ShowBase):
         self.audio3d.attachSoundToObject(snd, node)
         LoadSfxCollector.stop()
         return snd
-        
+
     def loadSfx(self, sndFile):
         LoadSfxCollector.start()
         snd = ShowBase.loadSfx(self, sndFile)
@@ -527,7 +527,7 @@ class CIBase(ShowBase):
 
         self.win.getGsg().getPreparedObjects().releaseAll()
         self.graphicsEngine.renderFrame()
-        
+
     def doMemReport(self):
         MemoryUsage.showCurrentTypes()
         MemoryUsage.showCurrentAges()
@@ -536,7 +536,7 @@ class CIBase(ShowBase):
         #print MemoryUsage.getTotalSize()
 
     def doPointers(self):
-        #print "---------------------------------------------------------------------"
+        #print("---------------------------------------------------------------------")
         data = {}
         mup = MemoryUsagePointers()
         MemoryUsage.getPointers(mup)
@@ -546,27 +546,27 @@ class CIBase(ShowBase):
                 data[ptr.__class__.__name__] += 1
             else:
                 data[ptr.__class__.__name__] = 1
-        
-        #print "NodeReferenceCount:", data["NodeReferenceCount"]
-        #print "CopyOnWriteObject:", data["CopyOnWriteObject"]
-        
-        #print "---------------------------------------------------------------------"
-        
+
+        #print("NodeReferenceCount:", data["NodeReferenceCount"])
+        #print("CopyOnWriteObject:", data["CopyOnWriteObject"])
+
+        #print("---------------------------------------------------------------------")
+
     def hideMouseCursor(self):
         props = WindowProperties()
         props.setCursorHidden(True)
         self.win.requestProperties(props)
-        
+
     def showMouseCursor(self):
         props = WindowProperties()
         props.setCursorHidden(False)
         self.win.requestProperties(props)
-        
+
     def doCamShake(self, intensity = 1.0, duration = 0.5, loop = False):
         shake = ShakeCamera(intensity, duration)
         shake.start(loop)
         return shake
-        
+
     def emitShake(self, emitter, magnitude = 1.0, duration = 0.5):
         dist = camera.getDistance(emitter)
         maxDist = 100.0 * magnitude
@@ -613,7 +613,7 @@ class CIBase(ShowBase):
             return self.music
 
         self.stopMusic()
-        
+
         self.currSongName = songName
 
         song = MusicCache.findSong(songName)
@@ -625,24 +625,24 @@ class CIBase(ShowBase):
         self.music.setLoop(looping)
         self.music.setVolume(volume)
         self.music.play()
-        
+
         return self.music
-        
+
     def fadeOutMusic(self, time = 1.0, music = None):
         if not music:
             music = self.music
-            
+
         if not music:
             return
-            
+
         self.fadeAudio(time, music, music.getVolume(), 0.0)
-            
+
     def fadeAudio(self, time, audio, start, end):
         from direct.interval.IntervalGlobal import LerpFunc
-        
+
         def __changeMusicVolume(vol):
             audio.setVolume(vol)
-            
+
         LerpFunc(__changeMusicVolume, time, start, end).start()
 
     def enablePhysicsNodes(self, rootNode):
@@ -653,14 +653,14 @@ class CIBase(ShowBase):
 
     def createPhysicsNodes(self, rootNode):
         PhysicsUtils.makeBulletCollFromPandaColl(rootNode)
-        
+
     def createAndEnablePhysicsNodes(self, rootNode):
         self.createPhysicsNodes(rootNode)
         self.enablePhysicsNodes(rootNode)
-        
+
     def removePhysicsNodes(self, rootNode):
         PhysicsUtils.removeBulletNodes(rootNode)
-        
+
     def disableAndRemovePhysicsNodes(self, rootNode):
         PhysicsUtils.detachAndRemoveBulletNodes(rootNode)
 
@@ -670,7 +670,7 @@ class CIBase(ShowBase):
         self.physicsWorld.doPhysics(dt, metadata.PHYS_SUBSTEPS, 0.016)
 
         return task.cont
-     
+
     def projectShadows(self):
         #self.shadowCaster.projectShadows()
         pass
@@ -686,13 +686,13 @@ class CIBase(ShowBase):
         #    self.filters.setBloom(desat = 0, intensity = 0.1, mintrigger = 1, maxtrigger = 2, size = "large")
         #else:
         #    self.filters.delBloom()
-        
+
     def initStuff(self):
         # Precache water bar shader, prevents crash from running out of GPU registers
         loader.loadShader("shaders/progress_bar.sha")
-        
+
         self.bspLoader.setWantShadows(metadata.USE_REAL_SHADOWS)
-        
+
         self.shaderGenerator = BSPShaderGenerator(self.win, self.win.getGsg(), self.camera, self.render)
         self.win.getGsg().setShaderGenerator(self.shaderGenerator)
         self.bspLoader.setShaderGenerator(self.shaderGenerator)
@@ -710,12 +710,12 @@ class CIBase(ShowBase):
         self.shaderGenerator.addShader(csm)
         self.shaderGenerator.addShader(skb)
         self.shaderGenerator.addShader(dcm)
-        
+
         #print self.shaderGenerator.getPlanarReflections().getReflectionTexture()
         #OnscreenImage(image = self.shaderGenerator.getPlanarReflections().getReflectionTexture(), scale = 0.3, pos = (0, 0, -0.7))
-        
+
         self.shaderGenerator.setShaderQuality(CIGlobals.getSettingsMgr().getSetting("shaderquality").getValue())
-        
+
         if metadata.USE_REAL_SHADOWS and self.config.GetBool('pssm-debug-cascades', False):
             from panda3d.core import CardMaker, Shader#, Camera, Trackball
             cm = CardMaker('cm')
@@ -733,7 +733,7 @@ class CIBase(ShowBase):
             #base.openWindow(useCamera = cam)
 
         #self.shadowCaster.turnOnShadows()
-        
+
         self.waterReflectionMgr.load()
 
         self.filters = CIPostProcess()
@@ -747,7 +747,7 @@ class CIBase(ShowBase):
         self.setFXAA(self.fxaaToggle)
         self.setAmbientOcclusion(self.aoToggle)
         #self.filters.setDepthOfField(distance = 10.0, range = 175.0, near = 1.0, far = 1000.0 / (1000.0 - 1.0))
-        
+
         #from src.coginvasion.globals import BSPUtility
         #BSPUtility.applyUnlitOverride(render)
 
@@ -756,13 +756,13 @@ class CIBase(ShowBase):
         # and use it as base.cr.attackMgr.
         from src.coginvasion.attack.AttackManager import AttackManager
         self.cl_attackMgr = AttackManager()
-        
+
         if self.DebugShaderQualities:
             from panda3d.bsp import SHADERQUALITY_HIGH, SHADERQUALITY_MEDIUM, SHADERQUALITY_LOW
             self.accept('1', self.shaderGenerator.setShaderQuality, [SHADERQUALITY_LOW])
             self.accept('2', self.shaderGenerator.setShaderQuality, [SHADERQUALITY_MEDIUM])
             self.accept('3', self.shaderGenerator.setShaderQuality, [SHADERQUALITY_HIGH])
-    
+
     def makeCamera(self, win, sort = 0, scene = None,
                    displayRegion = (0, 1, 0, 1), stereo = None,
                    aspectRatio = None, clearDepth = 0, clearColor = None,
@@ -841,7 +841,7 @@ class CIBase(ShowBase):
             dr = win.makeDisplayRegion(*displayRegion)
 
         dr.setSort(sort)
-        
+
         dr.disableClears()
 
         # By default, we do not clear 3-d display regions (the entire
@@ -857,7 +857,7 @@ class CIBase(ShowBase):
         dr.setCamera(cam)
 
         return cam
-            
+
     def makeCamera2d(self, win, sort = 10,
                      displayRegion = (0, 1, 0, 1), coords = (-1, 1, -1, 1),
                      lens = None, cameraName = None):
@@ -899,14 +899,14 @@ class CIBase(ShowBase):
             self.cam2d = camera2d
 
         return camera2d
-        
+
     def precacheStuff(self):
         from src.coginvasion.base.Precache import Precacheable
         for name, dclass in self.cr.dclassesByName.items():
             if hasattr(dclass.getClassDef(), 'precache'):
                 print("Precaching dclass", dclass.getClassDef(), name)
                 dclass.getClassDef().precache()
-                
+
         for cls in self.precacheList:
             cls.precache()
 
@@ -914,16 +914,16 @@ class CIBase(ShowBase):
         ToonGlobals.precacheToons()
 
         self.cl_attackMgr.precache()
-            
+
         from src.coginvasion.gags.LocationSeeker import LocationSeeker
         LocationSeeker.precache()
-        
+
         from src.coginvasion.cog import SuitBank
         SuitBank.precacheSuits()
 
         from src.coginvasion.base.Precache import precacheActor, precacheModel, precacheScene, precacheMaterial, precacheTexture, precacheSound, precacheFont
         precacheActor(CIGlobals.getSplat())
-        
+
         from src.coginvasion.nametag import NametagGlobals
         precacheScene(NametagGlobals.cardModel)
         precacheScene(NametagGlobals.arrowModel)
@@ -933,7 +933,7 @@ class CIBase(ShowBase):
 
         precacheModel("phase_3.5/models/props/suit-particles.bam")
         precacheModel("phase_14/models/props/creampie_gib.bam")
-        
+
         # UI
         precacheTexture("phase_14/maps/crosshair_4.png")
         precacheTexture("phase_14/maps/damage_effect.png")
@@ -947,7 +947,7 @@ class CIBase(ShowBase):
         precacheMaterial("phase_14/materials/pie_splat.mat")
         precacheMaterial("materials/scorch1.mat")
         precacheMaterial("materials/bigshot1.mat")
-        
+
         # Concrete
         for i in range(1, 5 + 1):
             precacheMaterial("materials/decals/concrete/shot{0}.mat".format(i))
@@ -960,29 +960,29 @@ class CIBase(ShowBase):
         # Metal
         for i in range(1, 5 + 1):
             precacheMaterial("materials/decals/glass/shot{0}.mat".format(i))
-        
+
         # Fonts
         precacheFont(CIGlobals.getSuitFont())
         precacheFont(CIGlobals.getToonFont())
         precacheFont(CIGlobals.getMickeyFont())
         precacheFont(CIGlobals.getMinnieFont())
-        
+
         precacheActor(['phase_14/models/props/tnt.bam', {'chan': 'phase_5/models/props/tnt-chan.bam'}])
         # Cog propeller
         precacheActor(['phase_4/models/props/propeller-mod.bam', {'chan': 'phase_4/models/props/propeller-chan.bam'}])
-        
+
         from src.coginvasion.base.MuzzleParticle import MuzzleParticle
         MuzzleParticle.precache()
-        
+
         # Sounds
         ricsFormat = "sound/weapons/ric{0}.wav"
         rics = [1, 5]
         for ric in rics:
             precacheSound(ricsFormat.format(ric))
-            
+
         from src.coginvasion.phys import Surfaces
         Surfaces.precacheSurfaces()
-        
+
     def setAmbientOcclusion(self, toggle):
         self.aoToggle = toggle
         if not hasattr(self, 'filters'):
@@ -992,14 +992,14 @@ class CIBase(ShowBase):
         #    self.filters.setAmbientOcclusion()
         #else:
         #    self.filters.delAmbientOcclusion()
-        
+
     def setFXAA(self, toggle):
         self.fxaaToggle = toggle
-        
+
         if not hasattr(self, 'filters'):
             # Sanity check
             return
-        
+
         #if toggle:
         #    self.filters.setFXAA()
         #else:
@@ -1018,7 +1018,7 @@ class CIBase(ShowBase):
         else:
             render.setAttrib(LightRampAttrib.makeDefault())
             #self.hdr.disable()
-        
+
     def setCellsActive(self, cells, active):
         for cell in cells:
             cell.setActive(active)
@@ -1060,7 +1060,7 @@ class CIBase(ShowBase):
 
     def unMuteSfx(self):
         self.sfxManagerList[0].setVolume(CIGlobals.SettingsMgr.getSetting("sfxvol").getValue())
-        
+
     def localAvatarReachable(self):
         # This verifies that the localAvatar hasn't been deleted and isn't none.
         return hasattr(self, 'localAvatar') and self.localAvatar

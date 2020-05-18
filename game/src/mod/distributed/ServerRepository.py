@@ -58,7 +58,7 @@ class ServerRepository:
             # distributed objects assigned to each zone, of the
             # objects created by this client.
             self.objectsByZoneId = {}
-    
+
     class Object:
         """ This internal class keeps track of the data associated
         with each extent distributed object. """
@@ -113,7 +113,7 @@ class ServerRepository:
         self.dcFile = DCFile()
         self.dcSuffix = ''
         self.readDCFile(dcFileNames)
-        
+
     def importModule(self, dcImports, moduleName, importSymbols):
         """ Imports the indicated moduleName and all of its symbols
         into the current namespace.  This more-or-less reimplements
@@ -280,7 +280,7 @@ class ServerRepository:
         client = self.Client(newConnection, info.netAddress, doIdBase)
         self.clientsByConnection[client.connection] = client
         self.clientsByDoIdBase[client.doIdBase] = client
-        
+
     def sendDoIdRange(self, client):
         """ sends the client the range of doid's that the client can
         use """
@@ -324,7 +324,7 @@ class ServerRepository:
         elif type == CLIENT_OBJECT_UPDATE_FIELD:
             self.handleClientObjectUpdateField(client, datagram, dgi)
         elif type == CLIENT_OBJECT_UPDATE_FIELD_TARGETED_CMU:
-            print "Update field targeted"
+            print("Update field targeted")
             self.handleClientObjectUpdateField(client, datagram, dgi, targeted = True)
         elif type == OBJECT_DELETE_CMU:
             self.handleClientDeleteObject(client, datagram, dgi.getUint32())

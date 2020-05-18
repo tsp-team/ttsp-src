@@ -46,7 +46,7 @@ class ClientRepository(ClientRepositoryBase):
     def handleSetDoIdrange(self, di):
         self.doIdBase = di.getUint32()
         self.doIdLast = self.doIdBase + di.getUint32()
-        print "doId range: ", self.doIdBase, self.doIdLast - 1
+        print("doId range: ", self.doIdBase, self.doIdLast - 1)
         self.doIdAllocator = UniqueIdAllocator(self.doIdBase, self.doIdLast - 1)
 
         self.ourChannel = self.doIdBase
@@ -134,7 +134,7 @@ class ClientRepository(ClientRepositoryBase):
         """ Removes the indicate doId from the available pool, as if
         it had been explicitly allocated.  You may pass it to
         freeDoId() later if you wish. """
-        print "reserveDoId", doId
+        print("reserveDoId", doId)
         self.doIdAllocator.initialReserveId(doId)
         return doId
 
@@ -365,7 +365,7 @@ class ClientRepository(ClientRepositoryBase):
         dg = distObj.dclass.clientFormatUpdate(
             fieldName, distObj.doId, args)
         self.send(dg)
-        
+
     def deleteObject(self, doId):
         """
         Removes the object from the client's view of the world.  This

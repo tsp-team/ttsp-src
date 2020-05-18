@@ -6,11 +6,11 @@ Cache = {}
 
 def precacheMusicDir(musicDir, extension = "ogg"):
     global Cache
-    
+
     vfs = VirtualFileSystem.getGlobalPtr()
     songList = vfs.scanDirectory(musicDir)
     if not songList:
-        print "No music in {0}".format(musicDir)
+        print("No music in {0}".format(musicDir))
         return
     for vFile in songList.getFiles():
         fn = vFile.getFilename()

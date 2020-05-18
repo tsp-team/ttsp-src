@@ -61,12 +61,12 @@ from src.mod.distributed.ModServerRepository import ModServerRepository
 base.sr = ModServerRepository(7032, dcFileNames = ModGlobals.DCFileNames)
 
 def __handleAIReady():
-    print "AI ready"
+    print("AI ready")
     base.air.setInterestZones([ModGlobals.UberZoneId, ModGlobals.BattleZoneId])
     from direct.distributed.TimeManagerAI import TimeManagerAI
     tm = TimeManagerAI(base.air)
     tm.generateWithRequiredAndId(ModGlobals.TimeManagerID, 0, ModGlobals.UberZoneId)
-    
+
     def makeBattle():
         from src.mod.ModBattleZoneAI import ModBattleZoneAI
         bZone = ModBattleZoneAI(base.air)
@@ -80,16 +80,16 @@ def __handleAIReady():
             bZone.b_setMap("museum_history")
         else:
             bZone.b_setMap("facility")
-    
+
     def __aiWaitForPlayer(task):
         if ModGlobals.LocalAvatarID in base.air.doId2do.keys():
-            print "Player generated on server"
+            print("Player generated on server")
             makeBattle()
             return task.done
         return task.cont
-        
+
     taskMgr.add(__aiWaitForPlayer, "aiWaitForPlayer")
-    
+
 def __handleAIConnected():
     base.air.sendAIHello()
     base.acceptOnce('createReady', __handleAIReady)

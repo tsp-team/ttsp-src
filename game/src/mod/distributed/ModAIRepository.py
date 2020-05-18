@@ -100,7 +100,7 @@ class ModAIRepository(ModClientRepository):
             self.numAvatars += 1
 
             if zoneId in self.battleZones:
-                print "Adding avatar to battle zone at {0}".format(zoneId)
+                print("Adding avatar to battle zone at {0}".format(zoneId))
                 avatar.battleZone = self.battleZones[zoneId]
                 avatar.addToPhysicsWorld(avatar.battleZone.physicsWorld)
 
@@ -120,7 +120,7 @@ class ModAIRepository(ModClientRepository):
             self.numAvatars -= 1
 
         if avatar.battleZone:
-            print "Removing avatar from battle zone at {0}".format(zoneOfAv)
+            print("Removing avatar from battle zone at {0}".format(zoneOfAv))
             avatar.removeFromPhysicsWorld(avatar.battleZone.physicsWorld)
             avatar.battleZone = None
 
@@ -132,7 +132,7 @@ class ModAIRepository(ModClientRepository):
 
     def deallocateZone(self, zone):
         self.zoneAllocator.free(zone)
-        
+
     def generateWithRequired(self, do, parentId, zoneId, optionalFields = None):
         self.createDistributedObject(distObj = do, zoneId = zoneId, optionalFields = optionalFields, indirect = True)
 

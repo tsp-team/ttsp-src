@@ -49,7 +49,7 @@ class SuitPlan:
         self.headShadowPos = headShadowPos
         self.behaviors = []
         self.cls = cls
-        
+
         # Gag weaknesses are stored as a dictionary like so:
         # Gag Name : Percentage Bonus (0.0-1.0)
         # If % < 1, this is an immunity (does less damage),
@@ -127,7 +127,7 @@ class SuitPlan:
 
     def getBehaviors(self):
         return self.behaviors
-    
+
     def getGagWeaknesses(self):
         return self.gagWeaknesses
 
@@ -719,7 +719,7 @@ def chooseLevelAndGetAvailableSuits(levelRange, dept, boss = False):
     return [level, availableSuits]
 
 suitSetups = {}
-    
+
 def precacheSuits():
     from src.coginvasion.cog import Variant
     from src.coginvasion.cog.DistributedSuit import DistributedSuit
@@ -727,7 +727,7 @@ def precacheSuits():
     suit = DistributedSuit(None)
     suit.doId = 0
     for suitPlan in totalSuits:
-        print "Precaching", suitPlan.name
+        print("Precaching", suitPlan.name)
         suit.suitPlan = suitPlan
         suit.suit = suitPlan.getSuitType()
         suit.head = suitPlan.getHead()

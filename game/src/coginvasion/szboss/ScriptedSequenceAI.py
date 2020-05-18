@@ -20,10 +20,10 @@ from src.coginvasion.szboss.EntityAI import EntityAI
 
 class ScriptedSequenceAI(EntityAI):
     notify = directNotify.newCategory("ScriptedSequenceAI")
-    
+
     def __init__(self, air = None, dispatch = None):
         EntityAI.__init__(self, air, dispatch)
-        
+
         self.targetEnt = None
         self.nextScript = None
 
@@ -36,17 +36,17 @@ class ScriptedSequenceAI(EntityAI):
         self.shouldRestartAI = True
 
         self.seq = None
-        
+
     def load(self):
         EntityAI.load(self)
-        
+
         entname = self.getEntityValue("targetEnt")
         self.targetEnt = self.bspLoader.getPyEntityByTargetName(entname)
         if not self.targetEnt:
             self.notify.error("target entity `{0}` not found!".format(entname))
         elif not isinstance(self.targetEnt, BaseNPCAI):
             self.notify.error("target entity `{0}` is not an NPC!".format(entname))
-        
+
         nextName = self.getEntityValue("nextScript")
         if len(nextName) > 0:
             self.nextScript = self.bspLoader.getPyEntityByTargetName(nextName)
@@ -71,7 +71,7 @@ class ScriptedSequenceAI(EntityAI):
             return task.done
 
         if len(self.targetEnt.getMotor().getWaypoints()) == 0:
-            print "Movement done, performing sequence"
+            print("Movement done, performing sequence")
             self.__performSequence()
             return task.done
 
@@ -111,13 +111,13 @@ class ScriptedSequenceAI(EntityAI):
 
     def StopSequence(self):
         if self.shouldRestartAI:
-            print "restarting AI"
+            print("restarting AI")
             self.targetEnt.setNPCState(STATE_IDLE)
         if self.seq:
             self.seq.pause()
         self.seq = None
         self.dispatchOutput("OnStopSequence")
-        
+
     def unload(self):
         if self.seq:
             self.seq.pause()

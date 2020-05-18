@@ -28,7 +28,7 @@ class BaseAttack(Precacheable, BaseAttackShared):
     ModelVMAngles = Point3(0, 0, 0)
     ModelVMScale = 1
     ModelVMAnimate = True
-    
+
     SpecialVM = False
     SpecialVMCull = True
     SpecialVMActor = None
@@ -43,7 +43,7 @@ class BaseAttack(Precacheable, BaseAttackShared):
         self.specialViewModel = None
         self.crosshair = CrosshairData()
         self.animTrack = None
-    
+
     def hasSpecialViewModel(self):
         return self.SpecialVM and (self.specialViewModel is not None) and self.isFirstPerson()
 
@@ -88,7 +88,7 @@ class BaseAttack(Precacheable, BaseAttackShared):
         self.setAnimTrack(Sequence(Func(self.avatar.setForcedTorsoAnim, drawAnim),
                                    self.getAnimationTrack(drawAnim, drawAnimStart, drawAnimEnd, drawAnimSpeed),
                                    Func(__doHold)), startNow = True)
-    
+
     # This should be called to change the 'animTrack' variable.
     def setAnimTrack(self, track, startNow = False, looping = False):
         """ Sets the animation track for this gag. """
@@ -100,7 +100,7 @@ class BaseAttack(Precacheable, BaseAttackShared):
 
         # Stop the one that was playing before.
         self.clearAnimTrack()
-        
+
         self.animTrack = track
 
         if startNow:
@@ -108,7 +108,7 @@ class BaseAttack(Precacheable, BaseAttackShared):
                 self.animTrack.loop()
             else:
                 self.animTrack.start()
-    
+
     # This should be called whenever we want to clear the 'animTrack' variable.
     def clearAnimTrack(self):
         if self.animTrack is not None:
@@ -118,15 +118,15 @@ class BaseAttack(Precacheable, BaseAttackShared):
     def playAnimThatShouldBePlaying(self):
         if self.avatar and hasattr(self.avatar, 'playingAnim'):
             self.avatar.loop(self.avatar.playingAnim)
-            
+
     def getAnimationTrack(self, animName, startFrame = None, endFrame = None,
                           playRate = 1.0, startTime = None, endTime = None, fullBody = False):
         seq = Parallel()
 
         def __animTrack(partName):
-            return ActorInterval(self.avatar, 
-                animName, 
-                startFrame = startFrame, 
+            return ActorInterval(self.avatar,
+                animName,
+                startFrame = startFrame,
                 endFrame = endFrame,
                 partName = partName,
                 playRate = playRate,
@@ -141,20 +141,20 @@ class BaseAttack(Precacheable, BaseAttackShared):
             seq.append(__animTrack(None))
 
         return seq
-            
+
     def getBobSequence(self, animName, startFrame, endFrame, playRate):
 
         def __animTrack_bobUp(partName):
-            return ActorInterval(self.avatar, 
-                    animName, 
+            return ActorInterval(self.avatar,
+                    animName,
                     startFrame = startFrame,
                     endFrame = endFrame,
                     partName = partName,
                     playRate = playRate)
 
         def __animTrack_bobDown(partName):
-            return ActorInterval(self.avatar, 
-                    animName, 
+            return ActorInterval(self.avatar,
+                    animName,
                     startFrame = endFrame,
                     endFrame = startFrame,
                     partName = partName,
@@ -237,7 +237,7 @@ class BaseAttack(Precacheable, BaseAttackShared):
 
     @classmethod
     def doPrecache(cls):
-        print "BaseAttack(%s).doPrecache()" % cls.ModelPath
+        print("BaseAttack(%s).doPrecache()" % cls.ModelPath)
         if cls.ModelAnimPath:
             precacheActor([cls.ModelPath, {'chan' : cls.ModelAnimPath, 'zero' : cls.ModelPath}])
         elif cls.ModelPath:

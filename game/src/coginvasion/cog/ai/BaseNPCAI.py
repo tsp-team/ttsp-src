@@ -21,48 +21,48 @@ from collections import deque
 import random
 
 class AITarget:
-    
+
     def __init__(self, entity, relationship):
         self.entity = entity
         self.relationship = relationship
         self.lastKnownPosition = entity.getPos(render)
         self.lkpUpdated = True
-        
+
     def cleanup(self):
         self.entity = None
         self.relationship = None
         self.lastKnownPosition = None
         self.lkpUpdated = None
-        
+
 class TakeDamageInfo:
-    
+
     def __init__(self, entity, damage, damageType):
         self.entity = entity # who damaged me
         self.damage = damage
         self.damageType = damageType
-        
+
     def cleanup(self):
         self.entity = None
         self.damage = None
         self.damageType = None
-        
+
 class Hearing:
-    
+
     def __init__(self):
         self.soundList = []
         self.soundBits = 0
-        
+
     def cleanup(self):
         self.soundList = None
         self.soundBits = None
-        
+
 class BaseCombatCharacterAI:
     notify = directNotify.newCategory("BaseCombatCharacterAI")
-        
+
     def getAvailableAttacks(self):
         """
         Return a list of all attacks in this character's aresenal.
-        
+
         The AI refers to this list to determine which attacks are capable
         of being used under the current conditions.
         """
@@ -72,10 +72,10 @@ class BaseCombatCharacterAI:
         return []
 
 class BaseNPCAI(BaseCombatCharacterAI):
-    
+
     notify = directNotify.newCategory("BaseNPCAI")
     notify.setDebug(True)
-    
+
     # 50% hp is considered low
     LOW_HP_PERCT = 0.5
     REACHABLE_DIST_SQR = 30*30
@@ -83,7 +83,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
     MAX_VISION_DISTANCE_SQR = 400*400
     MAX_HEAR_DISTANCE_SQR = 50*50
     MAX_OLD_ENEMIES = 4
-    
+
     BASE_SPEED = 10
 
     def __init__(self, battleZone = None):
@@ -92,16 +92,16 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         self.memory = 0
         self.memoryPosition = None
-        
+
         self.wallPoints = None
-        
+
         self.attackLOSData = [True, Vec3()]
-        
+
         self.lastHPPerct = 1.0
-        
+
         # Must be derived from the Avatar class
         self.target = None
-        
+
         self.rememberCurrentSchedule = True
         self.lastSchedule = None
         self.schedule = None
@@ -295,7 +295,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         }
 
         self.motor = Motor(self)
-        
+
         self.makeScheduleNames()
 
         #print self.schedules
@@ -303,22 +303,22 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         self.idealYaw = 0.0
         self.yawSpeed = 9.0
-        
+
         self.avatarsInSight = []
-        
+
         self.capableAttacks = []
         self.hearing = Hearing()
-        
+
         self.oldTargets = deque(maxlen = self.MAX_OLD_ENEMIES)
-        
+
         self.runAITask = None
-        
+
     def resetFwdSpeed(self):
         baseSpeed = self.BASE_SPEED
 
         self.motor.fwdSpeed = baseSpeed
         self.motor.lookAtWaypoints = True
-        
+
     def makeScheduleNames(self):
         self.scheduleNames = {v : k for k,v in self.schedules.items()}
 
@@ -348,10 +348,10 @@ class BaseNPCAI(BaseCombatCharacterAI):
     def findCover(self, threatPos, viewOffset, minDist = 0, maxDist = None):
         """
         Tries to find a nearby node that will hide
-        the caller from its enemy. 
+        the caller from its enemy.
         If supplied, search will return a node at least as far
-        away as MinDist, but no farther than MaxDist. 
-        if MaxDist isn't supplied, it defaults to a reasonable 
+        away as MinDist, but no farther than MaxDist.
+        if MaxDist isn't supplied, it defaults to a reasonable
         value
         """
 
@@ -366,7 +366,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         world = self.getBattleZone().getPhysicsWorld()
 
-        #print "findCover"
+        #print("findCover")
 
         # Find cover hint nodes in radius of me
         kdTree = self.getBattleZone().coverKDTree
@@ -377,7 +377,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         for nodeIdx in nearby:
             nodePos = self.getBattleZone().coverHints[nodeIdx].getCEntity().getOrigin()
             result = world.rayTestClosest(nodePos + viewOffset, lookersOffset, CIGlobals.WorldGroup)
-            #print "findCover result:", result, result.hasHit(), result.getNode()
+            #print("findCover result:", result, result.hasHit(), result.getNode())
             # if this cover point will block the threat's line of sight to me
             if result.hasHit():
                 distToThreat = (threatPos - nodePos).lengthSquared()
@@ -386,10 +386,10 @@ class BaseNPCAI(BaseCombatCharacterAI):
                 if distToMe <= distToThreat:
                     if self.validateCover(nodePos):
                         self.planPath(nodePos)
-                        #print "Found cover node", nodePos
+                        #print("Found cover node", nodePos)
                         return True
                 #else:
-                    #print "Found cover, but the node is further away than the threat"
+                    #print("Found cover, but the node is further away than the threat")
         return False
 
     def findLateralCover(self, threatPos, viewOffset):
@@ -407,36 +407,36 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         world = self.getBattleZone().getPhysicsWorld()
 
-        #print "findLateralCover"
+        #print("findLateralCover")
 
         for i in xrange(coverChecks):
             testLeft -= stepRight
             testRight += stepRight
-            
+
             result = world.rayTestClosest(threatPos + viewOffset, testLeft + self.getEyePosition(), CIGlobals.WorldGroup)
-            #print "findLateralCover left result:", result, result.hasHit(), result.getNode()
+            #print("findLateralCover left result:", result, result.hasHit(), result.getNode())
             if result.hasHit():
                 if self.validateCover(testLeft):
                     self.planPath(testLeft)
-                    #print "Found left cover", testLeft
+                    #print("Found left cover", testLeft)
                     return True
 
-            #print "findLateralCover right result:", result, result.hasHit(), result.getNode()
+            #print("findLateralCover right result:", result, result.hasHit(), result.getNode())
             result = world.rayTestClosest(threatPos + viewOffset, testRight + self.getEyePosition(), CIGlobals.WorldGroup)
             if result.hasHit():
                 if self.validateCover(testRight):
                     self.planPath(testRight)
-                    #print "Found right cover", testRight
+                    #print("Found right cover", testRight)
                     return True
 
         return False
-         
+
     def getMotor(self):
         return self.motor
-        
+
     def getYaw(self):
         return self.getH()
-        
+
     def setYaw(self, yaw):
         self.setH(yaw)
 
@@ -496,7 +496,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
     def getScheduleByName(self, name):
         return self.schedules.get(name, None)
-        
+
     def delete(self):
         self.stopAI()
         self.clearTarget()
@@ -523,32 +523,32 @@ class BaseNPCAI(BaseCombatCharacterAI):
         self.lastSchedule = None
         self.hearing.cleanup()
         self.hearing = None
-        
+
     #def setTarget(self, target):
     #    self.clearTarget()
     #    self.target = target
-        
+
     def clearTarget(self):
         if self.target is not None:
             self.target.cleanup()
             self.target = None
-        
+
     def setConditions(self, cond):
         self.conditionsMask |= cond
-        
+
     def hasConditions(self, cond):
         return (self.conditionsMask & cond) != 0
-        
+
     def getIgnoreConditions(self):
         """
         Override this function to return a mask of conditions that
         should be ignored by your AI implementation.
         """
         return 0
-        
+
     def clearConditions(self, cond):
         self.conditionsMask &= ~cond
-        
+
     def clearAllConditions(self):
         self.conditionsMask = 0
 
@@ -566,32 +566,32 @@ class BaseNPCAI(BaseCombatCharacterAI):
     def isPlayerInPVS(self, plyr):
         if not CIGlobals.isNodePathOk(plyr) or not CIGlobals.isNodePathOk(self):
             return False
-        
+
         plLeaf = self.battleZone.bspLoader.findLeaf(plyr.getPos() + (0, 0, 0.05))
         myLeaf = self.battleZone.bspLoader.findLeaf(self.getPos() + (0, 0, 0.05))
         return self.battleZone.bspLoader.isClusterVisible(myLeaf, plLeaf)
-        
+
     def getDistanceSquared(self, other):
         return (self.getPos(render) - other.getPos(render)).lengthSquared()
 
     def isPlayerAudible(self, plyr):
         return self.isPlayerInPVS(plyr) and self.getDistanceSquared(plyr) < self.MAX_HEAR_DISTANCE_SQR
-        
+
     def doesLineTraceToPlayer(self, plyr):
         # Do we have a clear LOS to the player?
         world = self.battleZone.physicsWorld
         result = PhysicsUtils.rayTestClosestNotMe(self,
             self.getPos(render) + self.getEyePosition(), plyr.getPos(render) + plyr.getEyePosition(),
             CIGlobals.WorldGroup | CIGlobals.CharacterGroup, world)
-            
+
         # Assume clear LOS if ray hit nothing
         if not result:
             return True
-        
+
         # Also clear LOS if ray hits the player
         np = NodePath(result.getNode()).getParent()
         return np.getKey() == plyr.getKey()
-        
+
     def isPlayerInVisionCone(self, plyr):
         # Is the player in my angle of vision?
 
@@ -599,10 +599,10 @@ class BaseNPCAI(BaseCombatCharacterAI):
         yaw = CIGlobals.angleMod(CIGlobals.vecToYaw(toPlyr))
         diff = CIGlobals.angleDiff(yaw, CIGlobals.angleMod(self.getYaw()))
 
-        #print "Vision cone from self->player:", diff
+        #print("Vision cone from self->player:", diff)
 
         return abs(diff) <= self.MAX_VISION_ANGLE
-        
+
     def isPlayerInVisionCone_FromPlayer(self, plyr):
         # Am I in the player's vision cone?
 
@@ -610,10 +610,10 @@ class BaseNPCAI(BaseCombatCharacterAI):
         yaw = CIGlobals.angleMod(CIGlobals.vecToYaw(toSelf))
         diff = CIGlobals.angleDiff(yaw, CIGlobals.angleMod(plyr.getH()))
 
-        #print "Vision cone from player->self:", diff
+        #print("Vision cone from player->self:", diff)
 
         return abs(diff) <= self.MAX_VISION_ANGLE
-        
+
     def isPlayerInVisionRange(self, plyr):
         # Is the player close enough to where I could see them?
         return self.getDistanceSquared(plyr) <= self.MAX_VISION_DISTANCE_SQR
@@ -625,25 +625,25 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         if checkVisionAngle and not self.isPlayerInVisionCone(plyr):
             return False
-                
+
         if checkVisionDistance and not self.isPlayerInVisionRange(plyr):
             return False
 
         return self.doesLineTraceToPlayer(plyr)
-        
+
     def getBestVisibleTarget(self, avs = None):
         target = None
         bestRelationship = RELATIONSHIP_NONE
         nearest = 9999999
-        
+
         if not avs:
             avs = self.avatarsInSight
-        
+
         for i in xrange(len(avs)):
             av = avs[i]
             if av.getHealth() <= 0:
                 continue
-            
+
             rel = av.getRelationshipTo(self)
             if rel > bestRelationship:
                 # entity is disliked more
@@ -659,71 +659,71 @@ class BaseNPCAI(BaseCombatCharacterAI):
                     nearest = dist
                     bestRelationship = rel
                     target = av
-                    
+
         return (target, bestRelationship)
-        
+
     def pushTarget(self, target):
         if not target:
             return
-                
+
         if target in self.oldTargets:
             return
-            
+
         self.oldTargets.appendleft(target)
-        
+
     def popTarget(self):
         for i in xrange(len(self.oldTargets) - 1, -1, -1):
             target = self.oldTargets[i]
             if not target or not CIGlobals.isNodePathOk(target.entity):
                 continue
-                
+
             if target.entity.getHealth() > 0:
                 self.target = target
                 return True
-            
+
             self.oldTargets.pop()
-            
+
         return False
-        
+
     def checkTarget(self):
         """
         Gets and stores data and conditions pertaining to the current target.
         Returns true if the target LKP was updated.
         """
-        
+
         updatedLKP = False
         self.clearConditions(COND_TARGET_FACING_ME)
-        
+
         if not self.isPlayerVisible(self.target.entity, False, False):
             assert not self.hasConditions(COND_SEE_TARGET), "COND_SEE_TARGET is set, but target is not visible."
             self.setConditions(COND_TARGET_OCCLUDED)
         else:
             self.clearConditions(COND_TARGET_OCCLUDED)
-        
+
         isDead = True
         try:
             isDead = self.target.entity.getHealth() <= 0
         except: pass
-        
+
         if isDead:
             self.setConditions(COND_TARGET_DEAD)
             self.clearConditions(COND_SEE_TARGET | COND_TARGET_OCCLUDED)
             self.clearTarget()
             return False
-            
+
         targetPos = self.target.entity.getPos(render)
         distToTarget = (targetPos - self.getPos(render)).lengthSquared()
-        
+
         if self.hasConditions(COND_SEE_TARGET):
             self.target.lastKnownPosition = targetPos
             updatedLKP = True
-            
+
             # Alright, we can see the player, but can the player see us?
             if self.isPlayerInVisionCone_FromPlayer(self.target.entity):
                 self.setConditions(COND_TARGET_FACING_ME)
             else:
                 self.clearConditions(COND_TARGET_FACING_ME)
-                
+
             if self.target.entity.movementDelta != Vec3.zero():
                 # trail the enemy a bit
                 self.target.lastKnownPosition = (
@@ -734,7 +734,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
             # let us know where the target is
             updatedLKP = True
             self.target.lastKnownPosition = targetPos
-            
+
         if distToTarget >= self.MAX_VISION_DISTANCE_SQR:
             # Target is very far from us
             self.setConditions(COND_TARGET_TOOFAR)
@@ -743,18 +743,18 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         if self.canCheckAttacks():
             self.checkAttacks(distToTarget)
-            
+
         return updatedLKP
 
     def hasAttacks(self):
         return len(self.capableAttacks) > 0
-        
+
     def canCheckAttacks(self):
         return self.hasConditions(COND_SEE_TARGET) and not self.hasConditions(COND_TARGET_TOOFAR)
 
     def canUseAttack(self, attackID):
         return attackID in self.capableAttacks
-        
+
     def checkAttacks(self, distSqr):
         """
         Builds a list of usable attacks for a target entity.
@@ -762,30 +762,30 @@ class BaseNPCAI(BaseCombatCharacterAI):
         del self.capableAttacks[:]
 
         self.clearConditions(COND_CAN_ATTACK)
-        
+
         # Vec from me to target
         vec2LOS = (self.target.entity.getPos() - self.getPos()).getXy()
         vec2LOS.normalize()
-        
+
         # How much are we facing the target?
         dot = vec2LOS.dot(self.getQuat().getForward().getXy())
-        
+
         attacks = self.getAvailableAttacks()
         for i in xrange(len(attacks)):
             attack = attacks[i]
             if attack.checkCapable(dot, distSqr) and attack.hasAmmo() and not attack.isCoolingDown():
                 #print attack, "is capable"
                 self.capableAttacks.append(attack.getID())
-        
+
         if len(self.capableAttacks) > 0:
             self.setConditions(COND_CAN_ATTACK)
-        
+
     def getTarget(self):
         """
         Find a target. By default, only target enemies (dislike or hate relationship).
         """
         if self.hasConditions(COND_SEE_HATE | COND_SEE_DISLIKE):
-            #print "we see hate or dislike"
+            #print("we see hate or dislike")
             target, relationship = self.getBestVisibleTarget()
             #print target, relationship
             if ((self.target is None or target != self.target.entity) and target is not None and target.takesDamage()):
@@ -794,13 +794,13 @@ class BaseNPCAI(BaseCombatCharacterAI):
                     self.pushTarget(self.target)
                     self.setConditions(COND_NEW_TARGET)
                     self.target = AITarget(target, relationship)
-                        
+
         # Remember old targets
         if not self.target and self.popTarget():
             if ((self.schedule and ((self.schedule.interruptMask & COND_NEW_TARGET) != 0)) or
                not self.schedule):
                 self.setConditions(COND_NEW_TARGET)
-                    
+
         return self.target is not None
 
     def getScheduleFlags(self):
@@ -831,14 +831,14 @@ class BaseNPCAI(BaseCombatCharacterAI):
                 self.idealState = STATE_ALERT
             elif conditions & COND_HEAVY_DAMAGE:
                 self.idealState = STATE_ALERT
-                
+
             elif conditions & COND_HEAR_SOMETHING:
                 bestSound = self.bestSound()
                 if bestSound:
                     self.makeIdealYaw(bestSound.origin)
                     if ((bestSound.soundType & SOUND_COMBAT) or
                     (self.getRelationshipTo(bestSound.emitter) == RELATIONSHIP_HATE and (bestSound.soundType & SOUND_SPEECH))):
-                        
+
                         # We just heart sounds of combat or somebody that we hate.
                         self.idealState = STATE_ALERT
 
@@ -850,13 +850,13 @@ class BaseNPCAI(BaseCombatCharacterAI):
             if conditions & (COND_NEW_TARGET|COND_SEE_TARGET):
                 # If we see an enemy, we must attack
                 self.idealState = STATE_COMBAT
-                
+
             elif conditions & COND_HEAR_SOMETHING:
                 self.idealState = STATE_ALERT
                 bestSound = self.bestSound()
                 if bestSound:
                     self.makeIdealYaw(bestSound.origin)
-        
+
         elif self.npcState == STATE_COMBAT:
             if not self.target:
                 self.idealState = STATE_ALERT
@@ -867,10 +867,10 @@ class BaseNPCAI(BaseCombatCharacterAI):
         return self.idealState
 
     def getSchedule(self):
-        
+
         if self.npcState == STATE_NONE:
             return None
-            
+
         #elif (self.npcState not in [STATE_SCRIPT, STATE_DEAD]) and self.hasConditions(COND_FRIEND_IN_WAY):
             # We can yield to a friend in any active state
         #    return self.getScheduleByName("YIELD_TO_FRIEND")
@@ -926,7 +926,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
 
         return None
-        
+
     def shouldYield(self, av):
         if not self.canMove():
             return False
@@ -943,18 +943,18 @@ class BaseNPCAI(BaseCombatCharacterAI):
             # Don't yield to a younger friend
             # (higher memory address? if that even means they are younger)
             return False
-        
+
         return (self.getPos() - av.getPos()).length() < self.getYieldDistance()
-        
+
     def getYieldDistance(self):
         return 5.0
-        
+
     def getHearingSensitivity(self):
         return 1.0
-        
+
     def bestSound(self):
         """Returns the closest sound to the NPC."""
-        
+
         closestSoundDist = 500*500
         closestSound = None
         for sound in self.battleZone.soundEmitterSystem.getSounds():
@@ -962,28 +962,28 @@ class BaseNPCAI(BaseCombatCharacterAI):
             if distToSound < closestSoundDist:
                 closestSound = sound
                 closestSoundDist = distToSound
-                
+
         return closestSound
-        
+
     def listen(self):
         """Listen for nearby sounds."""
-        
+
         self.clearConditions(COND_HEAR_DANGER | COND_HEAR_SOMETHING | COND_VP_JUMPING)
-        
+
         self.hearing.soundList = []
         self.hearing.soundBits = 0
-        
+
         myLeaf = self.battleZone.bspLoader.findLeaf(self.getPos() + (0, 0, 0.05))
-        
+
         hearingSensitivity = self.getHearingSensitivity()
-        
+
         bits = 0
-        
+
         for sound in self.battleZone.soundEmitterSystem.getSounds():
             if sound.emitter == self:
                 # I don't care about sounds I make
                 continue
-                
+
             soundLeaf = self.battleZone.bspLoader.findLeaf(sound.origin + (0, 0, 0.05))
             if not self.battleZone.bspLoader.isClusterVisible(myLeaf, soundLeaf):
                 # Not potentially audible
@@ -997,12 +997,12 @@ class BaseNPCAI(BaseCombatCharacterAI):
             bits |= COND_HEAR_SOMETHING
             if (sound.soundType & SOUND_VP_JUMP) != 0:
                 bits |= COND_VP_JUMPING
-                
+
             self.hearing.soundList.append(sound)
             self.hearing.soundBits |= sound.soundType
-            
+
         self.setConditions(bits)
-        
+
     def checkWalls(self):
         result = self.battleZone.physicsWorld.contactTest(self.bodyNode)
         for i in range(result.getNumContacts()):
@@ -1013,47 +1013,47 @@ class BaseNPCAI(BaseCombatCharacterAI):
                 self.wallPoints = [mfld.getPositionWorldOnA(), mfld.getPositionWorldOnB()]
                 self.setConditions(COND_IN_WALL)
                 return
-                
+
         self.clearConditions(COND_IN_WALL)
         #self.wallPoints = None
-        
+
     def look(self):
         """Look at the world in front of me."""
 
         self.clearConditions(COND_SEE_HATE | COND_SEE_FEAR | COND_SEE_DISLIKE |
                              COND_SEE_TARGET | COND_SEE_FRIEND | COND_FRIEND_IN_WAY)
-        
+
         bits = 0
-        
+
         del self.avatarsInSight[:]
-        
+
         # Go through all known avatars in my zone.
         for i in xrange(len(base.air.avatars[self.battleZone.zoneId])):
             av = base.air.avatars[self.battleZone.zoneId][i]
             # Ignore myself
             if av == self:
                 continue
-                
+
             #if av.__class__.__name__ == 'DistributedPlayerToonAI':
             #    continue
-                
+
             if av.getHealth() <= 0:
-                #print "\tdead"
+                #print("\tdead")
                 continue
-                
+
             relationship = av.getRelationshipTo(self)
             if relationship == RELATIONSHIP_NONE:
                 continue
 
             if not self.isPlayerVisible(av):
                 continue
-                
+
             self.avatarsInSight.append(av)
-                
+
             if self.target and av == self.target.entity:
                 # the visible avatar happens to be our target
                 bits |= COND_SEE_TARGET
-                
+
             if relationship == RELATIONSHIP_HATE:
                 bits |= COND_SEE_HATE
             elif relationship == RELATIONSHIP_FEAR:
@@ -1065,7 +1065,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
                 bits |= COND_SEE_FRIEND
             elif relationship == RELATIONSHIP_DISLIKE:
                 bits |= COND_SEE_DISLIKE
-                
+
         self.setConditions(bits)
 
     def isScheduleValid(self):
@@ -1078,12 +1078,12 @@ class BaseNPCAI(BaseCombatCharacterAI):
         return True
 
     def setDamageConditions(self, dmgAmt):
-        #print "damaged for", dmgAmt
+        #print("damaged for", dmgAmt)
         if dmgAmt >= self.getLightDamage():
-            #print "Setting light damage"
+            #print("Setting light damage")
             self.setConditions(COND_LIGHT_DAMAGE)
         if dmgAmt >= self.getHeavyDamage():
-           # print "Setting heavy damage"
+           # print("Setting heavy damage")
             self.setConditions(COND_HEAVY_DAMAGE)
 
     def scheduleChange(self):
@@ -1101,7 +1101,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
     def setNPCState(self, state, makeIdeal = True):
 
-        #print "Set state to", state
+        #print("Set state to", state)
 
         if state == STATE_IDLE:
             # not allowed to have target anymore
@@ -1113,7 +1113,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         self.npcStateTime = globalClock.getFrameTime()
         if makeIdeal:
             self.idealState = state
-            
+
     def setIdealState(self, state):
         self.idealState = state
 
@@ -1126,7 +1126,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
             if (self.idealState != STATE_DEAD and
                 (self.idealState != STATE_SCRIPT or self.idealState == self.npcState)):
 
-                if ((self.conditionsMask and not self.hasConditions(COND_SCHEDULE_DONE)) or 
+                if ((self.conditionsMask and not self.hasConditions(COND_SCHEDULE_DONE)) or
                     (self.schedule is not None and ((self.schedule.interruptMask & COND_SCHEDULE_DONE) != 0)) or
                     ((self.npcState == STATE_COMBAT) and (self.target is not None))):
 
@@ -1144,7 +1144,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
                     newSched = BaseNPCAI.getSchedule(self)
                 else:
                     newSched = self.getSchedule()
-                
+
                 # Don't restart the same schedule
                 if newSched != self.schedule or self.hasConditions(COND_SCHEDULE_DONE):
                     self.changeSchedule(newSched)
@@ -1157,33 +1157,33 @@ class BaseNPCAI(BaseCombatCharacterAI):
                 self.setConditions(COND_TASK_FAILED)
             else:
                 pass
-        
+
     def startAI(self):
         self.stopAI()
-        
+
         self.runAITask = taskMgr.add(self.__runAITask, "BaseNPCAI.runAITask-" + str(id(self)))
-        
+
     def __runAITask(self, task):
         self.runAI()
         return task.cont
-        
+
     def stopAI(self):
         if self.runAITask:
             self.runAITask.remove()
             self.runAITask = None
-        
+
     def runAI(self):
         """
         Runs an AI step.
         """
-        
+
         if not self.battleZone:
             self.notify.warning("Cannot run AI without a battle zone!")
             return
 
         if self.isDead() and self.npcState != STATE_DEAD:
             self.setNPCState(STATE_DEAD, makeIdeal = False)
-            
+
         # Don't bother with this crap if we are dead.
         if self.npcState != STATE_DEAD and self.npcState != STATE_NONE:
             self.look()
@@ -1192,7 +1192,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
                 self.checkWalls()
             self.clearConditions(self.getIgnoreConditions())
             self.getTarget()
-            
+
             # Do these calculations if we have a target
             if self.target:
                 self.checkTarget()
@@ -1216,6 +1216,3 @@ class BaseNPCAI(BaseCombatCharacterAI):
         #self.notify.info(msg)
 
         self.clearConditions(COND_LIGHT_DAMAGE|COND_HEAVY_DAMAGE)
-
-        
-        

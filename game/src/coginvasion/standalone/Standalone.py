@@ -101,5 +101,5 @@ soundClick = DirectGuiGlobals.getDefaultClickSound()
 NametagGlobals.setClickSound(soundClick)
 
 from src.coginvasion.base import MusicCache
-print "Precaching music..."
+print("Precaching music...")
 MusicCache.precacheMusic()

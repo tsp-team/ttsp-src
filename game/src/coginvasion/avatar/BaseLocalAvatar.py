@@ -33,10 +33,10 @@ class BaseLocalAvatar:
         self.needsToSwitchToGag = None
         self.gagsEnabled = False
         self.gagsTimedOut = False
-        
+
     def handleDamage(self, x, y, z):
         DirectionalDamageIndicator.make(Point3(x, y, z))
-        
+
     def createLaffMeter(self):
         r, g, b, _ = self.getHeadColor()
         animal = self.getAnimal()
@@ -51,7 +51,7 @@ class BaseLocalAvatar:
 
     def deleteLaffMeter(self):
         self.laffMeter.delete()
-        
+
     def updateAttackAmmo(self, attackId, ammo, maxAmmo, ammo2, maxAmmo2, clip, maxClip):
         if self.invGui:
             self.invGui.update()
@@ -59,7 +59,7 @@ class BaseLocalAvatar:
     def setupAttacks(self):
         if self.getBattleZone() and (not self.getBattleZone().getGameRules().useBackpack()):
             self.reloadInvGui()
-        
+
     def setEquippedAttack(self, gagId):
         if gagId != -1:
             if self.battleControls:
@@ -77,7 +77,7 @@ class BaseLocalAvatar:
                 self.b_setLookMode(self.LMOff)
         if self.invGui:
             self.invGui.update()
-        
+
     def createInvGui(self):
         self.invGui = GagSelectionGui()
         self.invGui.load()
@@ -93,7 +93,7 @@ class BaseLocalAvatar:
         if self.invGui:
             self.invGui.cleanup()
             self.invGui = None
-            
+
     def doFirstPersonCameraTransition(self):
         if self.isFirstPerson():
             # Fancy little camera transition for first person
@@ -103,11 +103,11 @@ class BaseLocalAvatar:
             LerpPosHprInterval(nodePath = camera, other = self, duration = 1.0,
                                pos = (0, -9.0 * heightScaleFactor, camHeight), hpr = (0, 0, 0),
                                blendType = 'easeInOut').start()
-        
+
     def handleHealthChange(self, hp, oldHp):
         if self.laffMeter:
             self.laffMeter.updateMeter(hp, oldHp)
-            
+
         if self.walkControls:
             if hp < oldHp and self.isFirstPerson():
                 self.getFPSCam().doDamageFade(1, 0, 0, (self.getHealth() - hp) / 30.0)
@@ -121,7 +121,7 @@ class BaseLocalAvatar:
         return (self.getEquippedAttack() != -1
                 and self.getAttackAmmo(self.getEquippedAttack()) > 0
                 and self.gagsEnabled)
-        
+
     def enableGags(self, andKeys = 0):
         if self.avatarMovementEnabled and andKeys:
             self.enableGagKeys()
@@ -141,7 +141,7 @@ class BaseLocalAvatar:
         CIGlobals.acceptWithModifiers(self, base.inputStore.Reload,                 self.reloadPress)
         CIGlobals.acceptWithModifiers(self, base.inputStore.Reload + '-up',         self.reloadRelease)
         CIGlobals.acceptWithModifiers(self, base.inputStore.LastGag,                self.switchToLastSelectedGag)
-        
+
         self.gagsEnabled = True
 
     def disableGagKeys(self):
@@ -161,28 +161,28 @@ class BaseLocalAvatar:
             self.invGui.hide()
             self.invGui.disableControls()
         self.b_setEquippedAttack(-1)
-        
+
     def resetHeadHpr(self, override = False):
         pass
-        
+
     def getBackpack(self):
         return None
-        
+
     def enableAvatarControls(self, wantMouse = 0):
         self.walkControls.enableControls(wantMouse)
         self.avatarMovementEnabled = True
-        
+
     def disableAvatarControls(self, chat = False):
         self.walkControls.disableControls(chat)
         self.avatarMovementEnabled = False
         self.resetSpeeds()
-        
+
     def handleJumpLand(self):
         pass
-        
+
     def handleJumpHardLand(self):
         pass
-        
+
     def startSmartCamera(self):
         self.smartCamera.startUpdateSmartCamera()
 
@@ -201,13 +201,13 @@ class BaseLocalAvatar:
     def printPos(self):
         x, y, z = self.getPos(render)
         h, p, r = self.getHpr(render)
-        print "Pos: (%s, %s, %s), Hpr: (%s, %s, %s)" % (x, y, z, h, p, r)
-        
+        print("Pos: (%s, %s, %s), Hpr: (%s, %s, %s)" % (x, y, z, h, p, r))
+
     def printPos_cam(self):
         x, y, z = camera.getPos(render)
         h, p, r = camera.getHpr(render)
-        print "Pos: (%s, %s, %s), Hpr: (%s, %s, %s)" % (x, y, z, h, p, r)
-        
+        print("Pos: (%s, %s, %s), Hpr: (%s, %s, %s)" % (x, y, z, h, p, r))
+
     def setWalkSpeedNormal(self):
         pass
 
@@ -216,45 +216,45 @@ class BaseLocalAvatar:
 
     def setWalkSpeedSlow(self):
         pass
-        
+
     def setupControls(self):
         pass
-        
+
     def attachCamera(self):
         self.walkControls.attachCamera()
-        
+
     def destroyControls(self):
         if not self.walkControls:
             return
-            
+
         self.walkControls.disableControls()
         self.walkControls.stopControllerUpdate()
         self.walkControls.cleanup()
         self.walkControls = None
-        
+
     def isMoving(self):
         return self.walkControls.isMoving()
-        
+
     def areGagsAllowed(self):
         state = (self.isFirstPerson() and self.getFPSCam().mouseEnabled) or (self.isThirdPerson() and self.battleControls)
         return (self.avatarMovementEnabled and self.walkControls.controlsEnabled and
                 (self.invGui is not None and self.invGui.getCurrentOrNextState() != 'Select') and state)
-        
+
     def collisionsOn(self):
         pass
-        
+
     def collisionsOff(self):
         pass
-        
+
     def startSmooth(self):
         self.notify.warning("Tried to call startSmooth() on the local avatar!")
-        
+
     def b_unEquipGag(self):
         self.b_setEquippedAttack(-1)
-       
+
     def switchToLastSelectedGag(self):
         self.selectGag(self.lastSelectedGag)
-        
+
     def selectGag(self, gagId, record = True):
         if record:
             # Forget this gag if they ran out of ammo
@@ -262,26 +262,26 @@ class BaseLocalAvatar:
                 self.lastSelectedGag = -1
             else:
                 self.lastSelectedGag = self.selectedGag
-                
+
         self.selectedGag = gagId
         self.needsToSwitchToGag = gagId
         self.b_setEquippedAttack(gagId)
-        
+
     def setBattleControls(self, flag):
         self.battleControls = flag
         if self.playState:
             self.disableAvatarControls()
             self.enableAvatarControls(1)
-        
+
     def d_broadcastPositionNow(self):
         self.d_clearSmoothing()
         if self.d_broadcastPosHpr:
             self.d_broadcastPosHpr()
-        
+
     def b_setLookMode(self, mode):
         self.setLookMode(mode)
         self.sendUpdate('setLookMode', [mode])
-        
+
     def isFirstPerson(self):
         return self.walkControls.mode == self.walkControls.MFirstPerson and self.battleControls
 
@@ -293,51 +293,51 @@ class BaseLocalAvatar:
 
     def getFPSCam(self):
         return self.walkControls.fpsCam
-        
+
     def showCrosshair(self):
         self.crosshair.show()
-        
+
     def hideCrosshair(self):
         self.crosshair.hide()
-        
+
     def setupCamera(self):
         base.camLens.setMinFov(CIGlobals.DefaultCameraFov / (4./3.))
         base.camLens.setNearFar(CIGlobals.DefaultCameraNear, CIGlobals.DefaultCameraFar)
         self.smartCamera.initializeSmartCamera()
         self.smartCamera.initCameraPositions()
         self.smartCamera.setCameraPositionByIndex(0)
-        
+
     def resetSpeeds(self):
         self.walkControls.speed = 0.0
         self.walkControls.rotationSpeed = 0.0
         self.walkControls.slideSpeed = 0.0
-        
+
     def startPlay(self, gags = False, laff = False, wantMouse = 1):
         if self.playState:
             return
-            
+
         if laff:
             self.createLaffMeter()
-            
+
         if not self.walkControls.getCollisionsActive():
             self.walkControls.setCollisionsActive(1)
         self.enableAvatarControls(wantMouse)
-        
+
         if gags:
             self.enableGags(1)
-        
+
         self.startPosHprBroadcast()
         self.d_broadcastPositionNow()
-        
+
         self.playState = True
-        
+
     def stopPlay(self):
         if not self.playState:
             return
-            
+
         self.disableGags()
         self.disableLaffMeter()
-            
+
         self.collisionsOff()
         if self.walkControls.getCollisionsActive():
             self.walkControls.setCollisionsActive(0, andPlaceOnGround=1)

@@ -101,7 +101,7 @@ def makeBulletCollFromGeoms(rootNode, exclusions = [], enableNow = True, world =
                 facetype = bca.getFaceType()
             else:
                 facetype = BSPFaceAttrib.FACETYPE_WALL
-                
+
             if not type2geoms.has_key(facetype):
                 type2geoms[facetype] = [(geom, state)]
             else:
@@ -144,7 +144,7 @@ def makeBulletCollFromGeoms(rootNode, exclusions = [], enableNow = True, world =
             result[rbnode] = data
 
     return result
-    
+
 def optimizePhys(root):
     colls = 0
     npc = NodePathCollection()
@@ -152,17 +152,17 @@ def optimizePhys(root):
         if child.node().isOfType(CollisionNode.getClassType()):
             colls += 1
             npc.addPath(child)
-    
+
     if colls > 1:
         collide = root.attachNewNode("__collide__")
         npc.wrtReparentTo(collide)
         collide.clearModelNodes()
         collide.flattenStrong()
-        
+
         # Move the possibly combined collisionNodes back to the root.
         collide.getChildren().wrtReparentTo(root)
         collide.removeNode()
-        
+
     for child in root.getChildren():
         if child.getName() != '__collide__':
             optimizePhys(child)
@@ -178,7 +178,7 @@ def makeBulletCollFromPandaColl(rootNode, exclusions = []):
     If the Panda CollisionNode is intangible, a BulletGhostNode is created.
     Else, a BulletRigidBodyNode is created.
     """
-    
+
     # First combine any redundant CollisionNodes.
     optimizePhys(rootNode)
 
@@ -250,44 +250,44 @@ def isChildOfLA(node):
 def detachBulletNodes(rootNode, world = None):
     if not rootNode or rootNode.isEmpty():
         return
-        
+
     if not world:
         world = base.physicsWorld
 
     for rbnode in rootNode.findAllMatches("**/+BulletRigidBodyNode"):
         if isChildOfLA(rbnode):
-            print "Tried to detach body node of local avatar!"
+            print("Tried to detach body node of local avatar!")
             continue
         world.removeRigidBody(rbnode.node())
     for ghostnode in rootNode.findAllMatches("**/+BulletGhostNode"):
         if isChildOfLA(ghostnode):
-            print "Tried to detach ghost node of local avatar!"
+            print("Tried to detach ghost node of local avatar!")
             continue
         world.removeGhost(ghostnode.node())
 
 def attachBulletNodes(rootNode, physicsWorld = None):
     if physicsWorld is None:
         physicsWorld = base.physicsWorld
-        
+
     for rbnode in rootNode.findAllMatches("**/+BulletRigidBodyNode"):
         physicsWorld.attachRigidBody(rbnode.node())
     for ghostnode in rootNode.findAllMatches("**/+BulletGhostNode"):
         physicsWorld.attachGhost(ghostnode.node())
-        
+
 def removeBulletNodes(rootNode):
     if not rootNode or rootNode.isEmpty():
         return
     for rbnode in rootNode.findAllMatches("**/+BulletRigidBodyNode"):
         if isChildOfLA(rbnode):
-            print "Tried to remove body node of local avatar!"
+            print("Tried to remove body node of local avatar!")
             continue
         rbnode.removeNode()
     for ghostnode in rootNode.findAllMatches("**/+BulletGhostNode"):
         if isChildOfLA(ghostnode):
-            print "Tried to remove ghost node of local avatar!"
+            print("Tried to remove ghost node of local avatar!")
             continue
         ghostnode.removeNode()
-        
+
 def detachAndRemoveBulletNodes(rootNode, world = None):
     if not world:
         world = base.physicsWorld
@@ -320,10 +320,10 @@ def enableLocalAvatarTriggerEvents(ghostNode, extraArgs = []):
         return
 
     GhostNodeLocalAvBroadcaster(ghostNode, extraArgs)
-    
+
 def getNearestGroundSurfaceZ(rootNode, height):
     """ Uses a ray test to find the nearest ground surface. Returns the found surface's Z value or -1 if no surface is found. """
-    
+
     if isinstance(rootNode, NodePath) and not rootNode.isEmpty():
         pFrom = Point3(rootNode.getPos(render))
         pDown = Point3(pFrom - Point3(0, 0, height))
@@ -334,7 +334,7 @@ def getNearestGroundSurfaceZ(rootNode, height):
             return -1
     else:
         raise Exception("#getNearestGroundSurfaceZ(): Requires a non-empty NodePath to ray test on!")
-    
+
     return -1
 
 def getThrowVector(traceOrigin, traceVector, throwOrigin, me, physWorld):

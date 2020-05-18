@@ -15,15 +15,15 @@ from panda3d.core import OmniBoundingVolume, NodePathCollection, CardMaker, Poin
 from panda3d.bsp import BSPMaterial, BSPFaceAttrib
 
 class Precacheable(object):
-    
+
     Precached = False
-        
+
     @classmethod
     def precache(cls):
         if not cls.Precached:
             cls.doPrecache()
             cls.Precached = True
-    
+
     @classmethod
     def doPrecache(cls):
         pass
@@ -36,27 +36,27 @@ def precacheScene(scene, reset = True):
     if render.isHidden():
         rHidden = True
         render.show()
-        
+
     stashed = NodePathCollection()
     for np in scene.findAllMatches("**;+s"):
         if np.isStashed():
             stashed.addPath(np)
             np.unstash()
-        
+
     if not scene.isAncestorOf(render):
         # if it's parented to camera,
         # camera will always see it
-        scene.reparentTo(render) 
-                             
+        scene.reparentTo(render)
+
     # this says that the scene takes up infinite space,
     # making it always intersect the view frustum,
     # guaranteed to be rendered
     scene.node().setBounds(OmniBoundingVolume())
     scene.node().setFinal(1)
-    
+
     # Always render if it's a BSP level, even if outside of PVS
     scene.setAttrib(BSPFaceAttrib.makeIgnorePvs(), 1)
-    
+
     try:
         scene.premungeScene(base.win.getGsg())
         scene.prepareScene(base.win.getGsg())
@@ -64,49 +64,49 @@ def precacheScene(scene, reset = True):
         base.graphicsEngine.renderFrame()
         base.graphicsEngine.syncFrame()
         base.musicManager.update()
-        
+
         if reset:
             scene.node().setFinal(0)
             scene.node().clearBounds()
-            
+
             scene.reparentTo(oldp)
-    
+
             if rHidden:
                 render.hide()
-        
+
         # restash
         for np in stashed:
             np.stash()
     except:
         # The program might have exited prematurely.
         # This will prevent the game from yelling at us.
-        print "precacheScene failed"
-        
+        print("precacheScene failed")
+
     scene.clearAttrib(BSPFaceAttrib)
 
     return rHidden
-    
+
 def precacheAnimation(actor, anim):
     actor.play(anim)
     base.graphicsEngine.renderFrame()
     base.graphicsEngine.renderFrame()
     base.graphicsEngine.syncFrame()
-    
+
 def precacheActor(actor):
-    #print "precacheActor:", actor
+    #print("precacheActor:", actor)
     if isinstance(actor, list) or isinstance(actor, tuple):
         # Actor was supplied as a model path and animation dictionary
         from direct.actor.Actor import Actor
         actor = Actor(actor[0], actor[1])
-        
+
     oldp = actor.getParent()
-    
+
     rHidden = precacheScene(actor, False)
     for anim in actor.getAnimNames():
         precacheAnimation(actor, anim)
-        
+
     actor.stop()
-    
+
     actor.node().setFinal(0)
     actor.node().clearBounds()
     actor.reparentTo(oldp)
@@ -117,13 +117,13 @@ def precacheModel(path):
     mdl = loader.loadModel(path)
     precacheScene(mdl)
     mdl.removeNode()
-    
+
 SoundCache = []
 
 def clearSoundCache():
     global SoundCache
     SoundCache = []
-    
+
 def precacheSound(path):
     global SoundCache
     snd = loader.loadSfx(path)
@@ -150,7 +150,7 @@ def __renderQuad(mat = None, tex = None):
     precacheScene(cardNp)
 
     cardNp.removeNode()
-    
+
 def precacheMaterial(path):
     mat = BSPMaterial.getFromFile(path)
     if not mat:
@@ -160,7 +160,7 @@ def precacheMaterial(path):
 def precacheTexture(path):
     tex = loader.loadTexture(path)
     __renderQuad(tex = tex)
-    
+
 def precacheFont(path):
     if isinstance(path, str):
         font = loader.loadFont(path)
@@ -172,7 +172,7 @@ def precacheFont(path):
     gnnp = NodePath(tn.generate())
     precacheScene(gnnp)
     gnnp.removeNode()
-    
+
 def precacheOther(classname, importPath):
     exec("from %s import %s" % (importPath, classname))
     exec("%s.precache()" % classname)

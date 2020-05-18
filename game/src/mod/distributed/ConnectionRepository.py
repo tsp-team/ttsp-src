@@ -236,7 +236,7 @@ class ConnectionRepository(
         # in sending them, anyway.
         if datagram.getLength() > 0:
 ##             if self.notify.getDebug():
-##                 print "ConnectionRepository sending datagram:"
+##                 print("ConnectionRepository sending datagram:")
 ##                 datagram.dumpHex(ostream)
 
             self.netSys.sendDatagram(self.connectionHandle, datagram, NetworkSystem.NSFReliableNoNagle)

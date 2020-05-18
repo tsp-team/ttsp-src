@@ -72,7 +72,7 @@ class Task_Func(BaseTaskAI):
         BaseTaskAI.cleanup(self)
 
 class Task_EquipAttack(BaseTaskAI):
-    
+
     def __init__(self, npc, attack = None):
         BaseTaskAI.__init__(self, npc)
         self.attack = attack
@@ -80,7 +80,7 @@ class Task_EquipAttack(BaseTaskAI):
     def runTask(self):
         if len(self.npc.capableAttacks) == 0:
             return SCHED_FAILED
-        
+
         if self.attack is None:
             attackID = random.choice(self.npc.capableAttacks)
         else:
@@ -88,7 +88,7 @@ class Task_EquipAttack(BaseTaskAI):
         if attackID != self.npc.getEquippedAttack():
             self.npc.b_setEquippedAttack(attackID)
         return SCHED_COMPLETE
-        
+
     def cleanup(self):
         del self.attack
         BaseTaskAI.cleanup(self)
@@ -99,28 +99,28 @@ class Task_StopAttack(BaseTaskAI):
         if self.npc.getEquippedAttack() != -1:
             self.npc.b_setEquippedAttack(-1)
         return SCHED_COMPLETE
-        
+
 class Task_SpeakAttack(BaseTaskAI):
-    
+
     def runTask(self):
         if self.npc.getEquippedAttack() == -1:
             return SCHED_FAILED
-            
+
         attack = self.npc.attacks[self.npc.getEquippedAttack()]
         phrases = attack.getTauntPhrases()
         chance = attack.getTauntChance()
-        
+
         if len(phrases) == 0 or chance <= 0:
             return SCHED_COMPLETE
-            
+
         if random.random() <= chance:
             phrase = random.choice(phrases)
             self.npc.d_setChat(phrase)
-            
+
         return SCHED_COMPLETE
-        
+
 class Task_TestAttackLOS(BaseTaskAI):
-    
+
     def runTask(self):
         attack = self.npc.attacks[self.npc.getEquippedAttack()]
         losData = attack.npc_testAttackLOS(self.npc.getPos() + (0, 0, self.npc.getHeight() / 2.0),
@@ -128,11 +128,11 @@ class Task_TestAttackLOS(BaseTaskAI):
         if not losData[0]:
             self.npc.attackLOSData = losData
             return SCHED_FAILED
-        
+
         return SCHED_COMPLETE
-        
+
 class Task_GetPathAttackLOS(BaseTaskAI):
-    
+
     def runTask(self):
         path = self.npc.battleZone.planPath(self.npc.getPos(), self.npc.getPos() + self.npc.attackLOSData[1])
         if len(path) < 2:
@@ -154,24 +154,24 @@ class Task_FireAttack(BaseTaskAI):
             return SCHED_CONTINUE
 
         return SCHED_COMPLETE
-        
+
 class Task_MoveShoot(BaseTaskAI):
-    
+
     def startTask(self):
         BaseTaskAI.startTask(self)
         self.npc.getMotor().startMotor(False, False)
-    
+
     def runTask(self):
         hasTarget = self.npc.target and CIGlobals.isNodePathOk(self.npc.target.entity) and self.npc.hasConditions(COND_SEE_TARGET)
         target = self.npc.target
         motor = self.npc.getMotor()
-        
+
         canAttack = False
-        
+
         if hasTarget:
             # We have a target, look at the target while moving
             self.npc.makeIdealYaw(target.entity.getPos())
-            
+
             if self.npc.getEquippedAttack() == -1:
                 # No attack currently? Equip one, if we have one to use
                 if len(self.npc.capableAttacks) > 0:
@@ -184,12 +184,12 @@ class Task_MoveShoot(BaseTaskAI):
             else:
                 # We already have an equipped attack to use
                 canAttack = True
-            
+
         else:
             if self.npc.getEquippedAttack() != -1:
                 self.npc.b_setEquippedAttack(-1)
             canAttack = False
-            
+
         if canAttack and self.npc.isFacingIdeal(5.0):
             # Fire at the target while moving
             attack = self.npc.attacks[self.npc.getEquippedAttack()]
@@ -197,10 +197,10 @@ class Task_MoveShoot(BaseTaskAI):
         elif not hasTarget and len(motor.waypoints) > 0:
             # Can't attack anything, just face the waypoint
             self.npc.makeIdealYaw(motor.waypoints[0])
-            
+
         if not self.npc.isFacingIdeal():
             self.npc.changeYaw()
-            
+
         if len(motor.waypoints) == 0:
             return SCHED_COMPLETE
         return SCHED_CONTINUE
@@ -209,17 +209,17 @@ class Task_FaceTarget(BaseTaskAI):
 
     def runTask(self):
         if not self.npc.target:
-            #print "fail: no target"
+            #print("fail: no target")
             return SCHED_FAILED
 
         # Determine a yaw to look at the target and move that way
         self.npc.makeIdealYaw(self.npc.target.lastKnownPosition)
         self.npc.changeYaw()
 
-        #print "Ideal is", self.npc.idealYaw
+        #print("Ideal is", self.npc.idealYaw)
 
         if self.npc.isFacingIdeal():
-            #print "complete: facing ideal"
+            #print("complete: facing ideal")
             return SCHED_COMPLETE
 
         return SCHED_CONTINUE
@@ -230,7 +230,7 @@ class Task_FaceIdeal(BaseTaskAI):
 
         if self.npc.isFacingIdeal():
             return SCHED_COMPLETE
-        
+
         # Simply turn towards whatever self.npc.idealYaw is
         self.npc.changeYaw()
 
@@ -250,7 +250,7 @@ class Task_GetPathToTarget(BaseTaskAI):
         return SCHED_COMPLETE
 
 class Task_RunPath(BaseTaskAI):
-    
+
     def __init__(self, npc, snapIdeal = False, turnThenRun = True):
         BaseTaskAI.__init__(self, npc)
         self.snapIdeal = snapIdeal
@@ -259,7 +259,7 @@ class Task_RunPath(BaseTaskAI):
     def runTask(self):
         self.npc.getMotor().startMotor(self.snapIdeal, self.turnThenRun)
         return SCHED_COMPLETE
-        
+
     def cleanup(self):
         del self.snapIdeal
         del self.turnThenRun
@@ -278,7 +278,7 @@ class Task_StopMoving(BaseTaskAI):
         return SCHED_COMPLETE
 
 class Task_AwaitMovement(BaseTaskAI):
-    
+
     def __init__(self, npc, watchTarget = False, changeYaw = True, toTarget = False):
         BaseTaskAI.__init__(self, npc)
         self.watchTarget = watchTarget
@@ -304,18 +304,18 @@ class Task_AwaitMovement(BaseTaskAI):
                         return SCHED_FAILED
 
                     self.npc.getMotor().setWaypoints(path)
-        
+
             if self.watchTarget:
                 if self.npc.hasConditions(COND_SEE_TARGET):
                     if CIGlobals.isNodePathOk(self.npc.target.entity):
                         self.npc.makeIdealYaw(self.npc.target.entity.getPos())
-                
+
         if self.changeYaw:
             # Continue looking in our ideal direction
             self.npc.changeYaw()
 
         return SCHED_CONTINUE
-        
+
     def cleanup(self):
         del self.watchTarget
         del self.changeYaw
@@ -340,7 +340,7 @@ class Task_FindCoverFromTarget(BaseTaskAI):
             # Then try for plain cover
             return SCHED_COMPLETE
 
-        #print "Didn't find cover!"
+        #print("Didn't find cover!")
         # No cover :(
         return SCHED_FAILED
 
@@ -385,52 +385,52 @@ class Task_AwaitAttack(BaseTaskAI):
         if self.npc.getEquippedAttack() == -1 or self.npc.attackFinished:
             return SCHED_COMPLETE
         return SCHED_CONTINUE
-        
+
 class Task_SetSchedule(BaseTaskAI):
-    
+
     def __init__(self, npc, schedName):
         BaseTaskAI.__init__(self, npc)
         self.schedName = schedName
-    
+
     def runTask(self):
         sched = self.npc.getScheduleByName(self.schedName)
         if not sched:
             return SCHED_FAILED
-            
+
         self.npc.changeSchedule(sched)
         return SCHED_COMPLETE
-        
+
     def cleanup(self):
         del self.schedName
         BaseTaskAI.cleanup(self)
-        
+
 class Task_RestartLastSchedule(BaseTaskAI):
-    
+
     def runTask(self):
         if self.npc.lastSchedule is None:
             return SCHED_FAILED
-            
+
         self.npc.changeSchedule(self.npc.lastSchedule)
         return SCHED_COMPLETE
-        
+
 class Task_RememberPosition(BaseTaskAI):
-    
+
     def runTask(self):
         self.npc.memoryPosition = self.npc.getPos()
         return SCHED_COMPLETE
-        
+
 class Task_ForgetPosition(BaseTaskAI):
-    
+
     def runTask(self):
         self.npc.memoryPosition = None
         return SCHED_COMPLETE
-        
+
 class Task_GetPathToMemoryPosition(BaseTaskAI):
-    
+
     def runTask(self):
         if not self.npc.memoryPosition:
             return SCHED_FAILED
-            
+
         path = self.npc.getBattleZone().planPath(self.npc.getPos(), self.npc.memoryPosition)
         if len(path) < 2:
             return SCHED_FAILED
@@ -462,7 +462,7 @@ class Task_Speak(BaseTaskAI):
     def runTask(self):
         if self.npc.blockAIChat:
             return SCHED_COMPLETE
-            
+
         chance = random.random()
         if chance <= self.chance:
             if isinstance(self.phrases, list):
@@ -476,9 +476,9 @@ class Task_Speak(BaseTaskAI):
         del self.chance
         del self.phrases
         BaseTaskAI.cleanup(self)
-        
+
 class Task_GetPathYieldToFriend(BaseTaskAI):
-    
+
     def runTask(self):
         moveVector = Vec3()
         currPos = self.npc.getPos()
@@ -488,7 +488,7 @@ class Task_GetPathYieldToFriend(BaseTaskAI):
                 continue
             otherPos = av.getPos()
             moveAway = currPos - otherPos
-            
+
             if moveAway.length() > self.npc.getYieldDistance():
                 continue
             moveMag = 1.0 / max(moveAway.lengthSquared(), 0.1)
@@ -499,7 +499,7 @@ class Task_GetPathYieldToFriend(BaseTaskAI):
 
         moveVector.normalize()
         newPos = currPos + (moveVector * self.npc.getYieldDistance())
-        
+
         path = self.npc.getBattleZone().planPath(currPos, newPos)
         if len(path) < 2:
             return SCHED_FAILED
@@ -520,43 +520,43 @@ class Task_SuggestState(BaseTaskAI):
     def cleanup(self):
         del self.state
         BaseTaskAI.cleanup(self)
-        
+
 class Task_GetPathToClearWall(BaseTaskAI):
-    
+
     def runTask(self):
-        
+
         currPos = self.npc.getPos()
         toWall = (self.npc.wallPoints[1].getXy() - currPos.getXy()).normalized()
         clearPos = currPos - (Vec3(toWall[0], toWall[1], 0.0) * 4)
-        
+
         # Snap clear position to floor if we can
         result = PhysicsUtils.rayTestClosestNotMe(self.npc, clearPos, clearPos - (0, 0, 10),
             CIGlobals.WorldGroup, self.npc.getBattleZone().getPhysicsWorld())
         if result:
             clearPos = result.getHitPos()
-        
+
         bestPath = self.npc.getBattleZone().planPath(currPos, clearPos)
-        
+
         if bestPath:
             self.npc.getMotor().setWaypoints(bestPath)
             return SCHED_COMPLETE
-            
+
         return SCHED_FAILED
-        
+
 class Task_SetFailSchedule(BaseTaskAI):
-    
+
     def __init__(self, npc, failSched):
         BaseTaskAI.__init__(self, npc)
         self.failSched = failSched
-    
+
     def runTask(self):
         self.npc.schedule.failSchedule = self.failSched
         return SCHED_COMPLETE
-    
+
     def cleanup(self):
         del self.failSched
         BaseTaskAI.cleanup(self)
-        
+
 
 def task_oneOff(task):
     task.startTask()

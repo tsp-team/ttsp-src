@@ -83,7 +83,7 @@ class SleepBehavior(Behavior):
 
     def determineNextBehavior(self):
         time = globalClock.getFrameTime()
-        
+
         hearsAnyPlyr = False
 
         for avId in self.avIds:
@@ -155,7 +155,7 @@ class MoveBehavior(Behavior):
         self.clearMoveTrack()
         self.moveFinished = False
         self.moving = False
-        
+
     def d_clearMoveTrack(self):
         self.goon.sendUpdate('clearMoveTrack')
 
@@ -312,7 +312,7 @@ class AttackBehavior(Behavior):
         self.target = target
         self.goon.d_watchTarget(target.doId)
         self.goon.d_shoot(target.doId)
-        
+
     def exit(self):
         self.goon.d_stopWatchingTarget()
         Behavior.exit(self)
@@ -360,7 +360,7 @@ class GoonAI(DirectObject):
 
     def enterBehavior(self, idx, args = []):
         if idx == GBInvalid or not self.behaviors.has_key(idx):
-            print "GoonAI: tried to enter invalid behavior ID", idx
+            print("GoonAI: tried to enter invalid behavior ID", idx)
             return
 
         self.exitCurrentBehavior()

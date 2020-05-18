@@ -21,7 +21,7 @@ class BaseLocalControls(DirectObject):
     CrouchSpeedFactor = 0.3
     FootstepIval = 0.6
     FootstepVolumeMod = 1.0
-    
+
     BattleNormalSpeed = 320 / 16.0
     BattleRunSpeed = 416 / 16.0
     BattleWalkSpeed = 190 / 16.0
@@ -60,11 +60,11 @@ class BaseLocalControls(DirectObject):
         self.fwdSpeed = CIGlobals.ToonForwardSpeed
         self.revSpeed = CIGlobals.ToonReverseSpeed
         self.turnSpeed = CIGlobals.ToonRotateSpeed
-        
+
         self.controlsEnabled = False
         self.airborne = False
         self.crouching = False
-        
+
         self.defaultSounds = [base.loadSfx("phase_14/audio/sfx/footsteps/default1.ogg"),
                               base.loadSfx("phase_14/audio/sfx/footsteps/default2.ogg")]
         self.defaultOverride = None#"concrete"
@@ -77,7 +77,7 @@ class BaseLocalControls(DirectObject):
         self.currFootstepSound = None
         self.lastFoot = True
         self.setCurrentSurface('default')
-        
+
         self.currentObjectUsing = None
         self.lastUseObjectTime = 0.0
 
@@ -90,24 +90,24 @@ class BaseLocalControls(DirectObject):
         self.active = False
 
         self.charUpdateTaskName = "controllerUpdateTask-" + str(id(self))
-        
+
         self.useInvalidSound = base.loadSfx("phase_4/audio/sfx/ring_miss.ogg")
-        
+
         # Debug stuff
         self.printFootstepInfo = False
         #base.localAvatar.accept('i', self.toggleDiagnostic)
 
     def getHighestSpeed(self):
         return self.BattleRunSpeed
-        
+
     def cleanup(self):
         if self.fpsCam:
             self.fpsCam.cleanup()
         self.fpsCam = None
-        
+
     def toggleDiagnostic(self):
         self.printFootstepInfo = not self.printFootstepInfo
-        print "Toggled footstep info"
+        print("Toggled footstep info")
 
     def enterOff(self):
         pass
@@ -132,7 +132,7 @@ class BaseLocalControls(DirectObject):
             self.dynamicFriction = 0.3
             self.allowCrouch = True
             self.allowJump = True
-        
+
     def attachCamera(self):
         self.fpsCam.attachCamera()
 
@@ -141,7 +141,7 @@ class BaseLocalControls(DirectObject):
 
         if self.controlsEnabled:
             self.fp_enable()
-            
+
         self.revSpeed = CIGlobals.ToonForwardSpeed
 
     def fp_enable(self, wantMouse = 0):
@@ -150,9 +150,9 @@ class BaseLocalControls(DirectObject):
         else:
             # At least allow them to engage the mouse.
             self.fpsCam.acceptEngageKeys()
-            
+
         base.localAvatar.resetHeadHpr(True)
-            
+
         if base.localAvatar.hasEquippedAttack():
             base.localAvatar.showCrosshair()
             if base.localAvatar.isFirstPerson():
@@ -162,7 +162,7 @@ class BaseLocalControls(DirectObject):
             base.localAvatar.b_setLookMode(base.localAvatar.LMHead)
 
         base.camLens.setMinFov(70.0 / (4. / 3.))
-        
+
         base.localAvatar.enableGagKeys()
 
     def exitFirstPerson(self):
@@ -178,7 +178,7 @@ class BaseLocalControls(DirectObject):
         #self.revSpeed = CIGlobals.ToonReverseSpeed\
 
         self.fpsCam.setup()
-        
+
         if self.controlsEnabled:
             self.fp_enable()
             base.localAvatar.startSmartCamera()
@@ -197,7 +197,7 @@ class BaseLocalControls(DirectObject):
 
     def setMode(self, mode):
         self.mode = mode
-        
+
         if mode == self.MFirstPerson:
             self.fsm.request('firstperson')
         elif mode == self.MThirdPerson:
@@ -229,7 +229,7 @@ class BaseLocalControls(DirectObject):
 
     def setCollisionsActive(self, flag, andPlaceOnGround=0):
         if not flag:
-            
+
             # There may be times when we need to return the avatar to the
             # ground so they don't break the laws of physics. Such as
             # when we disable collisions when moving a player through
@@ -263,12 +263,12 @@ class BaseLocalControls(DirectObject):
         surface = self.getCorrectedFootstepSound(surface)
         if self.currentSurface == surface:
             return
-            
+
         self.currentSurface = surface
-        
+
         if surface == self.getCorrectedFootstepSound("default") and self.defaultOverride is not None:
             surface = self.getCorrectedFootstepSound(self.defaultOverride)
-        
+
         if not surface in self.footstepSounds:
             self.footstepSounds[surface] = []
             vfs = VirtualFileSystem.getGlobalPtr()
@@ -281,13 +281,13 @@ class BaseLocalControls(DirectObject):
     def getCurrentSurface(self):
         if self.currentSurface == "default" and self.defaultOverride is not None:
             return self.defaultOverride
-            
+
         return self.currentSurface
 
     def enableControls(self, wantMouse = 0):
         if self.controlsEnabled:
             return
-        
+
         base.taskMgr.add(self.__handlePlayerControls, "LocalControls.handlePlayerControls")
         base.taskMgr.add(self.__handleFootsteps, "LocalControls.handleFootsteps", taskChain = "fpsIndependentStuff")
 
@@ -301,7 +301,7 @@ class BaseLocalControls(DirectObject):
             elif self.mode == self.MThirdPerson:
                 self.fp_enable(wantMouse)
                 base.localAvatar.startSmartCamera()
-                
+
             self.idealFwd = self.BattleNormalSpeed
             self.idealRev = self.BattleNormalSpeed
             self.fwdSpeed = self.idealFwd
@@ -328,14 +328,14 @@ class BaseLocalControls(DirectObject):
             self.setCurrentSurface(self.controller.getCurrentMaterial())
 
         return task.cont
-        
+
     def startControllerUpdate(self):
         self.stopControllerUpdate()
-    
+
         self.active = True
         self.controller.placeOnGround()
         taskMgr.add(self.__controllerUpdate, self.charUpdateTaskName, sort = 50)
-        
+
     def stopControllerUpdate(self):
         taskMgr.remove(self.charUpdateTaskName)
         self.active = False
@@ -347,29 +347,29 @@ class BaseLocalControls(DirectObject):
         self.controller.setDefaultMaterial(self.getDefaultSurface())
         self.controller.setMaxSlope(75.0, False)
         self.controller.setCollideMask(CIGlobals.LocalAvGroup)
-        
+
         capsules = [self.controller.getWalkCapsule(), self.controller.getCrouchCapsule(),
                     self.controller.getEventSphere()]
         for cap in capsules:
             cap.setPythonTag("localAvatar", base.localAvatar)
-            
+
         self.controller.setStandUpCallback(self.__handleStandUp)
         self.controller.setFallCallback(self.__handleLand)
         self.controller.setEventEnterCallback(self.__handleEventEnter)
         self.controller.setEventExitCallback(self.__handleEventExit)
-        
+
         base.localAvatar.reparentTo(self.controller.getMovementParent())
         base.localAvatar.assign(self.controller.getMovementParent())
         base.cr.doId2do[base.localAvatar.doId] = base.localAvatar
-        
+
         print taskMgr
 
         self.setControlScheme(self.SDefault)
-        
+
     def __handleEventEnter(self, np):
         print 'enter' + np.getName()
         messenger.send('enter' + np.getName(), [np])
-        
+
     def __handleEventExit(self, np):
         print 'exit' + np.getName()
         messenger.send('exit' + np.getName(), [np])
@@ -381,7 +381,7 @@ class BaseLocalControls(DirectObject):
 
     def watchMovementInputs(self):
         self.releaseMovementInputs()
-        
+
         if base.localAvatar.battleControls:
             self.movementTokens.append(inputState.watchWithModifiers('forward', 'w', inputSource = inputState.WASD))
             self.movementTokens.append(inputState.watchWithModifiers('reverse', 's', inputSource = inputState.WASD))
@@ -409,10 +409,10 @@ class BaseLocalControls(DirectObject):
         self.ignore('alt')
         self.ignore(base.inputStore.NextCameraPosition)
         self.ignore(base.inputStore.PreviousCameraPosition)
-        
+
         if not chat and (base.localAvatar.isThirdPerson() or not base.localAvatar.battleControls):
             base.localAvatar.stopSmartCamera()
-        
+
         inputState.set('forward', False, inputSource = inputState.WASD)
         inputState.set('reverse', False, inputSource = inputState.WASD)
         inputState.set('slideLeft', False, inputSource = inputState.WASD)
@@ -442,11 +442,11 @@ class BaseLocalControls(DirectObject):
                 #    self.fpsCam.handleJumpHardLand()
             else:
                 base.localAvatar.handleJumpLand()
-            
+
         if self.exitControlsWhenGrounded:
             self.stopControllerUpdate()
             self.exitControlsWhenGrounded = False
-            
+
     def getDefaultSurface(self):
         return "default"
 
@@ -472,18 +472,18 @@ class BaseLocalControls(DirectObject):
                 default.setVolume(volume * self.FootstepVolumeMod)
                 default.play()
             self.currFootstepSound = sound
-            
+
             if self.printFootstepInfo:
-                print "Playing Footstep"
-                print "Num Footstep Tasks: " + str(len(base.taskMgr.getTasksNamed("LocalControls.handleFootsteps")))
+                print("Playing Footstep")
+                print("Num Footstep Tasks: " + str(len(base.taskMgr.getTasksNamed("LocalControls.handleFootsteps"))))
         self.lastFootstepTime = globalClock.getFrameTime()
-        
+
     def getFootstepIval(self, speed):
         return CIGlobals.remapVal(speed, self.BattleNormalSpeed, self.BattleRunSpeed, 0.4, 0.3)
 
     def getFootstepVolume(self, speed):
         return min(1, speed / self.BattleNormalSpeed)
-        
+
     def __handleFootsteps(self, task):
         time = globalClock.getFrameTime()
         speeds = self.speeds.length()
@@ -491,15 +491,15 @@ class BaseLocalControls(DirectObject):
             self.footstepIval = self.getFootstepIval(speeds)
             if self.scheme == self.SSwim:
                 self.footstepIval *= 6.0
-                
+
             if time - self.lastFootstepTime >= self.footstepIval:
                 self.playFootstep(self.getFootstepVolume(speeds))
         return task.cont
-        
+
     def __handleUse(self, task):
         #if self.mode == LocalControls.MThirdPerson:
         #    return task.cont
-            
+
         time = globalClock.getFrameTime()
         use = inputState.isSet('use')
         if use:
@@ -521,7 +521,7 @@ class BaseLocalControls(DirectObject):
                 start = camPos + (camFwd * camToPlyr)
             stop = start + (camFwd * distance)
             hit = PhysicsUtils.rayTestClosestNotMe(base.localAvatar, start, stop, CIGlobals.UseableGroup)
-            
+
             somethingToUse = False
             if hit is not None:
                 node = hit.getNode()
@@ -537,23 +537,23 @@ class BaseLocalControls(DirectObject):
                         elif time - self.lastUseObjectTime >= obj.useIval:
                             obj.use()
                             self.lastUseObjectTime = time
-                        
+
                         self.currentObjectUsing = obj
-            
+
             if not somethingToUse and not self.lastUse:
                 self.useInvalidSound.play()
         else:
             if self.currentObjectUsing is not None:
                 self.currentObjectUsing.stopUse()
                 self.currentObjectUsing = None
-            
+
         self.lastUse = use
         return task.cont
 
     def __handlePlayerControls(self, task):
         dt = globalClock.getDt()
         time = globalClock.getFrameTime()
-        
+
         forward = inputState.isSet('forward')
         reverse = inputState.isSet('reverse')
         slideLeft = inputState.isSet('slideLeft')
@@ -564,17 +564,17 @@ class BaseLocalControls(DirectObject):
         crouch = inputState.isSet('crouch')
         sprint = inputState.isSet('sprint')
         walk = inputState.isSet('walk')
-    
+
         # Determine goal speeds
         speed = Vec3(0)
-        
+
         if forward:
             speed.setY(self.fwdSpeed)
         elif reverse:
             speed.setY(-self.revSpeed)
         else:
             speed.setY(0)
-            
+
         if reverse and slideLeft:
             speed.setX(-self.revSpeed * self.SlideFactor)
         elif reverse and slideRight:
@@ -585,7 +585,7 @@ class BaseLocalControls(DirectObject):
             speed.setX(self.fwdSpeed * self.SlideFactor)
         else:
             speed.setX(0)
-            
+
         if speed.getX() != 0 and speed.getY() != 0:
             speed.setX(speed.getX() * self.DiagonalFactor)
             speed.setY(speed.getY() * self.DiagonalFactor)
@@ -596,20 +596,20 @@ class BaseLocalControls(DirectObject):
             speed.setZ(-self.turnSpeed)
         else:
             speed.setZ(0)
-            
+
         self.speeds = Vec3(speed)
         if base.localAvatar.battleControls:
             # Apply smoothed out movement in battle controls.
 
             sFriction = 1 - math.pow(1 - self.staticFriction, dt * 30.0)
             dFriction = 1 - math.pow(1 - self.dynamicFriction, dt * 30.0)
-            
+
             # Apply friction to the goal speeds
             if abs(self.speeds.getX()) < abs(self.lastSpeeds.getX()):
                 self.lastSpeeds.setX(self.speeds.getX() * dFriction + self.lastSpeeds.getX() * (1 - dFriction))
             else:
                 self.lastSpeeds.setX(self.speeds.getX() * sFriction + self.lastSpeeds.getX() * (1 - sFriction))
-                
+
             if abs(self.speeds.getY()) < abs(self.lastSpeeds.getY()):
                 self.lastSpeeds.setY(self.speeds.getY() * dFriction + self.lastSpeeds.getY() * (1 - dFriction))
             else:
@@ -623,7 +623,7 @@ class BaseLocalControls(DirectObject):
             self.lastSpeeds = self.speeds
 
         self.speeds = Vec3(self.lastSpeeds)
-        
+
         if abs(self.speeds.getX()) < 0.1:
             self.speeds.setX(0)
         if abs(self.speeds.getY()) < 0.1:
@@ -632,7 +632,7 @@ class BaseLocalControls(DirectObject):
             self.speeds.setZ(0)
 
         linearSpeed = Vec3(self.speeds[0], self.speeds[1], 0.0)
-        
+
         if self.scheme == self.SSwim and self.mode == self.MFirstPerson:
             # When swimming in first person, move in the direction we are looking, like flying.
             linearSpeed = self.fpsCam.camRoot.getQuat(render).xform(linearSpeed)
@@ -650,7 +650,7 @@ class BaseLocalControls(DirectObject):
         elif onGround and self.controller.getMovementState() == MOVEMENTSTATE_GROUND:
             # We landed
             self.airborne = False
-            
+
         if walk:
             fctr = 0.6
             self.fwdSpeed = self.BattleWalkSpeed
@@ -661,7 +661,7 @@ class BaseLocalControls(DirectObject):
         elif not self.crouching:
             self.fwdSpeed = self.idealFwd
             self.revSpeed = self.idealRev
-            
+
         if crouch and not self.crouching and self.allowCrouch:
             fctr = self.CrouchSpeedFactor
             self.fwdSpeed = self.idealFwd * fctr
@@ -687,5 +687,5 @@ class BaseLocalControls(DirectObject):
 
         if moveBits != base.localAvatar.moveBits:
             base.localAvatar.b_setMoveBits(moveBits)
-        
+
         return task.cont
