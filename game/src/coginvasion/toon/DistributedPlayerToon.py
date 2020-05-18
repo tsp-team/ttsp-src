@@ -6,7 +6,7 @@ Copyright (c) CIO Team. All rights reserved.
 @author Maverick Liberty/Brian Lach
 @date June 15, 2018
 
-This is to get away from the legacy way of having all Toons in the game, including NPCs, 
+This is to get away from the legacy way of having all Toons in the game, including NPCs,
 share the same code.
 
 """
@@ -15,7 +15,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, SoundInterval
 from direct.interval.IntervalGlobal import Parallel, LerpPosInterval, LerpQuatInterval, LerpHprInterval
 
-from DistributedPlayerToonShared import DistributedPlayerToonShared
+from .DistributedPlayerToonShared import DistributedPlayerToonShared
 from src.coginvasion.toon.DistributedToon import DistributedToon
 from src.coginvasion.gags.backpack.Backpack import Backpack
 from src.coginvasion.gags import GagGlobals
@@ -24,7 +24,7 @@ from src.coginvasion.phys import PhysicsUtils
 
 class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
     notify = directNotify.newCategory('DistributedPlayerToon')
-    
+
     def __init__(self, cr):
         try:
             self.DistributedPlayerToon_initialized
@@ -39,12 +39,12 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
         self.equippedPU = -1
         self.backpack = Backpack(self)
         self.battleMeter = None
-        
+
         # Quest-related variables.
         self.quests = ""
         self.tier = None
         self.questHistory = None
-        
+
         self.busy = 1
         self.friends = None
         self.tutDone = 0
@@ -55,13 +55,13 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
         self.tunnelTrack = None
         self.trackExperience = dict(GagGlobals.DefaultTrackExperiences)
         return
-        
+
     def getHealth(self):
         return DistributedPlayerToonShared.getHealth(self)
-        
+
     def getMaxHealth(self):
         return DistributedPlayerToonShared.getMaxHealth(self)
-    
+
     def stopSmooth(self):
         DistributedToon.stopSmooth(self)
         localAvatarReachable = (hasattr(base, 'localAvatar') and base.localAvatar)
@@ -74,14 +74,14 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
         base.audio3d.attachSoundToObject(hpSfx, self)
         SoundInterval(hpSfx, node = self).start()
         del hpSfx
-        
+
     def setChat(self, chat):
         chat = ChatGlobals.filterChat(chat, self.animal)
         DistributedToon.setChat(self, chat)
-    
+
     def goThroughTunnel(self, toZone, inOrOut, requestStatus = None):
         pass
-        
+
     def setDefaultShard(self, shardId):
         self.defaultShard = shardId
 
@@ -149,7 +149,7 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
 
     def getQuests(self):
         return self.quests
-            
+
     def d_createBattleMeter(self):
         self.sendUpdate('makeBattleMeter', [])
 
@@ -215,10 +215,10 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
         return self.backpack
 
     def setEquippedAttack(self, attackID):
-        try: 
-            self.backpack.setCurrentGag(attackID) 
+        try:
+            self.backpack.setCurrentGag(attackID)
         except:
-            # If we couldn't do this, it means that the avatar was most likely disabled. 
+            # If we couldn't do this, it means that the avatar was most likely disabled.
             pass
         DistributedToon.setEquippedAttack(self, attackID)
 
@@ -234,24 +234,24 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
                 if gag:
                     loadout.append(gag)
             self.backpack.setLoadout(loadout)
-    
+
     def setBackpackAmmo(self, netString):
         if len(self.attackIds) != 0 or len(self.attacks) != 0:
             self.cleanupAttacks()
             self.clearAttackIds()
         return self.backpack.updateSuppliesFromNetString(netString)
-    
+
     def getBackpackAmmo(self):
         if self.backpack:
             return self.backpack.netString
         return GagGlobals.getDefaultBackpack().toNetString()
-    
+
     def setTrackExperience(self, netString):
         self.trackExperience = GagGlobals.getTrackExperienceFromNetString(netString)
         if GagGlobals.processTrackData(self.trackExperience, self.backpack) and self == base.localAvatar:
             if base.localAvatar.invGui:
                 base.localAvatar.reloadInvGui()
-        
+
     def getTrackExperience(self):
         return GagGlobals.trackExperienceToNetString(self.trackExperience)
 
@@ -272,7 +272,7 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
 
     def getAccessLevel(self):
         return 0
-    
+
     def disable(self):
         if self.tunnelTrack:
             self.ignore(self.tunnelTrack.getDoneEvent())
@@ -299,7 +299,7 @@ class DistributedPlayerToon(DistributedToon, DistributedPlayerToonShared):
         self.trackExperience = None
         self.destroyBattleMeter()
         DistributedToon.disable(self)
-    
+
     def delete(self):
         try:
             self.DistributedPlayerToon_deleted

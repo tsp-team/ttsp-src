@@ -18,7 +18,7 @@ from src.coginvasion.toon.DistributedToonAI import DistributedToonAI
 from src.coginvasion.toon.ToonGlobals import GAG_START_EVENT
 from src.coginvasion.gags.backpack.BackpackAI import BackpackAI
 from src.coginvasion.gags import GagGlobals
-from DistributedPlayerToonShared import DistributedPlayerToonShared
+from .DistributedPlayerToonShared import DistributedPlayerToonShared
 from . import ToonDNA
 import types
 
