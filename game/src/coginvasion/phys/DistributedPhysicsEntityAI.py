@@ -9,10 +9,10 @@ Copyright (c) CIO Team. All rights reserved.
 """
 
 from src.coginvasion.distributed.DistributedSmoothNodeAI import DistributedSmoothNodeAI
-from PhysicsNodePathAI import PhysicsNodePathAI
+from .PhysicsNodePathAI import PhysicsNodePathAI
 
 class DistributedPhysicsEntityAI(DistributedSmoothNodeAI, PhysicsNodePathAI):
-    
+
     def __init__(self, air):
         DistributedSmoothNodeAI.__init__(self, air)
         PhysicsNodePathAI.__init__(self, 'physEntity')
@@ -33,4 +33,3 @@ class DistributedPhysicsEntityAI(DistributedSmoothNodeAI, PhysicsNodePathAI):
         self.stopPosHprBroadcast()
         self.cleanupPhysics()
         DistributedSmoothNodeAI.delete(self)
-
