@@ -1,7 +1,7 @@
 """ServerRepository module: contains the ServerRepository class"""
 
 from pandac.PandaModules import *
-from networksystem import *
+from panda3d.networksystem import *
 from direct.distributed.MsgTypesCMU import *
 from direct.task import Task
 from direct.directnotify import DirectNotifyGlobal
