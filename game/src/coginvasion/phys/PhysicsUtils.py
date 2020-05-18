@@ -118,9 +118,9 @@ def makeBulletCollFromGeoms(rootNode, exclusions = [], enableNow = True, world =
                 mesh.addGeom(geom, True)
                 surfaceprop = "default"
                 if state.hasAttrib(BSPMaterialAttrib.getClassSlot()):
-					mat = state.getAttrib(BSPMaterialAttrib.getClassSlot()).getMaterial()
-					if mat:
-						surfaceprop = mat.getSurfaceProp()
+                    mat = state.getAttrib(BSPMaterialAttrib.getClassSlot()).getMaterial()
+                    if mat:
+                        surfaceprop = mat.getSurfaceProp()
                 for j in xrange(geom.getNumPrimitives()):
                     prim = geom.getPrimitive(j)
                     prim = prim.decompose()
