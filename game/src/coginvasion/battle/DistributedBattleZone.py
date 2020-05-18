@@ -15,7 +15,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from src.coginvasion.battle.GameRules import GameRules
 from src.coginvasion.battle.TempEnts import TempEnts
 from src.coginvasion.globals import CIGlobals
-import BattleGlobals
+from . import BattleGlobals
 
 from direct.interval.IntervalGlobal import Sequence, Func, Wait
 

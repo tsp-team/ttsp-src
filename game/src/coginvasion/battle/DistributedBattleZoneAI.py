@@ -25,7 +25,7 @@ from src.coginvasion.gags import GagGlobals
 from src.coginvasion.phys.PhysicsUtils import makeBulletCollFromGeoms, detachAndRemoveBulletNodes
 from src.coginvasion.battle.SoundEmitterSystemAI import SoundEmitterSystemAI
 
-import BattleGlobals
+from . import BattleGlobals
 import itertools
 
 try:
