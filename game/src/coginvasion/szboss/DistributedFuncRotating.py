@@ -2,7 +2,7 @@ from panda3d.core import Vec3
 
 from direct.interval.IntervalGlobal import LerpHprInterval
 
-from DistributedEntity import DistributedEntity
+from .DistributedEntity import DistributedEntity
 from src.coginvasion.phys import PhysicsUtils
 from direct.fsm.FSM import FSM
 

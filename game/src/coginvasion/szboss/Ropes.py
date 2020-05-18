@@ -2,7 +2,7 @@ from direct.showutil.Rope import Rope
 
 from src.coginvasion.globals import BSPUtility, CIGlobals
 
-from Entity import Entity
+from .Entity import Entity
 
 class RopeKeyframe(Entity):
     NeedNode = False

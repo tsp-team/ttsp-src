@@ -2,8 +2,8 @@ from panda3d.core import NodePath, Point3, Vec3
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, LerpPosInterval
 
-from UseableObject import UseableObject
-from Entity import Entity
+from .UseableObject import UseableObject
+from .Entity import Entity
 
 class FuncButton(UseableObject, Entity):
 
@@ -14,20 +14,20 @@ class FuncButton(UseableObject, Entity):
         self.pressIval = None
 
         self.assignToTrigger = False
-        
+
     def startUse(self):
         UseableObject.startUse(self)
         self.press()
-        
+
     def getUseableBounds(self, min, max):
         self.cEntity.getModelBounds(min, max)
 
     def load(self):
         self.assign(self.cEntity.getModelNp())
-        
+
         Entity.load(self)
         UseableObject.load(self)
-        
+
         self.pressSound = base.audio3d.loadSfx("phase_3.5/audio/sfx/AV_hit_button.ogg")
         base.audio3d.attachSoundToObject(self.pressSound, self.cEntity.getModelNp())
         self.origin = self.getPos()

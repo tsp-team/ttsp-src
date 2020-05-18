@@ -3,11 +3,11 @@ from panda3d.core import Point3, Vec3
 from direct.interval.IntervalGlobal import LerpPosInterval, Sequence, Wait, Func
 from direct.fsm.FSM import FSM
 
-from UseableObject import UseableObject
-from DistributedEntity import DistributedEntity
+from .UseableObject import UseableObject
+from .DistributedEntity import DistributedEntity
 
 class DistributedButton(DistributedEntity, UseableObject, FSM):
-    
+
     def __init__(self, cr):
         DistributedEntity.__init__(self, cr)
         UseableObject.__init__(self, False)
@@ -20,17 +20,17 @@ class DistributedButton(DistributedEntity, UseableObject, FSM):
         self.maxs = Point3(0)
         self.origin = Point3(0)
         self.pressSound = None
-        
+
         self.hasPhysGeom = False
         self.underneathSelf = True
-        
+
     def startUse(self):
         UseableObject.startUse(self)
         self.d_requestPress()
-        
+
     def d_requestPress(self):
         self.sendUpdate('requestPress')
-        
+
     def load(self):
 
         DistributedEntity.load(self)
@@ -49,70 +49,70 @@ class DistributedButton(DistributedEntity, UseableObject, FSM):
 
         self.origin = self.getPos()
         self.cEntity.getModelBounds(self.mins, self.maxs)
-        
+
     def getMoveData(self):
         posDelta = self.maxs - self.mins
         posDelta.componentwiseMult(self.moveDir)
         openPos = self.origin + posDelta
         closedPos = self.origin
         duration = (posDelta.length() * 16.0) / self.speed
-        
+
         return [posDelta, openPos, closedPos, duration]
-        
+
     def enterDepressed(self):
         pos = self.getMoveData()[2]
         self.setPos(pos)
-        
+
     def exitDepressed(self):
         pass
-        
+
     def enterPressed(self):
         pos = self.getMoveData()[1]
         self.setPos(pos)
-        
+
     def exitPressed(self):
         pass
-        
+
     def playPressSound(self):
         if self.pressSound:
             self.pressSound.play()
-            
+
     def enterDepressing(self):
         if self.moveIval:
             self.moveIval.finish()
             self.moveIval = None
-            
+
         posDelta, openPos, closedPos, duration = self.getMoveData()
-        
+
         self.moveIval = Sequence()
         self.moveIval.append(LerpPosInterval(self, pos = closedPos, startPos = openPos, duration = duration))
         self.moveIval.start()
-        
+
     def exitDepressing(self):
         if self.moveIval:
             self.moveIval.finish()
             self.moveIval = None
-        
+
     def enterPressing(self):
         if self.moveIval:
             self.moveIval.finish()
             self.moveIval = None
-        
+
         posDelta, openPos, closedPos, duration = self.getMoveData()
-            
+
         self.moveIval = Sequence(Func(self.playPressSound),
                                  LerpPosInterval(self, pos = openPos, startPos = closedPos, duration = duration))
-        
+
         self.moveIval.start()
-        
+
     def exitPressing(self):
         if self.moveIval:
             self.moveIval.finish()
             self.moveIval = None
-            
+
     def getUseableBounds(self, min, max):
         self.cEntity.getModelBounds(min, max)
-        
+
     def unload(self):
         DistributedEntity.unload(self)
         self.request('Off')
@@ -126,7 +126,7 @@ class DistributedButton(DistributedEntity, UseableObject, FSM):
         self.pressSound = None
         self.state = None
         self.removeNode()
-    
+
     def setState(self, state):
         self.state = state
         if state == 0:

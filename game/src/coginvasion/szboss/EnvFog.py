@@ -1,13 +1,13 @@
 from panda3d.core import Fog
 
 from src.coginvasion.globals import CIGlobals
-from DistributedEntity import DistributedEntity
+from .DistributedEntity import DistributedEntity
 
 class EnvFog(DistributedEntity):
 
     FadeInDuration = 0.5
     FadeOutDuration = 0.5
-    
+
     NeedNode = False
 
     def __init__(self, cr):
@@ -24,7 +24,7 @@ class EnvFog(DistributedEntity):
         self.fogNode = Fog('env_fog')
         self.fogNode.setExpDensity(density)
         self.fogNode.setColor(color)
-        
+
         base.shaderGenerator.setFog(self.fogNode)
 
     def think(self):

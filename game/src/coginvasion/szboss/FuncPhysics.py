@@ -3,14 +3,14 @@ from panda3d.bullet import BulletRigidBodyNode, BulletBoxShape
 
 from src.coginvasion.phys import PhysicsUtils
 
-from Entity import Entity
+from .Entity import Entity
 
 class FuncPhysics(Entity):
 
     def __init__(self):
         Entity.__init__(self)
         self.assign(NodePath('func_physics'))
-        
+
     def load(self):
         Entity.load(self)
         loader = self.cEntity.getLoader()
@@ -29,7 +29,7 @@ class FuncPhysics(Entity):
         self.setPos(center)
         self.cEntity.getModelNp().wrtReparentTo(self)
         base.physicsWorld.attachRigidBody(rbnode)
-        
+
     def unload(self):
         Entity.unload(self)
         if not self.isEmpty():

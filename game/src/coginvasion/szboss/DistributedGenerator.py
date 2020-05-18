@@ -1,11 +1,11 @@
-from DistributedEntity import DistributedEntity
+from .DistributedEntity import DistributedEntity
 
 from direct.fsm.FSM import FSM
 
 from src.coginvasion.phys import PhysicsUtils
 
 class DistributedGenerator(DistributedEntity, FSM):
-    
+
     def __init__(self, cr):
         DistributedEntity.__init__(self, cr)
         FSM.__init__(self, 'DGenerator')
@@ -13,25 +13,25 @@ class DistributedGenerator(DistributedEntity, FSM):
         self.runSound = None
         self.powerDownSound = None
         self.powerUpSound = None
-        
+
     def enterPoweringOn(self):
         self.powerUpSound.play()
-        
+
     def exitPoweringOn(self):
         self.powerUpSound.stop()
-        
+
     def enterPowerOn(self):
         self.runSound.play()
-        
+
     def exitPowerOn(self):
         self.runSound.stop()
-        
+
     def enterPoweringOff(self):
         self.powerDownSound.play()
-        
+
     def exitPoweringOff(self):
         self.powerDownSound.stop()
-        
+
     def load(self):
         DistributedEntity.load(self)
         self.powerUpSound = base.loadSfxOnNode("phase_14/audio/sfx/sewer_generator_windup.ogg", self.cEntity.getModelNp())
@@ -39,7 +39,7 @@ class DistributedGenerator(DistributedEntity, FSM):
         self.runSound = base.loadSfxOnNode("phase_14/audio/sfx/sewer_generator_hum.ogg", self.cEntity.getModelNp())
         self.runSound.setLoop(True)
         base.materialData.update(PhysicsUtils.makeBulletCollFromGeoms(self.cEntity.getModelNp()))
-        
+
     def setState(self, state):
         self.state = state
         if state == 0:
@@ -50,7 +50,7 @@ class DistributedGenerator(DistributedEntity, FSM):
             self.request('PoweringOn')
         elif state == 3:
             self.request('PoweringOff')
-            
+
     def disable(self):
         self.request('Off')
         self.state = None

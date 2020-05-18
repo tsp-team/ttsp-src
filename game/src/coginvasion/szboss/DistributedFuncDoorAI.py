@@ -3,7 +3,7 @@ from panda3d.core import Point3, Vec3
 from direct.fsm.FSM import FSM
 from direct.interval.IntervalGlobal import LerpPosInterval, Sequence, Wait, Func
 
-from DistributedEntityAI import DistributedEntityAI
+from .DistributedEntityAI import DistributedEntityAI
 
 DOORSTATE_CLOSED = 0
 DOORSTATE_OPENING = 1
@@ -26,30 +26,30 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
         self.maxs = Point3(0)
         self.loopMoveSound = False
         self.locked = False
-        
+
     def filterOpened(self, request, args):
         if request == 'Closing':
             return (request,) + args
         return None
-        
+
     def filterClosed(self, request, args):
         if request == 'Opening':
             return (request,) + args
         return None
-        
+
     def filterOpening(self, request, args):
         if request in ['Opened', 'Closing']:
             return (request,) + args
         return None
-        
+
     def filterClosing(self, request, args):
         if request in ['Opening', 'Closed']:
             return (request,) + args
         return None
-        
+
     def Lock(self):
         self.locked = True
-        
+
     def Unlock(self):
         self.locked = False
         self.d_playSound("unlocked")
@@ -65,7 +65,7 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
 
     def playStopSound(self):
         self.d_playSound("stopsnd")
-        
+
     def announceGenerate(self):
         DistributedEntityAI.announceGenerate(self)
         self.startPosHprBroadcast()
@@ -74,36 +74,36 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
             self.Open()
         if self.hasSpawnFlags(2): # starts locked
             self.Lock()
-        
+
     def getDoorData(self):
         posDelta = self.maxs - self.mins
         posDelta.componentwiseMult(self.moveDir)
         openPos = self.origin + posDelta
         closedPos = self.origin
         duration = (posDelta.length() * 16.0) / self.speed
-        
+
         data = [posDelta, openPos, closedPos, self.origin]
         print data
-        
+
         return [posDelta, openPos, closedPos, duration]
-        
+
     def requestOpen(self):
         if self._doorState == DOORSTATE_CLOSED:
             if self.locked:
                 self.d_playSound("locked")
             else:
                 self.Open()
-        
+
     def Open(self):
         if self.getDoorState() in [DOORSTATE_OPENED, DOORSTATE_OPENING] or self.locked:
             return
         self.setDoorState(DOORSTATE_OPENING)
-        
+
     def Close(self):
         if self.getDoorState() in [DOORSTATE_CLOSED, DOORSTATE_CLOSING]:
             return
         self.setDoorState(DOORSTATE_CLOSING)
-        
+
     def loadEntityValues(self):
         self.wait = self.getEntityValueFloat("wait")
         self.moveDir = self.getEntityValueVector("movedir")
@@ -115,7 +115,7 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
     def setDoorState(self, state):
         if state == self._doorState:
             return
-            
+
         self._doorState = state
         if state == DOORSTATE_CLOSED:
             self.request('Closed')
@@ -125,10 +125,10 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
             self.request('Opened')
         elif state == DOORSTATE_CLOSING:
             self.request('Closing')
-            
+
     def getDoorState(self):
         return self._doorState
-        
+
     def enterClosed(self):
         self.dispatchOutput("OnCloseFinish")
 
@@ -136,48 +136,48 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
         self.playStopSound()
         closedPos = self.getDoorData()[2]
         self.setPos(closedPos)
-        
+
     def exitClosed(self):
         pass
-        
+
     def stopMoveIval(self):
         if self.moveIval:
             self.moveIval.pause()
         self.moveIval = None
-        
+
     def enterOpening(self):
         self.dispatchOutput("OnOpenStart")
-        
+
         self.stopMoveIval()
-        
+
         posDelta, openPos, closedPos, duration = self.getDoorData()
-            
+
         self.moveIval = Sequence(Func(self.playMoveSound),
                                  LerpPosInterval(self, pos = openPos, startPos = closedPos,
                                                  duration = duration),
                                  Func(self.setDoorState, DOORSTATE_OPENED))
-        
+
         self.moveIval.start()
-        
+
     def exitOpening(self):
         self.stopMoveIval()
-        
+
     def enterClosing(self):
         self.dispatchOutput("OnCloseStart")
-        
+
         self.stopMoveIval()
-            
+
         posDelta, openPos, closedPos, duration = self.getDoorData()
-        
+
         self.moveIval = Sequence()
         self.moveIval.append(Func(self.playMoveSound))
         self.moveIval.append(LerpPosInterval(self, pos = closedPos, startPos = openPos, duration = duration))
         self.moveIval.append(Func(self.setDoorState, DOORSTATE_CLOSED))
         self.moveIval.start()
-    
+
     def exitClosing(self):
         self.stopMoveIval()
-        
+
     def enterOpened(self):
         self.dispatchOutput("OnOpenFinish")
 
@@ -189,14 +189,14 @@ class DistributedFuncDoorAI(DistributedEntityAI, FSM):
         if self.wait != -1:
             taskMgr.doMethodLater(self.wait, self.__doorMoveDone, name = self.uniqueName('doorOpenDone'),
                                   extraArgs = [DOORSTATE_CLOSING], appendTask = True)
-        
+
     def exitOpened(self):
         taskMgr.remove(self.uniqueName('doorOpenDone'))
-        
+
     def __doorMoveDone(self, nextState, task):
         self.setDoorState(nextState)
         return task.done
-        
+
     def delete(self):
         self.request('Off')
         self.stopMoveIval()

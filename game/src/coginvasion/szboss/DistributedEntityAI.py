@@ -2,7 +2,7 @@ from src.coginvasion.distributed.DistributedSmoothNodeAI import DistributedSmoot
 
 from src.coginvasion.phys.PhysicsNodePathAI import BasePhysicsObjectAI
 from src.coginvasion.phys import PhysicsUtils
-from Entity import Entity
+from .Entity import Entity
 
 class DistributedEntityAI(DistributedSmoothNodeAI, BasePhysicsObjectAI, Entity):
 
