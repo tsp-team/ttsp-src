@@ -134,7 +134,7 @@ def makeBulletCollFromGeoms(rootNode, exclusions = [], enableNow = True, world =
             rbnode.addShape(shape)
             rbnodeNp = NodePath(rbnode)
             rbnodeNp.reparentTo(faceNp)
-            print rbnodeNp
+            print(rbnodeNp)
             if facetype == BSPFaceAttrib.FACETYPE_WALL:
                 rbnodeNp.setCollideMask(CIGlobals.WallGroup)
             elif facetype == BSPFaceAttrib.FACETYPE_FLOOR:
