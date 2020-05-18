@@ -18,7 +18,7 @@ from src.coginvasion.attack.BaseAttack import BaseAttack
 from src.coginvasion.attack.LobProjectile import LobProjectile
 from src.coginvasion.attack.Attacks import ATTACK_FIRED, ATTACK_HOLD_NONE
 from .Fired_Shared import Fired_Shared
-import SuitAttacks
+from . import SuitAttacks
 
 GlowMdl = "phase_14/models/props/lightglow.egg"
 
