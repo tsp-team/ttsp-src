@@ -3,7 +3,7 @@
 from direct.distributed.ClockDelta import *
 from direct.task import Task
 from direct.showbase.PythonUtil import randFloat, Enum
-from .networksystem import CDistributedSmoothNodeBase
+from panda3d.networksystem import CDistributedSmoothNodeBase
 
 class DummyTaskClass:
     def setDelay(self, blah):
