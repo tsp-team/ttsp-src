@@ -281,16 +281,16 @@ gagData = {
                  'supply': 150,
                  'track': Trap},
     BirthdayCake : {'health': 10,
-        'minDamage' : 48, 
+        'minDamage' : 48,
         'maxDamage': 100,
         'minMaxSupply' : 3,
-        'maxSupply': 3, 
-        'supply': 3, 
+        'maxSupply': 3,
+        'supply': 3,
     'track' : Throw},
-    TNT : {'minDamage' : 90, 
-        'maxDamage': 180, 
-        'maxSupply': 10, 
-        'supply': 10, 
+    TNT : {'minDamage' : 90,
+        'maxDamage': 180,
+        'maxSupply': 10,
+        'supply': 10,
     'track' : Trap},
     FireHose : {'health': 6,
         'minDamage' : 3,
@@ -299,122 +299,122 @@ gagData = {
         'maxSupply' : 100,
         'supply' : 100,
     'track' : Squirt},
-    Geyser : {'damage': 105, 
-        'maxSupply': 1, 
-        'supply': 1, 
+    Geyser : {'damage': 105,
+        'maxSupply': 1,
+        'supply': 1,
     'track' : Squirt},
     BananaPeel : {'minDamage': 10,
         'maxDamage' : 12,
-        'minMaxSupply' : 5, 
-        'maxSupply': 20, 
-        'supply': 5, 
+        'minMaxSupply' : 5,
+        'maxSupply': 20,
+        'supply': 5,
     'track' : Trap},
     Lipstick : {'healRange': (25, 30),
-        'minMaxSupply' : 5, 
-        'maxSupply': 20, 
-        'supply': 5, 
+        'minMaxSupply' : 5,
+        'maxSupply': 20,
+        'supply': 5,
     'track' : ToonUp},
     Anvil : {'damage': 30,
         'minMaxSupply' : 5,
-        'maxSupply': 20, 
-        'supply': 5, 
+        'maxSupply': 20,
+        'supply': 5,
     'track' : Drop},
     WaterGun : {'health': 2,
         'minDamage' : 3,
-        'maxDamage': 4, 
+        'maxDamage': 4,
         'minMaxSupply': 50,
-        'maxSupply' : 100, 
-        'supply': 100, 
+        'maxSupply' : 100,
+        'supply': 100,
     'track' : Squirt},
     JugglingBalls : {'healRange': (90, 120),
-        'maxSupply': 3, 
-        'supply': 3, 
+        'maxSupply': 3,
+        'supply': 3,
     'track' : ToonUp},
     Safe : {'damage': 60,
         'minMaxSupply' : 3,
-        'maxSupply': 7, 
-        'supply': 3, 
+        'maxSupply': 7,
+        'supply': 3,
     'track' : Drop},
-    WholeCreamPie : {'health': 5, 
+    WholeCreamPie : {'health': 5,
         'minDamage': 36,
-        'maxDamage' : 40, 
+        'maxDamage' : 40,
         'minMaxSupply': 50,
-        'maxSupply' : 50, 
-        'supply': 3, 
+        'maxSupply' : 50,
+        'supply': 3,
     'track' : Throw},
     WholeFruitPie : {'health': 3,
         'minDamage' : 24,
-        'damage': 27, 
+        'damage': 27,
         'minMaxSupply' : 5,
-        'maxSupply': 15, 
+        'maxSupply': 15,
         'supply': 5,
     'track' : Throw},
-    SquirtFlower : {'minDamage': 3, 
+    SquirtFlower : {'minDamage': 3,
         'maxDamage' : 4,
         'minMaxSupply' : 10,
         'maxSupply' : 30,
-        'supply': 10, 
+        'supply': 10,
     'track' : Squirt},
     BikeHorn : {'minDamage': 3,
         'maxDamage' : 4,
-        'minMaxSupply' : 10, 
-        'maxSupply': 30, 
-        'supply': 10, 
+        'minMaxSupply' : 10,
+        'maxSupply': 30,
+        'supply': 10,
     'track' : Sound},
     TrapDoor : {'minDamage' : 60,
-        'maxDamage': 70, 
+        'maxDamage': 70,
         'minMaxSupply' : 3,
-        'maxSupply': 5, 
-        'supply': 3, 
+        'maxSupply': 5,
+        'supply': 3,
     'track' : Trap},
     FlowerPot : {'damage' : 10,
         'minMaxSupply' : 10,
-        'maxSupply': 30, 
-        'supply': 10, 
+        'maxSupply': 30,
+        'supply': 10,
     'track' : Drop},
     Aoogah : {'minDamage': 14,
         'maxDamage' : 16,
-        'minMaxSupply' : 5, 
-        'maxSupply': 15, 
-        'supply': 5, 
+        'minMaxSupply' : 5,
+        'maxSupply': 15,
+        'supply': 5,
     'track' : Sound},
     Megaphone : {'healRange': (10, 20),
         'minMaxSupply' : 5,
-        'maxSupply': 25, 
-        'supply': 5, 
+        'maxSupply': 25,
+        'supply': 5,
     'track' : ToonUp},
-    Opera : {'damage': 90, 
-        'maxSupply': 1, 
-        'supply': 1, 
+    Opera : {'damage': 90,
+        'maxSupply': 1,
+        'supply': 1,
     'track' : Sound},
     BambooCane : {'healRange': (40, 45),
         'minMaxSupply' : 5,
         'maxSupply' : 15,
-        'supply': 5, 
+        'supply': 5,
     'track' : ToonUp},
-    Cupcake : {'health': 1, 
-        'minDamage' : 4, 
+    Cupcake : {'health': 1,
+        'minDamage' : 4,
         'maxDamage': 6,
         'minMaxSupply' : 10,
-        'maxSupply': 30, 
-        'supply': 10, 
+        'maxSupply': 30,
+        'supply': 10,
     'track' : Throw},
     Bugle : {'minDamage': 9,
         'maxDamage' : 11,
-        'minMaxSupply' : 5, 
+        'minMaxSupply' : 5,
         'maxSupply': 20,
-        'supply': 5, 
+        'supply': 5,
     'track' : Sound},
     Sandbag : {'damage': 18,
-        'minMaxSupply' : 5, 
-        'maxSupply': 25, 
-        'supply': 5, 
+        'minMaxSupply' : 5,
+        'maxSupply': 25,
+        'supply': 5,
     'track' : Drop},
-    WaterGlass : {'health': 2, 
-        'minDamage': 6, 
+    WaterGlass : {'health': 2,
+        'minDamage': 6,
         'maxDamage' : 8,
-        'minMaxSupply': 5, 
-        'maxSupply': 25, 
+        'minMaxSupply': 5,
+        'maxSupply': 25,
         'supply' : 5,
     'track' : Squirt},
     SeltzerBottle : {'health': 5,
@@ -422,69 +422,69 @@ gagData = {
         'maxDamage' : 21,
         'minMaxSupply' : 5,
         'maxSupply' : 15,
-        'supply' : 10, 
+        'supply' : 10,
     'track' : Squirt},
     PixieDust : {'healRange': (50, 70),
         'minMaxSupply' : 3,
-        'maxSupply': 7, 
-        'supply': 3, 
+        'maxSupply': 7,
+        'supply': 3,
     'track' : ToonUp},
     Foghorn : {'minDamage': 25,
-        'maxDamage' : 50, 
-        'maxSupply': 3, 
-        'supply': 3, 
+        'maxDamage' : 50,
+        'maxSupply': 3,
+        'supply': 3,
     'track' : Sound},
     GrandPiano : {'minDamage': 85,
         'maxDamage' : 170,
         'maxSupply' : 3,
-        'supply' : 3, 
+        'supply' : 3,
     'track' : Drop},
     StormCloud : {'minDamage': 36,
-        'maxDamage' : 80, 
-        'maxSupply': 3, 
+        'maxDamage' : 80,
+        'maxSupply': 3,
         'supply': 3,
     'track' : Squirt},
-    WeddingCake : {'health': 25, 
-        'damage': 120, 
-        'maxSupply': 3, 
-        'supply': 3, 
+    WeddingCake : {'health': 25,
+        'damage': 120,
+        'maxSupply': 3,
+        'supply': 3,
     'track' : Throw},
     ElephantHorn : {'minDamage': 19,
-        'maxDamage' : 21, 
+        'maxDamage' : 21,
         'minMaxSupply': 3,
-        'maxSupply' : 7, 
-        'supply': 3, 
+        'maxSupply' : 7,
+        'supply': 3,
     'track' : Sound},
     Whistle : {'minDamage': 5,
         'maxDamage' : 7,
         'minMaxSupply' : 5,
-        'maxSupply' : 25, 
-        'supply': 5, 
+        'maxSupply' : 25,
+        'supply': 5,
     'track' : Sound},
-    FruitPieSlice : {'health': 1, 
-        'minDamage' : 8, 
+    FruitPieSlice : {'health': 1,
+        'minDamage' : 8,
         'maxDamage': 10,
-        'minMaxSupply' : 5, 
-        'maxSupply': 25, 
-        'supply': 5, 
+        'minMaxSupply' : 5,
+        'maxSupply': 25,
+        'supply': 5,
     'track' : Throw},
-    Quicksand : {'minDamage': 45, 
+    Quicksand : {'minDamage': 45,
         'maxDamage' : 50,
-        'minMaxSupply': 3, 
-        'maxSupply': 10, 
+        'minMaxSupply': 3,
+        'maxSupply': 10,
         'supply' : 3,
     'track' : Trap},
     CreamPieSlice : {'health': 2,
         'minDamage' : 14,
         'maxDamage': 17,
-        'minMaxSupply' : 5, 
-        'maxSupply': 20, 
-        'supply': 5, 
+        'minMaxSupply' : 5,
+        'maxSupply': 20,
+        'supply': 5,
     'track' : Throw},
     BigWeight : {'damage': 45,
         'minMaxSupply' : 5,
-        'maxSupply' : 15, 
-        'supply': 5, 
+        'maxSupply' : 15,
+        'supply': 5,
     'track' : Drop},
 }
 
@@ -606,26 +606,26 @@ def calculateMaxSupply(avatar, name, data):
     """ This calculates the max supply an avatar can hold with their experience """
     maxSupply = data.get('maxSupply')
     minMaxSupply = maxSupply
-    
+
     if 'minMaxSupply' in data.keys():
         minMaxSupply = data.get('minMaxSupply')
-    
+
     if not avatar is None and minMaxSupply != maxSupply:
         track = data.get('track')
         trackExp = avatar.trackExperience.get(track)
-        
+
         if trackExp == 0:
             return int(minMaxSupply)
         elif trackExp >= MaxedTrackExperiences[track]:
             return int(maxSupply)
-        
+
         trackExperiences = TrackExperienceAmounts.get(track)
         gagIndex = TrackGagNamesByTrackName.get(track).index(name)
         unlockAtExp = float(trackExperiences[gagIndex])
-        
+
         increaseEvery = float(unlockAtExp / maxSupply)
         increaseAmt = (float(trackExp - unlockAtExp) / increaseEvery)
-        
+
         if (minMaxSupply + increaseAmt) > maxSupply:
             return int(maxSupply)
         else:
@@ -638,24 +638,24 @@ def calculateMaxSupply(avatar, name, data):
 def calcBaseDamage(avatar, name, data):
     track = data.get('track')
     trackExp = avatar.trackExperience.get(track)
-        
+
     minDamage = float(data.get('minDamage'))
     maxDamage = float(data.get('maxDamage'))
     gagIndex = TrackGagNamesByTrackName.get(track).index(name)
     unlockAtExp = float(TrackExperienceAmounts.get(track)[gagIndex])
     nextGagUnlockExp = unlockAtExp
-        
+
     if (gagIndex + 1) < len(TrackExperienceAmounts.get(track)):
         nextGagUnlockExp = float(TrackExperienceAmounts.get(track)[gagIndex + 1])
-        
+
     scaleDmgEvery = float((nextGagUnlockExp - unlockAtExp) / (maxDamage - minDamage))
     earnedExpSinceUnlock = float(trackExp - unlockAtExp)
-        
+
     if scaleDmgEvery == 0:
         baseDmg = maxDamage
     else:
         dmgAdditions = math.ceil(earnedExpSinceUnlock / scaleDmgEvery)
-            
+
         if (minDamage + dmgAdditions) > maxDamage:
             baseDmg = maxDamage
         else:
@@ -671,7 +671,7 @@ def calculateDamage(avId, name, data):
         avatar = avId
 
     baseDmg = 0
-    
+
     if 'damage' in data.keys():
         baseDmg = float(data.get('damage'))
     elif 'minDamage' in data.keys():
@@ -811,7 +811,7 @@ def getGagData(gagName):
 # Returns a blob of the track data.
 def trackExperienceToNetString(tracks):
     dg = PyDatagram()
-    
+
     for track, exp in tracks.iteritems():
         dg.addUint8(TrackNameById.values().index(track))
         dg.addInt16(exp)
@@ -825,17 +825,17 @@ def processTrackData(trackData, backpack, isAI = False):
     for track, exp in trackData.iteritems():
         expAmounts = TrackExperienceAmounts.get(track)
         gags = TrackGagNamesByTrackName.get(track)
-        
+
         for i in range(len(expAmounts)):
             maxEXP = expAmounts[i]
             if exp >= maxEXP and len(gags) > i:
                 gagAtLevel = gags[i]
                 gagId = getIDByName(gagAtLevel, isAI)
-                
+
                 if not backpack.hasGag(gagAtLevel):
                     addedGag = True
                     backpack.addGag(gagId, 1, None)
-                
+
     for gagId in backpack.avatar.attacks.keys():
         gagName = backpack.avatar.getAttackMgr().getAttackName(gagId)
         maxSupply = calculateMaxSupply(backpack.avatar, gagName, gagData.get(gagName))
@@ -846,31 +846,31 @@ def processTrackData(trackData, backpack, isAI = False):
 def getTrackExperienceFromNetString(netString):
     dg = PyDatagram(netString)
     dgi = PyDatagramIterator(dg)
-    
+
     tracks = {}
-    
+
     for track in TrackNameById.values():
         tracks[track] = 0
-    
+
     while dgi.getRemainingSize() > 0:
         trackId = dgi.getUint8()
         exp = dgi.getInt16()
-        
+
         tracks[TrackNameById.get(trackId)] = exp
     return tracks
 
 def getMaxExperienceValue(exp, track):
     levels = TrackExperienceAmounts[track]
-    
+
     if exp > -1:
         for i in range(len(levels)):
             if exp < levels[i] or (i == (len(levels) - 1) and exp >= levels[i]):
                 return levels[i]
     return -1
-    
+
 def getTrackName(tId):
     return TrackNameById.get(tId, "not found")
-    
+
 def getTrackOfGag(arg, getId = False, isAI = False):
     if type(arg) == types.IntType:
 
@@ -929,33 +929,33 @@ DefaultBackpack = None
 
 def getDefaultBackpack(isAI = False):
     global DefaultBackpack
-    
+
     if not DefaultBackpack:
         DefaultBackpack = {}
-        
+
         # Let's add all the temporary allowed gags.
         for tempGag in tempAllowedGags:
             data = gagData.get(tempGag, None)
-            
+
             if not data:
-                print 'Invalid attack supplied: ' + tempGag
+                print('Invalid attack supplied: ' + tempGag)
                 continue
-            
+
             # This line just gets the proper supply for the specified attack,
             # or 10 if it wasn't specified.
             supply = data.get('supply', 10)
-            
+
             if isAI:
                 ID = base.air.attackMgr.getAttackIDByName(tempGag)
             else:
                 ID = base.cr.attackMgr.getAttackIDByName(tempGag)
             DefaultBackpack[ID] = supply
-        
+
     return DefaultBackpack
-    
-def getDefaultBackpackNetString(isAI = False):    
+
+def getDefaultBackpackNetString(isAI = False):
     bp = getDefaultBackpack(isAI)
-    
+
     dg = PyDatagram()
     for gagId, supply in bp.items():
         dg.addUint8(gagId)
