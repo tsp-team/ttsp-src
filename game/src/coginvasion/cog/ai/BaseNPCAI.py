@@ -10,12 +10,12 @@ from src.coginvasion.avatar.Activities import ACT_WAKE_ANGRY, ACT_NONE, ACT_SMAL
 from src.coginvasion.avatar.Motor import Motor
 from src.coginvasion.battle.SoundEmitterSystemAI import *
 from src.coginvasion.phys import PhysicsUtils
-from ScheduleAI import Schedule
-from ConditionsAI import *
-from RelationshipsAI import *
-from StatesAI import *
-from ScheduleResultsAI import *
-from MemoryAI import *
+from .ScheduleAI import Schedule
+from .ConditionsAI import *
+from .RelationshipsAI import *
+from .StatesAI import *
+from .ScheduleResultsAI import *
+from .MemoryAI import *
 
 from collections import deque
 import random

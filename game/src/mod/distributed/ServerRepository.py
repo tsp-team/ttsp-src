@@ -1,6 +1,7 @@
 """ServerRepository module: contains the ServerRepository class"""
 
 from panda3d.core import *
+from panda3d.direct import *
 from panda3d.networksystem import *
 from direct.distributed.MsgTypesCMU import *
 from direct.task import Task
