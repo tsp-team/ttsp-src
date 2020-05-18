@@ -3,8 +3,8 @@ from panda3d.core import VBase4, PandaNode, ConfigVariableBool
 
 from src.coginvasion.margins.MarginVisible import MarginVisible
 from . import NametagGlobals
-from Nametag2d import Nametag2d
-from Nametag3d import Nametag3d
+from .Nametag2d import Nametag2d
+from .Nametag3d import Nametag3d
 
 
 class NametagGroup:
