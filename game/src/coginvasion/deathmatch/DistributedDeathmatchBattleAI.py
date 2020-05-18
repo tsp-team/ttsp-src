@@ -9,7 +9,7 @@ Copyright (c) CIO Team. All rights reserved.
 """
 
 from src.coginvasion.battle.DistributedBattleZoneAI import DistributedBattleZoneAI
-from DeathmatchRulesAI import DeathmatchRulesAI
+from .DeathmatchRulesAI import DeathmatchRulesAI
 
 class DistributedDeathmatchBattleAI(DistributedBattleZoneAI):
 
@@ -18,16 +18,16 @@ class DistributedDeathmatchBattleAI(DistributedBattleZoneAI):
 
     def generate(self):
         DistributedBattleZoneAI.generate(self)
-        
+
         from src.coginvasion.deathmatch.DistributedGagPickupAI import DistributedGagPickupAI
         self.bspLoader.linkServerEntityToClass("gag_pickup", DistributedGagPickupAI)
-        
+
     def handleAvatarLeave(self, avatar, reason):
         DistributedBattleZoneAI.handleAvatarLeave(self, avatar, reason)
 
         if hasattr(self, 'watchingAvatarIds') and len(self.watchingAvatarIds) == 0:
             self.requestDelete()
-        
+
     def readyToStart(self):
         pass
 
