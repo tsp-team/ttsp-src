@@ -362,7 +362,7 @@ class FPSCamera(DirectObject):
         if base.localAvatar.isFirstPerson():
             base.localAvatar.getGeomNode().hide()
 
-        base.win.movePointer(0, base.win.getXSize() / 2, base.win.getYSize() / 2)
+        base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
 
         base.taskMgr.add(self.__updateTask, "mouseUpdateFPSCamera", sort = -40)
         self.acceptEngageKeys()
@@ -435,7 +435,7 @@ class FPSCamera(DirectObject):
         mw = base.mouseWatcherNode
         if mw.hasMouse():
             md = base.win.getPointer(0)
-            center = Point2(base.win.getXSize() / 2, base.win.getYSize() / 2)
+            center = Point2(base.win.getXSize() // 2, base.win.getYSize() // 2)
 
             xDist = md.getX() - center.getX()
             yDist = md.getY() - center.getY()
