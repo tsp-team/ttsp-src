@@ -1,5 +1,5 @@
 
-from PickPocketShared import PickPocketShared
+from .PickPocketShared import PickPocketShared
 from src.coginvasion.attack.BaseAttackAI import BaseAttackAI
 from src.coginvasion.attack.Attacks import ATTACK_PICKPOCKET
 
@@ -16,7 +16,7 @@ class PickPocket_AI(BaseAttackAI, PickPocketShared):
         self.traceOrigin = None
         self.traceVector = None
         self.didPick = False
-        
+
     def determineNextAction(self, completedAction):
         if completedAction == self.StateAttack:
             self.avatar.npcFinishAttack()
@@ -24,10 +24,10 @@ class PickPocket_AI(BaseAttackAI, PickPocketShared):
 
     def getBaseDamage(self):
         return 10
-        
+
     def getTauntChance(self):
         return 0.75
-        
+
     def getTauntPhrases(self):
         return ['Let me check your valuables.',
             "Hey, what's that over there?",
@@ -51,11 +51,11 @@ class PickPocket_AI(BaseAttackAI, PickPocketShared):
 
     def think(self):
         BaseAttackAI.think(self)
-        
+
         if (self.action == self.StateAttack and
             self.getActionTime() >= self.PickTime and
             not self.didPick):
-            
+
             self.didPick = True
             self.doTraceAndDamage(self.traceOrigin, self.traceVector, self.PickRange)
 
@@ -64,7 +64,7 @@ class PickPocket_AI(BaseAttackAI, PickPocketShared):
 
     def canUse(self):
         return self.getAction() == self.StateIdle
-        
+
     def onSetAction(self, action):
         if action == self.StateAttack:
             self.didPick = False
@@ -76,5 +76,5 @@ class PickPocket_AI(BaseAttackAI, PickPocketShared):
         self.traceOrigin = self.avatar.getPos() + (0, 0, self.avatar.getHeight() / 2)
         self.traceVector = ((target.getPos() + (0, 0, target.getHeight() / 2.0)) - self.traceOrigin).normalized()
         self.setNextAction(self.StateAttack)
-        
+
         return True

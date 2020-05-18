@@ -17,7 +17,7 @@ from src.coginvasion.globals import CIGlobals
 from src.coginvasion.attack.BaseAttack import BaseAttack
 from src.coginvasion.attack.LobProjectile import LobProjectile
 from src.coginvasion.attack.Attacks import ATTACK_FIRED, ATTACK_HOLD_NONE
-from Fired_Shared import Fired_Shared
+from .Fired_Shared import Fired_Shared
 import SuitAttacks
 
 GlowMdl = "phase_14/models/props/lightglow.egg"
@@ -124,13 +124,13 @@ class Fired(BaseAttack, Fired_Shared):
             self.glow.removeNode()
         self.glow = None
         BaseAttack.cleanup(self)
-        
+
     def unEquip(self):
         if not BaseAttack.unEquip(self):
             return False
-        
+
         self.avatar.doingActivity = False
-            
+
         return True
 
     def onSetAction(self, action):

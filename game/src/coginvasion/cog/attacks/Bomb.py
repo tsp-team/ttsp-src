@@ -1,6 +1,6 @@
 from direct.interval.IntervalGlobal import Func, Sequence, Wait, Parallel
 
-from BombShared import BombShared
+from .BombShared import BombShared
 from src.coginvasion.attack.BaseAttack import BaseAttack
 from src.coginvasion.attack.Attacks import ATTACK_BOMB, ATTACK_HOLD_RIGHT
 
@@ -20,13 +20,13 @@ class Bomb(BaseAttack, BombShared):
             return False
 
         return True
-        
+
     def unEquip(self):
         if not BaseAttack.unEquip(self):
             return False
-            
+
         self.avatar.doingActivity = False
-            
+
         return True
 
     def onSetAction(self, action):
@@ -37,7 +37,7 @@ class Bomb(BaseAttack, BombShared):
         if action == self.StateThrow:
 
             self.avatar.doingActivity = True
-            
+
             time = 0.0#3.0 * 0.667
             sf = self.ThrowObjectFrame#0
 

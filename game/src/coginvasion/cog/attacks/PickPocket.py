@@ -12,11 +12,11 @@ Copyright (c) CIO Team. All rights reserved.
 
 from direct.interval.IntervalGlobal import Parallel, Sequence, Wait, Func
 
-from PickPocketShared import PickPocketShared
+from .PickPocketShared import PickPocketShared
 from src.coginvasion.attack.BaseAttack import BaseAttack
 from src.coginvasion.attack.Attacks import ATTACK_PICKPOCKET, ATTACK_HOLD_NONE
 from src.coginvasion.base.Precache import precacheSound
-    
+
 class PickPocket(BaseAttack, PickPocketShared):
     Hold = ATTACK_HOLD_NONE
     Name = "Pick-Pocket"
@@ -51,9 +51,9 @@ class PickPocket(BaseAttack, PickPocketShared):
     def unEquip(self):
         if not BaseAttack.unEquip(self):
             return False
-            
+
         self.avatar.doingActivity = False
-            
+
         return True
 
     def onSetAction(self, action):

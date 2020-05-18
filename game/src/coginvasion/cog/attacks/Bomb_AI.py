@@ -1,7 +1,7 @@
 from panda3d.core import Vec3, Point3
 
-from BombShared import BombShared
-from BombProjectileAI import BombProjectileAI
+from .BombShared import BombShared
+from .BombProjectileAI import BombProjectileAI
 from src.coginvasion.attack.BaseAttackAI import BaseAttackAI
 from src.coginvasion.attack.Attacks import ATTACK_BOMB
 from src.coginvasion.phys import PhysicsUtils
@@ -12,7 +12,7 @@ class Bomb_AI(BaseAttackAI, BombShared):
 
     ThrowPower = 100.0
     FriendlyFire = True
-    
+
     HasCooldown = True
     CooldownTime = 10.0
 
@@ -26,15 +26,15 @@ class Bomb_AI(BaseAttackAI, BombShared):
 
         self.maxAmmo = 255
         self.ammo = 255
-        
+
     def determineNextAction(self, ca):
         if ca == self.StateThrow:
             self.avatar.npcFinishAttack()
         return self.StateIdle
-        
+
     def getTauntChance(self):
         return 0.5
-        
+
     def getTauntPhrases(self):
         return ["Bombs away!"]
 
@@ -55,7 +55,7 @@ class Bomb_AI(BaseAttackAI, BombShared):
             proj.node().setLinearVelocity(throwVector * self.ThrowPower)
             proj.d_clearSmoothing()
             proj.d_broadcastPosHpr()
-            
+
             self.startCooldown()
 
     def checkCapable(self, dot, squaredDistance):
@@ -69,5 +69,5 @@ class Bomb_AI(BaseAttackAI, BombShared):
         self.traceOrigin = self.throwOrigin
         self.traceVector = ((target.getPos(render) + (0, 0, target.getHeight() / 2.0)) - self.throwOrigin).normalized()
         self.setNextAction(self.StateThrow)
-        
+
         return True

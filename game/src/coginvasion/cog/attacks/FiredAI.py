@@ -13,7 +13,7 @@ from src.coginvasion.attack.Attacks import ATTACK_FIRED
 from src.coginvasion.attack.LobProjectileAI import LobProjectileAI
 from src.coginvasion.globals import CIGlobals
 from src.coginvasion.phys.WorldColliderAI import WorldColliderAI
-from Fired_Shared import Fired_Shared
+from .Fired_Shared import Fired_Shared
 
 class FiredProjectileAI(LobProjectileAI):
 
@@ -47,10 +47,10 @@ class FiredAI(BaseAttackAI, Fired_Shared):
 
     def getBaseDamage(self):
         return 5
-        
+
     def getTauntChance(self):
         return 0.5
-        
+
     def getTauntPhrases(self):
         return ["I hope you brought some marshmallows.",
                 "It's going to get rather warm around here.",
@@ -78,7 +78,7 @@ class FiredAI(BaseAttackAI, Fired_Shared):
             return self.StateEnd
         elif completedAction == self.StateEnd:
             self.avatar.npcFinishAttack()
-        
+
         return self.StateIdle
 
     def npcUseAttack(self, target):
@@ -88,7 +88,7 @@ class FiredAI(BaseAttackAI, Fired_Shared):
         self.target = target
         self.lastFireTime = 0.0
         self.setNextAction(self.StateBegin)
-        
+
         return True
 
     def checkCapable(self, dot, squaredDistance):
@@ -119,4 +119,3 @@ class FiredAI(BaseAttackAI, Fired_Shared):
                 flame.addExclusion(self.avatar)
 
                 self.lastFireTime = now
-            
