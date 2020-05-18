@@ -89,7 +89,7 @@ class DistributedBattleZone(DistributedObject):
         from src.coginvasion.base.Precache import precacheScene
         curPos = camera.getPos(render)
         visLeafs = base.bspLoader.getNumVisleafs()
-        for i in xrange(1, visLeafs):
+        for i in range(1, visLeafs):
             center = base.bspLoader.getLeafCenter(i)
             camera.setPos(render, center)
             #base.bspLoader.update()

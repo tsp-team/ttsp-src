@@ -461,7 +461,7 @@ class DistributedPlayerToonAI(DistributedToonAI, DistributedPlayerToonShared):
 
     def setLoadout(self, gagIds):
         if self.backpack:
-            for i in xrange(len(gagIds) - 1, -1, -1):
+            for i in range(len(gagIds) - 1, -1, -1):
                 gagId = gagIds[i]
                 if not self.backpack.hasGag(gagId):
                     gagIds.remove(gagId)

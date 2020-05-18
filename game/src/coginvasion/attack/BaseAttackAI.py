@@ -56,7 +56,7 @@ class BaseAttackAI(BaseAttackShared):
             # We have a line-of-sight from start to end
             return [True, Vec3()]
         
-        for i in xrange(losChecks):
+        for i in range(losChecks):
             testLeft -= stepRight
             testRight += stepRight
             
@@ -136,7 +136,7 @@ class BaseAttackAI(BaseAttackShared):
                     random.choice(decals), 0.3, 0, origin, hitPos + (traceDir * 0.1))
 
             if "metal" in Surfaces.getSurfaceName(surface):
-                for _ in xrange(traces * random.randint(2, 4)):
+                for _ in range(traces * random.randint(2, 4)):
                     self.avatar.getBattleZone().getTempEnts().makeBulletRicochet(hitPos, traceDir, hitNormal)
                     
             # Emit a sound at the hit point
@@ -148,7 +148,7 @@ class BaseAttackAI(BaseAttackShared):
         if (CIGlobals.isAvatar(avNP) and 
                 self.canDamage(avNP)):
             
-            for _ in xrange(traces):
+            for _ in range(traces):
                 dmgInfo = TakeDamageInfo(self.avatar, self.getID(),
                                     self.calcDamage(distance),
                                     hitPos, origin, hitNode = hitNode)

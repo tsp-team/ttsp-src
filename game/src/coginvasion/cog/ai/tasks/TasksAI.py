@@ -482,7 +482,7 @@ class Task_GetPathYieldToFriend(BaseTaskAI):
     def runTask(self):
         moveVector = Vec3()
         currPos = self.npc.getPos()
-        for i in xrange(len(self.npc.avatarsInSight)):
+        for i in range(len(self.npc.avatarsInSight)):
             av = self.npc.avatarsInSight[i]
             if self.npc.getRelationshipTo(av) != RELATIONSHIP_FRIEND:
                 continue

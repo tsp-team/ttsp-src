@@ -53,7 +53,7 @@ class DistributedSewer(DistributedBattleZone):
         if base.localAvatar.walkControls.getCollisionsActive():
             base.localAvatar.walkControls.setCollisionsActive(0)
 
-        for entnum in xrange(base.bspLoader.getNumEntities()):
+        for entnum in range(base.bspLoader.getNumEntities()):
             classname = base.bspLoader.getEntityValue(entnum, "classname")
             if classname == "info_player_start":
                 origin = base.bspLoader.getEntityValueVector(entnum, "origin")

@@ -65,7 +65,7 @@ class HeaderGenerator:
     def askAuthor(self):
         # We need to know who is programming this file.
         authors = 'Known Authors:'
-        for i in xrange(0, len(self.knownAuthors)):
+        for i in range(0, len(self.knownAuthors)):
             author = self.knownAuthors[i]
             authors += '\n%d) %s' % (i + 1, author)
             

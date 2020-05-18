@@ -89,7 +89,7 @@ class HL2Shotgun(BaseHitscan, HL2ShotgunShared):
             precacheSound(rl)
             
         precacheModel(cls.ShellPath)
-        for i in xrange(cls.ShellContactSoundRange[0], cls.ShellContactSoundRange[1] + 1):
+        for i in range(cls.ShellContactSoundRange[0], cls.ShellContactSoundRange[1] + 1):
             precacheSound(cls.ShellContactSoundPath.format(i))
             
     def addPrimaryPressData(self, dg):

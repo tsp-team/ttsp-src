@@ -357,7 +357,7 @@ class CIBase(ShowBase):
             return [startPos, endPos]
         result = []
         valueList = self.navMeshNp.node().path_find_follow(startPos, endPos)
-        for i in xrange(valueList.get_num_values()):
+        for i in range(valueList.get_num_values()):
             result.append(valueList.get_value(i))
         return result
 
@@ -368,7 +368,7 @@ class CIBase(ShowBase):
         if not self.bspLoader.hasActiveLevel():
             return data
 
-        for i in xrange(self.bspLoader.getNumEntities()):
+        for i in range(self.bspLoader.getNumEntities()):
             classname = self.bspLoader.getEntityValue(i, "classname")
             if classname == "light_environment":
                 data[0] = 1
@@ -536,7 +536,7 @@ class CIBase(ShowBase):
         data = {}
         mup = MemoryUsagePointers()
         MemoryUsage.getPointers(mup)
-        for i in xrange(mup.getNumPointers()):
+        for i in range(mup.getNumPointers()):
             ptr = mup.getPythonPointer(i)
             if ptr.__class__.__name__ in data.keys():
                 data[ptr.__class__.__name__] += 1

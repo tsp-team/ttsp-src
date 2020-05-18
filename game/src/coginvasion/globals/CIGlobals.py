@@ -349,7 +349,7 @@ def isDistributed(obj):
 def getMoveIvalFromPath(np, path, speed):
     from direct.interval.IntervalGlobal import Sequence, Func, LerpPosInterval
     moveIval = Sequence()
-    for i in xrange(len(path)):
+    for i in range(len(path)):
         if i == 0:
             continue
         waypoint = path[i]
@@ -602,7 +602,7 @@ def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1)):
     scale = random.uniform(scale-0.25, scale+0.25)
     #scale = clamp(scale, 0.5, 8.0)
     
-    for i in xrange(1, 9):
+    for i in range(1, 9):
         offset = Point3(pos) + (forward * (i*(2 / 16.0)*scale))
         size = (random.uniform(6 / 16.0, 9 / 16.0) * (12-(i))/9) * scale
         roll = random.randint(0, 360)

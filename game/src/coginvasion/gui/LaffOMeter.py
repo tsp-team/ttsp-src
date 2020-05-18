@@ -145,7 +145,7 @@ class LaffOMeter(DirectFrame):
             ToontownIntervals.start(ToontownIntervals.getPulseSmallerIval(self.container, name))
 
     def adjustTeeth(self, health):
-        for i in xrange(len(self.teethList)):
+        for i in range(len(self.teethList)):
             if health > self.maxHP * self.fractions[i]:
                 self.teethList[i].show()
             else:

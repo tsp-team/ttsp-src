@@ -47,7 +47,7 @@ class Modifier:
             if len(data) < 3:
                 # if the user supplied less than 3 values for a color,
                 # fill in the missing values with the last supplied value.
-                for _ in xrange(3 - len(data)):
+                for _ in range(3 - len(data)):
                     data.append(data[len(data) - 1])
             if len(data) < 4:
                 # user didn't supply a scalar.
@@ -201,7 +201,7 @@ class EnvironmentConfiguration:
                     self.notify.warning('Unexpected key %s was found.' % key)
 
             fileDataLoaded = 0
-            for i in xrange(0, len(self.hoodData.keys())):
+            for i in range(0, len(self.hoodData.keys())):
                 if len(hoodDataToLoad) > 0 and i < len(hoodDataToLoad):
                     hoodData = self.getHoodSection(hoodDataToLoad[i])
                     hoodData.setDefaults()

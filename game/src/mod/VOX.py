@@ -29,7 +29,7 @@ class VOX:
 
         words = sentence.split(" ")
         self.speechTrack = Sequence()
-        for i in xrange(len(words)):
+        for i in range(len(words)):
             word = words[i].lower()
 
             if word == ",":

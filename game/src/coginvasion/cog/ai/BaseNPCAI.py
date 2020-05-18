@@ -409,7 +409,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         #print("findLateralCover")
 
-        for i in xrange(coverChecks):
+        for i in range(coverChecks):
             testLeft -= stepRight
             testRight += stepRight
 
@@ -639,7 +639,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         if not avs:
             avs = self.avatarsInSight
 
-        for i in xrange(len(avs)):
+        for i in range(len(avs)):
             av = avs[i]
             if av.getHealth() <= 0:
                 continue
@@ -672,7 +672,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         self.oldTargets.appendleft(target)
 
     def popTarget(self):
-        for i in xrange(len(self.oldTargets) - 1, -1, -1):
+        for i in range(len(self.oldTargets) - 1, -1, -1):
             target = self.oldTargets[i]
             if not target or not CIGlobals.isNodePathOk(target.entity):
                 continue
@@ -771,7 +771,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         dot = vec2LOS.dot(self.getQuat().getForward().getXy())
 
         attacks = self.getAvailableAttacks()
-        for i in xrange(len(attacks)):
+        for i in range(len(attacks)):
             attack = attacks[i]
             if attack.checkCapable(dot, distSqr) and attack.hasAmmo() and not attack.isCoolingDown():
                 #print attack, "is capable"
@@ -1028,7 +1028,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
         del self.avatarsInSight[:]
 
         # Go through all known avatars in my zone.
-        for i in xrange(len(base.air.avatars[self.battleZone.zoneId])):
+        for i in range(len(base.air.avatars[self.battleZone.zoneId])):
             av = base.air.avatars[self.battleZone.zoneId][i]
             # Ignore myself
             if av == self:

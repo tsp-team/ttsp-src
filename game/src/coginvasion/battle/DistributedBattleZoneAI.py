@@ -337,7 +337,7 @@ class DistributedBattleZoneAI(DistributedObjectAI, AvatarWatcher):
         result = []
         valueList = self.navMeshNp.node().path_find_follow(startPos, endPos)
         currDir = Vec3(0)
-        for i in xrange(valueList.get_num_values()):
+        for i in range(valueList.get_num_values()):
             if i > 0 and i < valueList.get_num_values() - 1:
                 dir = (valueList.get_value(i - 1) - valueList.get_value(i)).normalized()
                 if dir.almostEqual(currDir, 0.05):
@@ -407,11 +407,11 @@ class DistributedBattleZoneAI(DistributedObjectAI, AvatarWatcher):
             numRigids = self.physicsWorld.getNumRigidBodies()
             numGhosts = self.physicsWorld.getNumGhosts()
             numConstraints = self.physicsWorld.getNumConstraints()
-            for i in xrange(numRigids - 1, -1, -1):
+            for i in range(numRigids - 1, -1, -1):
                 self.physicsWorld.removeRigidBody(self.physicsWorld.getRigidBody(i))
-            for i in xrange(numGhosts - 1, -1, -1):
+            for i in range(numGhosts - 1, -1, -1):
                 self.physicsWorld.removeGhost(self.physicsWorld.getGhost(i))
-            for i in xrange(numConstraints - 1, -1, -1):
+            for i in range(numConstraints - 1, -1, -1):
                 self.physicsWorld.removeConstraint(self.physicsWorld.getConstraint(i))
 
     def delete(self):
