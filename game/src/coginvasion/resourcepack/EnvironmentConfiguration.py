@@ -12,7 +12,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from panda3d.core import Vec3
 
-from yaml import load
+from panda3d.core import CKeyValues
 
 from src.coginvasion.globals.CIGlobals import colorFromRGBScalar255
 
@@ -25,11 +25,11 @@ stringList = 'stringList'
 anyValue = 'any'
 
 class Modifier:
-    notify = directNotify.newCategory('YAMLConfigurationModifier')
-    
+    notify = directNotify.newCategory('ResourcePackModifier')
+
     def __init__(self, modType = color):
         self.modType = modType
-    
+
     # Called when a key is suspected to be this modifier.
     # This method will double-check that and verify that it has everything it needs.
     def digest(self, data):
@@ -43,7 +43,7 @@ class Modifier:
                     if not isinstance(n, (int, long)):
                         self.notify.warning('Received a non-int value for color.')
                         return None
-            
+
             if len(data) < 3:
                 # if the user supplied less than 3 values for a color,
                 # fill in the missing values with the last supplied value.
@@ -90,7 +90,7 @@ class Modifier:
             return data
 
 class HoodData(object):
-    
+
     def __init__(self, envConfig):
         self.envConfig = envConfig
         self.outdoorAmbientColor = None
@@ -111,14 +111,14 @@ class HoodData(object):
             'interior-light-color' : [Modifier(color), 'interiorLightColor'],
             'sky-type' : [Modifier(numberValue), 'skyType']
         }
-        
+
     def setDefaults(self):
         # Let's set non-set attributes to the defaults inside of EnvironmentConfiguration.
         for valueSet in self.modifiers.values():
             attrName = valueSet[1]
             if not getattr(self, valueSet[1]):
                 setattr(self, valueSet[1], getattr(self.envConfig, 'default' + attrName[0].upper() + attrName[1:]))
-        
+
     def digest(self, hoodSection):
         for key in hoodSection:
             if not isinstance(key, dict):
@@ -126,13 +126,13 @@ class HoodData(object):
                     entry = self.modifiers.get(key)
                     modifier = entry[0]
                     setattr(self, entry[1], modifier.digest(hoodSection[key]))
-                    
+
         self.setDefaults()
-                
+
     def __str__(self):
         return 'Outside Ambient Color: %s, Indoor Ambient Color: %s, \
         Fog Color: %s, Fog Density: %d, Sun Color: %s, Sun Angle: %s,\
-        Interior Light Color: %s, Sky Type: %d' % (self.outdoorAmbientColor, 
+        Interior Light Color: %s, Sky Type: %d' % (self.outdoorAmbientColor,
             self.indoorAmbientColor, self.fogColor, self.fogDensity, self.sunColor,
             self.sunAngle, self.interiorLightColor, self.skyType)
 
@@ -166,12 +166,12 @@ class EnvironmentConfiguration:
            'default-fog-density' : [Modifier(numberValue), 'defaultFogDensity'],
            'default-interior-light-color' : [Modifier(color), 'defaultInteriorLightColor'],
         }
-        
+
         self.hoodData = {}
 
     def addHood(self, hoodId):
         self.hoodData[hoodId] = HoodData(self)
-            
+
     def processData(self, data):
         # This is the section where our environment data can be found.
         environ = data if not self.section else data[self.section]
@@ -179,7 +179,7 @@ class EnvironmentConfiguration:
         if 'want-reflections' in environ.keys():
             modifier = Modifier(boolean)
             self.wantReflections = modifier.digest(environ['want-reflections'])
-        
+
         if 'shaders' in environ:
             shaders = environ['shaders']
             # A list of keys that point to hood data that should be loaded.
@@ -199,7 +199,7 @@ class EnvironmentConfiguration:
                     continue
                 else:
                     self.notify.warning('Unexpected key %s was found.' % key)
-            
+
             fileDataLoaded = 0
             for i in xrange(0, len(self.hoodData.keys())):
                 if len(hoodDataToLoad) > 0 and i < len(hoodDataToLoad):
@@ -209,19 +209,18 @@ class EnvironmentConfiguration:
                     hoodData = self.getHoodSection(fileHoodDataToLoad[fileDataLoaded])
                     hoodData.digest(shaders[key])
                     fileDataLoaded += 1
-                
+
             for key in shaders:
                 hoodData = self.getHoodSection(key)
                 if isinstance(shaders[key], dict) and hoodData:
                     hoodData.digest(shaders[key])
-        
+
     def digest(self):
         if self.configPath:
             with open(self.configPath, 'r') as stream:
                 self.processData(load(stream))
         elif self.configStream:
             self.processData(load(self.configStream))
-                    
+
     def getHoodSection(self, key):
         return self.hoodData.get(key, None)
-        
