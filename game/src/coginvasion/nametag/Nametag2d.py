@@ -5,8 +5,8 @@ from panda3d.core import PGButton, VBase4, DepthWriteAttrib, Point3
 from src.coginvasion.toon.ChatBalloon import ChatBalloon
 from src.coginvasion.margins import MarginGlobals
 from src.coginvasion.margins.MarginVisible import MarginVisible
-import NametagGlobals
-from Nametag import Nametag
+from . import NametagGlobals
+from .Nametag import Nametag
 from src.coginvasion.gui.Clickable2d import Clickable2d
 from src.coginvasion.globals import CIGlobals
 
@@ -35,7 +35,7 @@ class Nametag2d(Nametag, Clickable2d, MarginVisible):
 
         self.contents.setScale(self.CONTENTS_SCALE)
         self.hideThought()
-        
+
         #self.cTag = CNametag()
 
         self.accept('MarginVisible-update', self.update)
@@ -44,7 +44,7 @@ class Nametag2d(Nametag, Clickable2d, MarginVisible):
         self.ignoreAll()
 
         Nametag.destroy(self)
-        
+
         self.cTag = None
 
         if self.textNodePath is not None:
@@ -193,7 +193,7 @@ class Nametag2d(Nametag, Clickable2d, MarginVisible):
             reversed=self.chatReversed,
             button=self.chatButton[self.clickState], is2d = True)
         self.chatBalloon.reparentTo(self.contents)
-        
+
         #self.cTag.set_chatballoon_size(self.chatBalloon.width, self.chatBalloon.height)
 
         # Calculate the center of the TextNode:
@@ -253,7 +253,7 @@ class Nametag2d(Nametag, Clickable2d, MarginVisible):
         self.panelWidth = self.textNode.getWidth() + self.PANEL_X_PADDING
         self.panelHeight = self.textNode.getHeight() + self.PANEL_Z_PADDING
         self.panel.setScale(self.panelWidth, 1, self.panelHeight)
-        
+
         #self.cTag.set_panel_size(self.panelWidth, self.panelHeight)
 
         # Add an arrow:

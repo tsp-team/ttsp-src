@@ -2,7 +2,7 @@ from direct.task.Task import Task
 from panda3d.core import VBase4, PandaNode, ConfigVariableBool
 
 from src.coginvasion.margins.MarginVisible import MarginVisible
-import NametagGlobals
+from . import NametagGlobals
 from Nametag2d import Nametag2d
 from Nametag3d import Nametag3d
 
@@ -56,7 +56,7 @@ class NametagGroup:
 
         self.nametags = set()
         self.add(self.nametag2d)
-        
+
         self.add(self.nametag3d)
 
         # Add the tick task:
@@ -267,7 +267,7 @@ class NametagGroup:
     def setChatPageIndex(self, chatPageIndex):
         if chatPageIndex >= self.getNumChatPages():
             return
-        
+
         if self.avatar and hasattr(self.avatar, 'chatStompComplete'):
             self.avatar.chatStompComplete(self.chatPages[chatPageIndex])
 

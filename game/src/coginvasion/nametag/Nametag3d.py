@@ -4,8 +4,8 @@ from panda3d.core import BillboardEffect, Vec3, Point3, PGButton, VBase4
 from panda3d.core import DepthWriteAttrib, Point2, CardMaker, BitMask32
 
 from src.coginvasion.toon.ChatBalloon import ChatBalloon
-import NametagGlobals
-from Nametag import Nametag
+from . import NametagGlobals
+from .Nametag import Nametag
 from src.coginvasion.gui.Clickable3d import Clickable3d
 from src.coginvasion.globals import CIGlobals
 
@@ -23,7 +23,7 @@ class Nametag3d(Nametag, Clickable3d):
         self.contents.setLightOff(1)
         self.contents.hide(CIGlobals.ShadowCameraBitmask)
         CIGlobals.applyNoGlow(self.contents)
-        
+
         #self.cTag = CNametag3d()
 
         self.distance = 0
@@ -38,7 +38,7 @@ class Nametag3d(Nametag, Clickable3d):
 
     def destroy(self):
         self.ignoreAll()
-        
+
         self.cTag = None
 
         Nametag.destroy(self)
@@ -121,7 +121,7 @@ class Nametag3d(Nametag, Clickable3d):
     def tick(self, task):
         if not self.contents:
             return task.cont
-            
+
         distance = self.contents.getPos(base.cam).length()
 
         if distance < self.SCALING_MIN_DISTANCE:
@@ -132,7 +132,7 @@ class Nametag3d(Nametag, Clickable3d):
         if distance != self.distance:
             self.contents.setScale(math.sqrt(distance) * self.SCALING_FACTOR)
             self.distance = distance
-            
+
         if self.isClickable():
             self.updateClickRegion()
 
@@ -159,9 +159,9 @@ class Nametag3d(Nametag, Clickable3d):
             reversed=self.chatReversed,
             button=self.chatButton[self.clickState])
         self.chatBalloon.reparentTo(self.contents)
-        
+
         #self.cTag.set_chatballoon_size(self.chatBalloon.width, self.chatBalloon.height)
-        
+
         if not base.config.GetBool('want-nametags', True):
             self.contents.show()
 
@@ -202,8 +202,8 @@ class Nametag3d(Nametag, Clickable3d):
         self.panelWidth = self.textNode.getWidth() + self.PANEL_X_PADDING
         self.panelHeight = self.textNode.getHeight() + self.PANEL_Z_PADDING
         self.panel.setScale(self.panelWidth, 1, self.panelHeight)
-        
+
         #self.cTag.set_panel_size(self.panelWidth, self.panelHeight)
-        
+
         if not base.config.GetBool('want-nametags', True):
             self.contents.hide()
