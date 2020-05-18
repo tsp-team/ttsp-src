@@ -39,11 +39,11 @@ from src.coginvasion.base import ScreenshotHandler
 from src.coginvasion.base import MusicCache
 from src.coginvasion.hood.SkyUtil import SkyUtil
 from src.coginvasion.phys.FPSCamera import FPSCamera
-from Lighting import OutdoorLightingConfig
+from .Lighting import OutdoorLightingConfig
 
-from HDR import HDR
-from ShakeCamera import ShakeCamera
-from WaterReflectionManager import WaterReflectionManager
+from .HDR import HDR
+from .ShakeCamera import ShakeCamera
+from .WaterReflectionManager import WaterReflectionManager
 from src.coginvasion.phys import PhysicsUtils
 
 import __builtin__
