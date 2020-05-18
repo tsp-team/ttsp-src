@@ -4,7 +4,7 @@ from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.NetMessenger import NetMessenger
 
 from src.mod.ModMsgTypes import AI_HELLO_CMU
-from ModClientRepository import ModClientRepository
+from .ModClientRepository import ModClientRepository
 from src.mod import ModGlobals
 
 from src.coginvasion.ai.AIZoneData import AIZoneDataStore, DynamicZonesBegin, DynamicZonesEnd
