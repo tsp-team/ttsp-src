@@ -12,7 +12,7 @@ from panda3d.bullet import BulletWorld
 from panda3d.bsp import Py_AI_BSPLoader
 from panda3d.core import Vec3
 
-from p3recastnavigation import RNNavMeshSettings
+from panda3d.recastnavigation import RNNavMeshSettings
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectAI import DistributedObjectAI

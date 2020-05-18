@@ -18,7 +18,7 @@ from panda3d.bsp import Audio3DManager, DecalModulateSpec
 
 import sys
 
-#from p3recastnavigation import RNNavMeshManager
+#from panda3d.recastnavigation import RNNavMeshManager
 
 from direct.showbase.ShowBase import ShowBase
 from direct.directnotify.DirectNotifyGlobal import directNotify

@@ -40,7 +40,7 @@ loadPrcFileData('', 'audio-library-name none')
 from direct.showbase.ShowBase import ShowBase
 base = ShowBase()
 
-from p3recastnavigation import RNNavMeshManager
+from panda3d.recastnavigation import RNNavMeshManager
 
 nmMgr = RNNavMeshManager.get_global_ptr()
 nmMgr.set_root_node_path(render)
