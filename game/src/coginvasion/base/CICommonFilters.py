@@ -15,7 +15,7 @@ clunky approach.  - Josh
 
 """
 
-from CIFilterManager import FilterManager
+from .CIFilterManager import FilterManager
 from panda3d.core import LVecBase4, LPoint2
 from panda3d.core import Filename, NodePath
 from panda3d.core import AuxBitplaneAttrib
@@ -66,7 +66,7 @@ float readDepth(in vec2 coord, sampler2D tex)
 
 float compareDepths(in float depth1, in float depth2, inout int far)
 {
-	float garea = 1.0; //gauss bell width    
+	float garea = 1.0; //gauss bell width
 	float diff = (depth1 - depth2)*100.0; //depth difference (0-100)
 
 	//reduce left bell width to avoid self-shadowing
@@ -78,7 +78,7 @@ float compareDepths(in float depth1, in float depth2, inout int far)
 	{
 		far = 1;
 	}
-	
+
 	float gauss = pow(2.7182,-2.0*(diff-BIAS)*(diff-BIAS)/(garea*garea));
 	return gauss;
 }
@@ -93,10 +93,10 @@ float calcAO(vec2 uv, float depth, float dw, float dh, sampler2D tex)
 	float coordh = uv.y + dh*dd;
 	float coordw2 = uv.x - dw*dd;
 	float coordh2 = uv.y - dh*dd;
-	
+
 	vec2 coord = vec2(coordw , coordh);
 	vec2 coord2 = vec2(coordw2, coordh2);
-	
+
 	int far = 0;
 	temp = compareDepths(depth, readDepth(coord,tex),far);
 	//DEPTH EXTRAPOLATION:
@@ -105,38 +105,38 @@ float calcAO(vec2 uv, float depth, float dw, float dh, sampler2D tex)
 		temp2 = compareDepths(readDepth(coord2,tex),depth,far);
 		temp += (1.0-temp)*temp2;
 	}
-	
+
 	return temp;
 }
 
 float DoSSAO( in vec2 uv, in vec2 texelSize, in sampler2D color_depth )
 {
     float ao_out = 0.0;
-    
+
 	vec2 size = 1.0f / texelSize;
 	vec2 noise = rand(uv,size);
 	float depth = readDepth(uv, color_depth);
-	
+
 	float w = texelSize.x/clamp(depth, 0.25f, 1.0)+(noise.x*(1.0f-noise.x));
 	float h = texelSize.y/clamp(depth, 0.25f, 1.0)+(noise.y*(1.0f-noise.y));
-	
+
 	float pw;
 	float ph;
-	
+
 	float ao = 0;
 
 	float dl = PI*(3.0-sqrt(5.0));
 	float dz = 1.0/float( SAMPLES );
 	float z = 1.0 - dz/1.0;
 	float l = 0.0;
-	
+
 	for (int i = 1; i <= SAMPLES; i++)
 	{
 		float r = sqrt(1.0-z);
 
 		pw = cos(l)*r;
 		ph = sin(l)*r;
-		ao += calcAO( uv, depth, pw*w, ph*h, color_depth );     
+		ao += calcAO( uv, depth, pw*w, ph*h, color_depth );
 		z = z - dz;
 		l = l + dl;
 	}
@@ -144,7 +144,7 @@ float DoSSAO( in vec2 uv, in vec2 texelSize, in sampler2D color_depth )
 	ao = 1.0-ao;
 
 	vec3 color = tex2D(color_depth,uv).rgb;
-	
+
 	vec3 lumcoeff = vec3( 0.2126f, 0.7152f, 0.0722f );
 	float lum = dot( color.rgb, lumcoeff );
 
@@ -160,10 +160,10 @@ out vec4 o_color;
 void main()
 {
     float ssao_out = DoSSAO(l_texcoord, vec2(textureSize(depthSampler, 0)), depthSampler);
-    
+
     vec3 out_col = vec3(ssao_out);
     out_col *= 2.0;
-    
+
     o_color = vec4(out_col, 1.0);
 }
 """
@@ -193,19 +193,19 @@ class CommonFilters:
 
     def loadShader(self, name):
         return Shader.load(name)
-		
+
     def fullCleanup(self):
         self.cleanup()
         self.textures = {}
 
     def cleanup(self):
         self.manager.cleanup()
-		
+
         for tex in self.textures.keys():
             # Preserve color texture
             if tex != "color":
                 del self.textures[tex]
-        
+
         if self.finalQuad:
             self.finalQuad.removeNode()
         self.finalQuad = None
@@ -213,27 +213,27 @@ class CommonFilters:
         if self.fxaa:
             self.fxaa.removeNode()
         self.fxaa = None
-        
+
         for bloom in self.bloom:
             bloom.removeNode()
         self.bloom = []
-        
+
         for ssr in self.ssr:
             ssr.removeNode()
         self.ssr = []
-        
+
         for blur in self.blur:
             blur.removeNode()
         self.blur = []
-        
+
         for ssao in self.ssao:
             ssao.removeNode()
         self.ssao = []
-        
+
         if self.task != None:
           taskMgr.remove(self.task)
           self.task = None
-		  
+
     def makeTexture(self, tex):
         self.textures[tex] = Texture("scene-" + tex)
         self.textures[tex].setWrapU(Texture.WMClamp)
@@ -257,7 +257,7 @@ class CommonFilters:
 			# we don't need to make it.
             needtex = set()
             needtexcoord = set(["color"])
-                
+
             if ("SSR" in configuration):
                 needtex.add("depth")
                 needtex.add("aux0")
@@ -294,10 +294,10 @@ class CommonFilters:
             if (self.finalQuad == None):
                 self.cleanup()
                 return False
-                
+
             if ("SSR" in configuration):
                 self.ssr.append(self.manager.renderQuadInto("ssr-reflection", colortex = self.textures["ssrreflection"]))
-                
+
                 self.ssr[0].setShader(Shader.load(Shader.SL_GLSL, "resources/phase_14/models/shaders/ssr.vert.glsl",
                                                                   "resources/phase_14/models/shaders/ssr_reflection.frag.glsl"))
                 self.ssr[0].setShaderInput("colorSampler", self.textures["color"])
@@ -324,7 +324,7 @@ class CommonFilters:
                 self.ssao[1].setShader(self.loadShader("phase_3/models/shaders/filter-blurx.sha"))
                 self.ssao[2].setShaderInput("src", ssao1)
                 self.ssao[2].setShader(self.loadShader("phase_3/models/shaders/filter-blury.sha"))
-                
+
             if ("DOF" in configuration):
                 blur0=self.textures["blur0"]
                 blur1=self.textures["blur1"]
@@ -407,7 +407,7 @@ class CommonFilters:
             if ("Bloom" in configuration):
                 ptext += "  vec3 bloom = texture(tx_bloom3, l_texcoord).rgb;\n"
                 ptext += "  result.rgb += bloom.rgb;\n"
-                
+
             ptext += "  outputColor = result;\n"
             ptext += "}\n"
 
@@ -419,9 +419,9 @@ class CommonFilters:
                 self.finalQuad.setShaderInput("tx_"+tex, self.textures[tex])
 
             self.task = taskMgr.add(self.update, "common-filters-update")
-			
+
             messenger.send("CICommonFilters_reconfigure")
-            
+
         if (changed == "SSR") or fullrebuild:
             if ("SSR" in configuration):
                 ssrconf = configuration["SSR"]
@@ -546,7 +546,7 @@ class CommonFilters:
             del self.configuration["AmbientOcclusion"]
             return self.reconfigure(True, "AmbientOcclusion")
         return True
-        
+
     def setSSR(self, raytraceMaxLength = 256.0, raytraceMaxThickness = 0.2,
                reflectionEnhancer = 1.0, blurOffset = (1, 1), blurNum = 3,
                accumBlendRatio = 0.1):
@@ -557,7 +557,7 @@ class CommonFilters:
         newconfig.accumBlendRatio = accumBlendRatio
         self.configuration["SSR"] = newconfig
         return self.reconfigure(fullrebuild, "SSR")
-        
+
     def delSSR(self):
         if ("SSR" in self.configuration):
             del self.configuration["SSR"]

@@ -1,12 +1,12 @@
 from panda3d.core import *
 from direct.interval.IntervalGlobal import *
 from direct.actor.Actor import Actor
-from Ripples import *
+from .Ripples import *
 from src.coginvasion.toon import ParticleLoader
 
 class Splash(NodePath):
     splashCount = 0
-    
+
     def __init__(self, parent = hidden, wantParticles = 1, tint = (1, 1, 1, 1)):
         NodePath.__init__(self, parent)
         self.assign(parent.attachNewNode('splash'))
@@ -28,13 +28,13 @@ class Splash(NodePath):
             self.pSystem.setBin('fixed', 150, 1)
             self.pSystem.setColorScale(tint)
             self.particles = self.pSystem.particlesDict.get('particles-1')
-        
+
         self.track = None
         self.trackId = Splash.splashCount
         Splash.splashCount += 1
         self.setBin('fixed', 100, 1)
         self.hide()
-    
+
     def createTrack(self, rate = 1):
         self.ripples.createTrack(rate)
         self.splashdown.setPlayRate(rate, 'splashdown')
@@ -45,21 +45,21 @@ class Splash(NodePath):
         else:
             particleSequence = Sequence()
         self.track = Sequence(Func(self.show), Parallel(self.ripples.track, rippleSequence, particleSequence), Func(self.hide), name = 'splashdown-%d-track' % self.trackId)
-    
+
     def play(self, rate = 1):
         self.stop()
         self.createTrack(rate)
         self.track.start()
-    
+
     def loop(self, rate = 1):
         self.stop()
         self.createTrack(rate)
         self.track.loop()
-    
+
     def stop(self):
         if self.track:
             self.track.finish()
-    
+
     def destroy(self):
         self.stop()
         del self.track
@@ -69,5 +69,5 @@ class Splash(NodePath):
             self.pSystem.cleanup()
             del self.pSystem
             del self.particles
-        
+
         self.removeNode()
