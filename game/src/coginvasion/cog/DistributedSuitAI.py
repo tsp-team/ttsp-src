@@ -23,12 +23,12 @@ from src.coginvasion.cog.ai.tasks.BaseTaskAI import BaseTaskAI
 from src.coginvasion.gags import GagGlobals
 from src.coginvasion.gags.GagType import GagType
 
-from SuitBank import SuitPlan
-from SuitType import SuitType
-import SuitBank
-import SuitGlobals
-import Variant
-import GagEffects
+from .SuitBank import SuitPlan
+from .SuitType import SuitType
+from . import SuitBank
+from . import SuitGlobals
+from . import Variant
+from . import GagEffects
 
 import math
 

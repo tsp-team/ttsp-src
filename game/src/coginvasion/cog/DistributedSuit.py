@@ -18,12 +18,12 @@ from direct.distributed.ClockDelta import globalClockDelta
 
 from src.coginvasion.avatar.DistributedAvatar import DistributedAvatar
 
-from SuitBank import SuitPlan
-from Suit import Suit
-import SuitBank
-import SuitGlobals
-import Voice
-import Variant
+from .SuitBank import SuitPlan
+from .Suit import Suit
+from . import SuitBank
+from . import SuitGlobals
+from . import Voice
+from . import Variant
 
 class DistributedSuit(Suit, DistributedAvatar, DelayDeletable):
     notify = directNotify.newCategory('DistributedSuit')
@@ -64,7 +64,7 @@ class DistributedSuit(Suit, DistributedAvatar, DelayDeletable):
         # We will make a sequence of NPCWalkIntervals for each point2 in the path.
 
         self.clearMoveTrack()
-        
+
 
     def clearMoveTrack(self):
         if self.moveIval:
