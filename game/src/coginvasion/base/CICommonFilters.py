@@ -54,102 +54,102 @@ SSAO_PIXEL="""#version 330
 vec2 rand(vec2 coord, vec2 size)
 {
     float noiseX = fract(sin(dot(coord, vec2(12.9898,78.233))) * 43758.5453) * 2.0f-1.0f;
-	float noiseY = fract(sin(dot(coord, vec2(12.9898,78.233)*2.0)) * 43758.5453) * 2.0f-1.0f;
+    float noiseY = fract(sin(dot(coord, vec2(12.9898,78.233)*2.0)) * 43758.5453) * 2.0f-1.0f;
 
-	return vec2(noiseX,noiseY)*0.001;
+    return vec2(noiseX,noiseY)*0.001;
 }
 
 float readDepth(in vec2 coord, sampler2D tex)
 {
-	return textureLod(tex, vec4(coord, 0, 0)).a * (ZNEAR / ZFAR);
+    return textureLod(tex, vec4(coord, 0, 0)).a * (ZNEAR / ZFAR);
 }
 
 float compareDepths(in float depth1, in float depth2, inout int far)
 {
-	float garea = 1.0; //gauss bell width
-	float diff = (depth1 - depth2)*100.0; //depth difference (0-100)
+    float garea = 1.0; //gauss bell width
+    float diff = (depth1 - depth2)*100.0; //depth difference (0-100)
 
-	//reduce left bell width to avoid self-shadowing
-	if ( diff < BIAS + BIAS_OFFSET )
-	{
-		garea = BIAS;
-	}
-	else
-	{
-		far = 1;
-	}
+    //reduce left bell width to avoid self-shadowing
+    if ( diff < BIAS + BIAS_OFFSET )
+    {
+        garea = BIAS;
+    }
+    else
+    {
+        far = 1;
+    }
 
-	float gauss = pow(2.7182,-2.0*(diff-BIAS)*(diff-BIAS)/(garea*garea));
-	return gauss;
+    float gauss = pow(2.7182,-2.0*(diff-BIAS)*(diff-BIAS)/(garea*garea));
+    return gauss;
 }
 
 float calcAO(vec2 uv, float depth, float dw, float dh, sampler2D tex)
 {
-	float dd = (1.0-depth)*RADIUS;
+    float dd = (1.0-depth)*RADIUS;
 
-	float temp = 0.0;
-	float temp2 = 0.0;
-	float coordw = uv.x + dw*dd;
-	float coordh = uv.y + dh*dd;
-	float coordw2 = uv.x - dw*dd;
-	float coordh2 = uv.y - dh*dd;
+    float temp = 0.0;
+    float temp2 = 0.0;
+    float coordw = uv.x + dw*dd;
+    float coordh = uv.y + dh*dd;
+    float coordw2 = uv.x - dw*dd;
+    float coordh2 = uv.y - dh*dd;
 
-	vec2 coord = vec2(coordw , coordh);
-	vec2 coord2 = vec2(coordw2, coordh2);
+    vec2 coord = vec2(coordw , coordh);
+    vec2 coord2 = vec2(coordw2, coordh2);
 
-	int far = 0;
-	temp = compareDepths(depth, readDepth(coord,tex),far);
-	//DEPTH EXTRAPOLATION:
-	if (far > 0)
-	{
-		temp2 = compareDepths(readDepth(coord2,tex),depth,far);
-		temp += (1.0-temp)*temp2;
-	}
+    int far = 0;
+    temp = compareDepths(depth, readDepth(coord,tex),far);
+    //DEPTH EXTRAPOLATION:
+    if (far > 0)
+    {
+        temp2 = compareDepths(readDepth(coord2,tex),depth,far);
+        temp += (1.0-temp)*temp2;
+    }
 
-	return temp;
+    return temp;
 }
 
 float DoSSAO( in vec2 uv, in vec2 texelSize, in sampler2D color_depth )
 {
     float ao_out = 0.0;
 
-	vec2 size = 1.0f / texelSize;
-	vec2 noise = rand(uv,size);
-	float depth = readDepth(uv, color_depth);
+    vec2 size = 1.0f / texelSize;
+    vec2 noise = rand(uv,size);
+    float depth = readDepth(uv, color_depth);
 
-	float w = texelSize.x/clamp(depth, 0.25f, 1.0)+(noise.x*(1.0f-noise.x));
-	float h = texelSize.y/clamp(depth, 0.25f, 1.0)+(noise.y*(1.0f-noise.y));
+    float w = texelSize.x/clamp(depth, 0.25f, 1.0)+(noise.x*(1.0f-noise.x));
+    float h = texelSize.y/clamp(depth, 0.25f, 1.0)+(noise.y*(1.0f-noise.y));
 
-	float pw;
-	float ph;
+    float pw;
+    float ph;
 
-	float ao = 0;
+    float ao = 0;
 
-	float dl = PI*(3.0-sqrt(5.0));
-	float dz = 1.0/float( SAMPLES );
-	float z = 1.0 - dz/1.0;
-	float l = 0.0;
+    float dl = PI*(3.0-sqrt(5.0));
+    float dz = 1.0/float( SAMPLES );
+    float z = 1.0 - dz/1.0;
+    float l = 0.0;
 
-	for (int i = 1; i <= SAMPLES; i++)
-	{
-		float r = sqrt(1.0-z);
+    for (int i = 1; i <= SAMPLES; i++)
+    {
+        float r = sqrt(1.0-z);
 
-		pw = cos(l)*r;
-		ph = sin(l)*r;
-		ao += calcAO( uv, depth, pw*w, ph*h, color_depth );
-		z = z - dz;
-		l = l + dl;
-	}
-	ao /= float( SAMPLES );
-	ao = 1.0-ao;
+        pw = cos(l)*r;
+        ph = sin(l)*r;
+        ao += calcAO( uv, depth, pw*w, ph*h, color_depth );
+        z = z - dz;
+        l = l + dl;
+    }
+    ao /= float( SAMPLES );
+    ao = 1.0-ao;
 
-	vec3 color = tex2D(color_depth,uv).rgb;
+    vec3 color = tex2D(color_depth,uv).rgb;
 
-	vec3 lumcoeff = vec3( 0.2126f, 0.7152f, 0.0722f );
-	float lum = dot( color.rgb, lumcoeff );
+    vec3 lumcoeff = vec3( 0.2126f, 0.7152f, 0.0722f );
+    float lum = dot( color.rgb, lumcoeff );
 
-	ao_out = mix( ao, 1.0f, lum*ILLUM_INFLUENCE );
-	ao_out = ((ao_out - 0.5f) * max(CONTRAST, 0.0)) + 0.5f;
+    ao_out = mix( ao, 1.0f, lum*ILLUM_INFLUENCE );
+    ao_out = ((ao_out - 0.5f) * max(CONTRAST, 0.0)) + 0.5f;
     return ao_out;
 }
 
@@ -253,8 +253,8 @@ class CommonFilters:
                 return False
 
             auxbits = 0
-			# Color texture is already created at init,
-			# we don't need to make it.
+            # Color texture is already created at init,
+            # we don't need to make it.
             needtex = set()
             needtexcoord = set(["color"])
 

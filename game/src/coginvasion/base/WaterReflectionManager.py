@@ -49,7 +49,7 @@ class WaterSpec:
         self.fog = fog
         
         self.splashTint = splashTint
-		
+        
         self.envMap = envMap
 
         self.dudv = dudv

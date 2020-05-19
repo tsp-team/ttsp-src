@@ -54,14 +54,14 @@ class HL2Shotgun(BaseHitscan, HL2ShotgunShared):
     SpecialVMCull = False
     sgDir = 'phase_14/hl2/v_shotgun/panda/opt/'
     SpecialVMActor = [sgDir + 'v_shotgun.bam',
-	    {'draw': sgDir + 'v_shotgun-draw.egg',
-	     'idle': sgDir + 'v_shotgun-idle01.egg',
-	     'pump': sgDir + 'v_shotgun-pump.egg',
-	     'fire': sgDir + 'v_shotgun-fire01.egg',
-	     'altfire': sgDir + 'v_shotgun-altfire.egg',
-	     'reload1': sgDir + 'v_shotgun-reload1.egg',
-	     'reload2': sgDir + 'v_shotgun-reload2.egg',
-	     'reload3': sgDir + 'v_shotgun-reload3.egg'}]
+        {'draw': sgDir + 'v_shotgun-draw.egg',
+         'idle': sgDir + 'v_shotgun-idle01.egg',
+         'pump': sgDir + 'v_shotgun-pump.egg',
+         'fire': sgDir + 'v_shotgun-fire01.egg',
+         'altfire': sgDir + 'v_shotgun-altfire.egg',
+         'reload1': sgDir + 'v_shotgun-reload1.egg',
+         'reload2': sgDir + 'v_shotgun-reload2.egg',
+         'reload3': sgDir + 'v_shotgun-reload3.egg'}]
     SpecialVMFov = 54.0
     SpecialVMAngles = (180, 0, 0)
 

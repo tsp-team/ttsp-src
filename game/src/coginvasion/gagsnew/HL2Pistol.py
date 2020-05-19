@@ -44,10 +44,10 @@ class HL2Pistol(BaseHitscan, HL2PistolShared):
     SpecialVM = True
     SpecialVMCull = False
     SpecialVMActor = [sgDir + 'v_pistol.bam',
-	    {'draw': sgDir + 'v_pistol-draw.egg',
-	     'idle': sgDir + 'v_pistol-idle01.egg',
-	     'fire': sgDir + 'v_pistol-fire.egg',
-	     'reload': sgDir + 'v_pistol-reload.egg'}]
+        {'draw': sgDir + 'v_pistol-draw.egg',
+         'idle': sgDir + 'v_pistol-idle01.egg',
+         'fire': sgDir + 'v_pistol-fire.egg',
+         'reload': sgDir + 'v_pistol-reload.egg'}]
     SpecialVMAngles = (180, 0, 0)
     SpecialVMFov = 54.0
 

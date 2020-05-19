@@ -84,8 +84,8 @@ class FPSCamera(DirectObject):
                                 "button_press": "phase_14/models/char/v_toon_arms-button_press.egg",
 
                                 "gumball_draw": "phase_14/models/char/v_toon_arms-gumball_draw.egg",
-				                "gumball_idle": "phase_14/models/char/v_toon_arms-gumball_idle.egg",
-				                "gumball_fire": "phase_14/models/char/v_toon_arms-gumball_fire.egg",
+                                "gumball_idle": "phase_14/models/char/v_toon_arms-gumball_idle.egg",
+                                "gumball_fire": "phase_14/models/char/v_toon_arms-gumball_fire.egg",
 
                                 "hose_draw": "phase_14/models/char/v_toon_arms-hose_draw.egg",
                                 "hose_idle": "phase_14/models/char/v_toon_arms-hose_idle.egg",
