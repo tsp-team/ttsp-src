@@ -772,7 +772,7 @@ class BaseNPCAI(BaseCombatCharacterAI):
 
         attacks = self.getAvailableAttacks()
         for i in range(len(attacks)):
-            attack = attacks[i]
+            attack = list(attacks)[i]
             if attack.checkCapable(dot, distSqr) and attack.hasAmmo() and not attack.isCoolingDown():
                 #print(attack, "is capable")
                 self.capableAttacks.append(attack.getID())
