@@ -50,7 +50,7 @@ nmMgr.get_reference_node_path_debug().reparentTo(render)
 base.nmMgr = nmMgr
 
 from direct.distributed.ClockDelta import globalClockDelta
-__builtins__.globalClockDelta = globalClockDelta
+builtins.globalClockDelta = globalClockDelta
 
 ConfigVariableDouble('decompressor-step-time').setValue(0.01)
 ConfigVariableDouble('extractor-step-time').setValue(0.01)
@@ -101,18 +101,18 @@ base.air.connect(['http://127.0.0.1:7032'], __handleAIConnected)
 # =================================================================================
 
 import time
-sv_tickrate = ConfigVariableDouble("sv_tickrate", 16).getValue()
+sv_min_frametime = ConfigVariableDouble("sv_min_frametime", 1 / 120.0).getValue()
 
 while True:
     try:
         #frameStart = globalClock.getRealTime()
         base.taskMgr.step()
         #frameEnd = globalClock.getRealTime()
-        #msElapsed = (frameEnd - frameStart) * 1000
+        #secElapsed = (frameEnd - frameStart)
 
-        # How many milliseconds do we have to sleep?
-        #sleepTime = sv_tickrate - msElapsed
+        # How many seconds do we have to sleep?
+        #sleepTime = sv_min_frametime - secElapsed
         #if sleepTime > 0:
-        #    time.sleep(sleepTime / 1000.0)
+        #    time.sleep(sleepTime)
     except:
         break

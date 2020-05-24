@@ -6,12 +6,17 @@ from src.mod import ModGlobals
 from src.mod.VOX import VOX
 from src.mod.ModMainMenu import ModMainMenu
 
-import subprocess
+import multiprocessing
+
+def listenServerMain():
+    import src.mod.ModStartAI
 
 class ModBase(CIBase):
 
     def __init__(self):
         CIBase.__init__(self)
+
+        self.finalExitCallbacks.append(self.closeListenServer)
 
         self.isMuseum = ModGlobals.IsMuseum
 
@@ -37,6 +42,8 @@ class ModBase(CIBase):
 
         self.accept('7', self.audio3d.printAudioDigest)
         self.accept('t', self.printTaskMgr)
+
+        self.listenServer = None
 
         #self.setPhysicsDebug(True)
 
@@ -84,6 +91,20 @@ class ModBase(CIBase):
             self.accept('y', self.vox.say, ["buzwarn buzwarn Attention , forbidden personnel detected in this area . All cogs apprehend immediately"])
         self.mainMenu.create()
 
+    def closeListenServer(self):
+        if self.listenServer and self.listenServer.is_alive():
+            self.listenServer.kill()
+            self.listenServer.close()
+        self.listenServer = None
+
+    def openListenServer(self):
+        self.closeListenServer()
+
+        # Import the listen server on a separate process
+        proc = multiprocessing.Process(target = listenServerMain, name = "ListenServer")
+        proc.start()
+        self.listenServer = proc
+
     def playGame(self):
         base.transitions.fadeScreen(1.0)
         self.mainMenu.shutdown()
@@ -91,10 +112,7 @@ class ModBase(CIBase):
         #if not self.isMuseum:
             #self.precacheStuff()
 
-        # TODO: Production case
-        import os
-        enginePath = os.environ["CIOENGINE"]
-        subprocess.Popen([enginePath + "\\python\\python", "-B", "-m", "src.mod.ModStartAI"])
+        self.openListenServer()
 
         print("Starting client repo")
         from src.mod.distributed.ModClientRepository import ModClientRepository
