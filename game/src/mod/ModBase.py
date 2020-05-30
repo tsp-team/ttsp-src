@@ -100,6 +100,8 @@ class ModBase(CIBase):
     def openListenServer(self):
         self.closeListenServer()
 
+        # Make sure we use a fresh interpreter state on Linux as well.
+        multiprocessing.set_start_method('spawn', True)
         # Import the listen server on a separate process
         proc = multiprocessing.Process(target = listenServerMain, name = "ListenServer")
         proc.start()
