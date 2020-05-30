@@ -431,10 +431,11 @@ class FPSCamera(DirectObject):
 
         camRootAngles = Vec3(0)
 
+        props = base.win.getProperties()
         # Mouse look around
-        mw = base.mouseWatcherNode
-        if mw.hasMouse():
-            md = base.win.getPointer(0)
+        md = base.win.getPointer(0)
+        # Don't look around if window is not in focus.
+        if props.getForeground() and md.getInWindow():
             center = Point2(base.win.getXSize() // 2, base.win.getYSize() // 2)
 
             xDist = md.getX() - center.getX()
