@@ -8,7 +8,7 @@ class ModCredits(DirectObject):
     def __init__(self, menu):
         base.transitions.fadeScreen(1.0)
         vfs = VirtualFileSystem.getGlobalPtr()
-        creditsTextStr = vfs.readFile("scripts/credits.txt", True)
+        creditsTextStr = str(vfs.readFile("scripts/credits.txt", True))
         self.creditsText = OnscreenText(text = creditsTextStr,
             fg = (1, 1, 1, 1), align = TextNode.ACenter, mayChange = False, scale = 0.06)
         self.creditsText.reparentTo(aspect2d, DGG.FADE_SORT_INDEX + 1)
