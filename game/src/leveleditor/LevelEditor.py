@@ -1,8 +1,11 @@
 from panda3d.core import WindowProperties, NativeWindowHandle
 
 from src.coginvasion.base.BSPBase import BSPBase
+from src.leveleditor.Grid import Grid
+from src.leveleditor.FlyCam import FlyCam
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from fgdtools import FgdParse
 
 class LevelEditorSubWind(QtWidgets.QWidget):
 
@@ -74,21 +77,20 @@ class LevelEditor(BSPBase):
         self.loader.mountMultifiles()
         self.loader.mountMultifile("resources/mod.mf")
 
-        toon = loader.loadModel("phase_4/models/neighborhoods/toontown_central_beta.bam")
-        toon.reparentTo(render)
+        
         #toon.setY(10)
 
-        base.enableMouse()
+        #base.enableMouse()
 
         from panda3d.core import DirectionalLight, AmbientLight
         dlight = DirectionalLight('dlight')
-        dlight.setColor((2.2, 2.2, 2.2, 1))
+        dlight.setColor((2.5, 2.5, 2.5, 1))
         dlnp = render.attachNewNode(dlight)
-        dlnp.setHpr(-45, -45, 0)
+        dlnp.setHpr(165 - 180, -60, 0)
         render.setLight(dlnp)
         self.dlnp = dlnp
         alight = AmbientLight('alight')
-        alight.setColor((0.3, 0.3, 0.3, 1))
+        alight.setColor((0.4, 0.4, 0.4, 1))
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
 
@@ -97,11 +99,29 @@ class LevelEditor(BSPBase):
         self.mainloopTimer.timeout.connect(self.taskMgr.step)
         self.mainloopTimer.setSingleShot(False)
 
+        self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
+
+        self.currentTool = None
+        self.grid = Grid()
+        self.grid.update()
+        self.flyCam = FlyCam()
+
+        self.mapRoot = render.attachNewNode('mapRoot')
+        self.mapRoot.setScale(16.0)
+
+        toon = loader.loadModel("models/cogB_robot/cogB_robot.bam")
+        toon.reparentTo(self.mapRoot)
+        #toon.setX(4)
+
+        #render.setScale(1 / 16.0)
+
         base.setBackgroundColor(0, 0, 0)
 
     def initStuff(self):
         BSPBase.initStuff(self)
         self.camLens.setMinFov(70.0 / (4./3.))
+        self.camLens.setNearFar(0.1, 10000)
+        #self.shaderGenerator.setSunLight(self.dlnp)
 
     def openDefaultWindow(self, *args, **kwargs):
         props = WindowProperties.getDefault()
