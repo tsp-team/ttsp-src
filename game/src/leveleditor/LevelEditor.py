@@ -7,6 +7,8 @@ from src.leveleditor.FlyCam import FlyCam
 from PyQt5 import QtWidgets, QtCore, QtGui
 from fgdtools import FgdParse
 
+import builtins
+
 class LevelEditorSubWind(QtWidgets.QWidget):
 
     def __init__(self, area):
@@ -19,6 +21,8 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         self.show()
         
     def resizeEvent(self, event):
+        if not hasattr(builtins, 'base'):
+            return
         if not hasattr(base, 'win'):
             return
 
@@ -103,7 +107,7 @@ class LevelEditor(BSPBase):
 
         self.currentTool = None
         self.grid = Grid()
-        self.grid.update()
+        #self.grid.update()
         self.flyCam = FlyCam()
 
         self.mapRoot = render.attachNewNode('mapRoot')
