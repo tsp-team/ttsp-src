@@ -201,7 +201,7 @@ class DistributedBattleZone(DistributedObject):
         self.suits[obj.doId] = obj
 
     def __handleSuitDelete(self, obj):
-        if self.suits.has_key(obj.doId):
+        if obj.doId in self.suits:
             del self.suits[obj.doId]
 
     def disable(self):

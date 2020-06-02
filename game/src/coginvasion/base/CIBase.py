@@ -55,7 +55,7 @@ class CIBase(ShowBase):
 
     def __init__(self):
         self.bspLoader = Py_CL_BSPLoader()
-        self.bspLoader.setGlobalPtr(self.bspLoader)
+        BSPLoader.setGlobalPtr(self.bspLoader)
 
         if metadata.USE_RENDER_PIPELINE:
             from rpcore import RenderPipeline

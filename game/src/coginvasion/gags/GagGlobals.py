@@ -16,7 +16,6 @@ from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 
 from collections import OrderedDict
-import types
 import math
 
 Mickey, Goofy, Pluto, Donald = "Mickey", "Goofy", "Pluto", "Donald"
@@ -872,7 +871,7 @@ def getTrackName(tId):
     return TrackNameById.get(tId, "not found")
 
 def getTrackOfGag(arg, getId = False, isAI = False):
-    if type(arg) == types.IntType:
+    if isinstance(arg, int):
 
         # This is a gag id.
         for trackName, gagList in TrackGagNamesByTrackName.items():
@@ -886,7 +885,7 @@ def getTrackOfGag(arg, getId = False, isAI = False):
                     # Return the int ID of the track
                     return TrackIdByName[trackName]
 
-    elif type(arg) == types.StringType:
+    elif isinstance(arg, str):
 
         # This is a gag name.
         for trackName, gagList in TrackGagNamesByTrackName.items():
