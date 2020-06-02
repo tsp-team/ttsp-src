@@ -174,10 +174,13 @@ class SettingsManager:
             loadPrcFileData("", "win-size {0} {1}".format(width, height))
         
     def __updateAspectRatio(self, maintainRatio):
-        if not maintainRatio:
-            base.doOldToontownRatio()
-        else:
-            base.doRegularRatio()
+        try:
+            if not maintainRatio:
+                base.doOldToontownRatio()
+            else:
+                base.doRegularRatio()
+        except:
+            pass
     
     def __updateFullscreen(self, flag):
         wp = WindowProperties()
@@ -193,7 +196,7 @@ class SettingsManager:
             # fxaa
             try:    base.setFXAA(True)
             except: pass
-        """
+        
         elif "MSAA" in degree:
             degree = int(degree.split('x')[0])
             loadPrcFileData("", "framebuffer-multisample 1")
@@ -211,7 +214,7 @@ class SettingsManager:
                 render.clearAntialias()
                 aspect2d.clearAntialias()
             except: pass
-        """
+        
             
     def __updateAF(self, degree):
         loadPrcFileData("", "texture-anisotropic-degree {0}".format(degree))
@@ -229,7 +232,8 @@ class SettingsManager:
             
         qualities = {"Off": 0, "Low": 256, "Medium": 512, "High": 1024, "Very High": 2048}
         resolution = qualities.get(value, 0)
-        base.waterReflectionMgr.handleResolutionUpdate(resolution)
+        try: base.waterReflectionMgr.handleResolutionUpdate(resolution)
+        except: pass
         
     def __updateHDR(self, flag):
         base.setHDR(flag)
@@ -247,10 +251,10 @@ class SettingsManager:
         pass
     
     def __updateGagKey(self, ctrlName):
-        base.inputStore.updateControl('UseGag', ctrlName)
-        
-        # Let's attempt to update the used key list.
         try:
+            base.inputStore.updateControl('UseGag', ctrlName)
+        
+            # Let's attempt to update the used key list.
             base.localAvatar.chatInput.setKeyList()
         except: pass
         
