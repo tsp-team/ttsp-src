@@ -63,7 +63,7 @@ class WholeCreamPieAI(BaseGagAI, WholeCreamPieShared):
 
     def __init__(self):
         BaseGagAI.__init__(self)
-        self.actionLengths.update({self.StateDraw   :   0.5,
+        self.actionLengths.update({self.StateDraw   :   1.5,
                                    self.StateThrow  :   1.0})
 
         self.throwOrigin = Point3(0)

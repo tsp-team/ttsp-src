@@ -33,6 +33,23 @@ class BaseLocalAvatar:
         self.needsToSwitchToGag = None
         self.gagsEnabled = False
         self.gagsTimedOut = False
+        self.lastState = None
+
+    def startTrackAnimToSpeed(self):
+        if not base.taskMgr.hasTaskNamed(self.uniqueName('trackAnimToSpeed')):
+            base.taskMgr.add(self.trackAnimToSpeed, self.uniqueName('trackAnimToSpeed'))
+
+    def stopTrackAnimToSpeed(self):
+        base.taskMgr.remove(self.uniqueName('trackAnimToSpeed'))
+
+    def trackAnimToSpeed(self, task):
+        slideSpeed, speed, rotSpeed = self.walkControls.getSpeeds()
+        state = 'Happy'
+        if state != self.lastState:
+            self.lastState = state
+            self.b_setAnimState(state)
+        self.setSpeed(speed, rotSpeed, slideSpeed)
+        return task.cont
 
     def handleDamage(self, x, y, z):
         DirectionalDamageIndicator.make(Point3(x, y, z))
@@ -329,6 +346,8 @@ class BaseLocalAvatar:
         self.startPosHprBroadcast()
         self.d_broadcastPositionNow()
 
+        self.startTrackAnimToSpeed()
+
         self.playState = True
 
     def stopPlay(self):
@@ -343,5 +362,7 @@ class BaseLocalAvatar:
             self.walkControls.setCollisionsActive(0, andPlaceOnGround=1)
         self.disableAvatarControls()
         self.stopPosHprBroadcast()
+
+        self.stopTrackAnimToSpeed()
 
         self.playState = False

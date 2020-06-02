@@ -146,4 +146,4 @@ class ModLocalAvatar(ModPlayer, BaseLocalAvatar):
     def setupControls(self):
         self.walkControls = ModLocalControls()
         self.walkControls.setupControls()
-        self.walkControls.setMode(ModLocalControls.MFirstPerson)
+        self.walkControls.setMode(ModLocalControls.MThirdPerson)

@@ -29,6 +29,7 @@ class PieGib(DistributedEntity):
 
 class WholeCreamPie(BaseGag, WholeCreamPieShared):
     ModelPath = "phase_14/models/props/creampie.bam"
+    ModelOrigin = (0, 0, 0.335)
     ModelScale = 1
     Hold = ATTACK_HOLD_RIGHT
 
