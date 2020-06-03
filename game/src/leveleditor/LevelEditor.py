@@ -1,8 +1,10 @@
-from panda3d.core import WindowProperties, NativeWindowHandle
+from panda3d.core import WindowProperties, NativeWindowHandle, NodePath
+from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
 
 from src.coginvasion.base.BSPBase import BSPBase
 from src.leveleditor.Grid import Grid
 from src.leveleditor.FlyCam import FlyCam
+from .EntityEdit import EntityEdit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from fgdtools import FgdParse
@@ -38,6 +40,9 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         from src.leveleditor.ui.mainwindow import Ui_LevelEditor
         self.ui = Ui_LevelEditor()
         self.ui.setupUi(self)
+
+        self.toolBar = self.ui.leftBar
+        self.toolGroup = QtWidgets.QActionGroup(self.ui.leftBar)
 
         self.gameViewWind = LevelEditorSubWind(self.ui.gameViewArea)
 
@@ -81,6 +86,14 @@ class LevelEditor(BSPBase):
         self.loader.mountMultifiles()
         self.loader.mountMultifile("resources/mod.mf")
 
+        # Collision stuff for selecting out of the viewport.
+        self.clickRay = CollisionRay()
+        self.clickNode = CollisionNode('viewportClickRay')
+        self.clickNode.addSolid(self.clickRay)
+        self.clickNP = NodePath(self.clickNode)
+        self.clickQueue = CollisionHandlerQueue()
+        self.clickTrav = CollisionTraverser()
+        self.clickTrav.addCollider(NodePath(self.clickNode), self.clickQueue)
         
         #toon.setY(10)
 
@@ -110,22 +123,57 @@ class LevelEditor(BSPBase):
         #self.grid.update()
         self.flyCam = FlyCam()
 
+        self.tools = []
+
         self.mapRoot = render.attachNewNode('mapRoot')
         self.mapRoot.setScale(16.0)
 
-        toon = loader.loadModel("models/cogB_robot/cogB_robot.bam")
-        toon.reparentTo(self.mapRoot)
+        from src.leveleditor.mapobject.MapObject import MapObject
+        mo = MapObject()
+        mo.setClassname("prop_static")
         #toon.setX(4)
+
+        self.entityEdit = None
 
         #render.setScale(1 / 16.0)
 
         base.setBackgroundColor(0, 0, 0)
+
+    def editEntity(self, ent):
+        self.entityEdit = EntityEdit(ent)
+
+    def click(self, mask):
+        if not self.mouseWatcherNode.hasMouse():
+            return None
+
+        self.clickNP.reparentTo(base.camera)
+        self.clickRay.setFromLens(self.camNode, self.mouseWatcherNode.getMouse())
+        self.clickNode.setFromCollideMask(mask)
+        self.clickQueue.clearEntries()
+        self.clickTrav.traverse(self.mapRoot)
+        self.clickQueue.sortEntries()
+        self.clickNP.reparentTo(NodePath())
+        return self.clickQueue.getEntries()
+
+    def addTool(self, toolInst):
+        toolInst.createButton()
+        self.tools.append(toolInst)
+
+    def addTools(self):
+        from src.leveleditor.tools.SelectTool import SelectTool
+        from src.leveleditor.tools.EntityTool import EntityTool
+        self.addTool(SelectTool())
+        self.addTool(EntityTool())
+
+        self.qtApp.window.toolBar.addActions(self.qtApp.window.toolGroup.actions())
 
     def initStuff(self):
         BSPBase.initStuff(self)
         self.camLens.setMinFov(70.0 / (4./3.))
         self.camLens.setNearFar(0.1, 10000)
         #self.shaderGenerator.setSunLight(self.dlnp)
+
+        self.addTools()
 
     def openDefaultWindow(self, *args, **kwargs):
         props = WindowProperties.getDefault()

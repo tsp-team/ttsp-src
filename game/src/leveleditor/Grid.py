@@ -1,4 +1,4 @@
-from panda3d.core import LineSegs, NodePath, Vec4, Point3, LPlane
+from panda3d.core import LineSegs, NodePath, Vec4, Point3
 
 from src.coginvasion.globals import CIGlobals
 
@@ -27,8 +27,6 @@ class Grid:
         self.np.setFogOff(1)
         self.np.hide(CIGlobals.ShadowCameraBitmask)
         self.enabled = True
-
-        self.gridPlane = LPlane(0, 0, 1, 0)
 
         self.gridNp = None
 
