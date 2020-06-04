@@ -190,7 +190,8 @@ class CIBase(BSPBase):
 
     def initialize(self):
         BSPBase.initialize(self)
-
+        self.cam.node().getDisplayRegion(0).setClearDepthActive(1)
+        self.camLens.setNearFar(CIGlobals.DefaultCameraNear, CIGlobals.DefaultCameraFar)
         self.win.disableClears()
 
         render.hide()
@@ -576,6 +577,16 @@ class CIBase(BSPBase):
 
     def initStuff(self):
         BSPBase.initStuff(self)
+
+        # Any ComputeNodes should be parented to this node, not render.
+        # We isolate ComputeNodes to avoid traversing the same ComputeNodes
+        # when doing multi-pass rendering.
+        self.computeRoot = NodePath('computeRoot')
+        self.computeCam = self.makeCamera(base.win)
+        self.computeCam.node().setCameraMask(CIGlobals.ComputeCameraBitmask)
+        self.computeCam.node().setCullBounds(OmniBoundingVolume())
+        self.computeCam.node().setFinal(True)
+        self.computeCam.reparentTo(self.computeRoot)
 
         self.bspLoader.setShaderGenerator(self.shaderGenerator)
 

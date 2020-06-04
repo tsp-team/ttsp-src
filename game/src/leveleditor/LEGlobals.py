@@ -1,25 +1,3 @@
-from panda3d.core import BitMask32, LineSegs, Point3
+from panda3d.core import BitMask32
 
 EntityMask = BitMask32.bit(0)
-
-def makeCubeOutline(mins, maxs, color, thickness = 1.0):
-    lines = LineSegs()
-    lines.setColor(color)
-    lines.setThickness(thickness)
-    lines.move_to( mins )
-    lines.draw_to( Point3( mins.get_x(), mins.get_y(), maxs.get_z() ) )
-    lines.draw_to( Point3( mins.get_x(), maxs.get_y(), maxs.get_z() ) )
-    lines.draw_to( Point3( mins.get_x(), maxs.get_y(), mins.get_z() ) )
-    lines.draw_to( mins )
-    lines.draw_to( Point3( maxs.get_x(), mins.get_y(), mins.get_z() ) )
-    lines.draw_to( Point3( maxs.get_x(), mins.get_y(), maxs.get_z() ) )
-    lines.draw_to( Point3( mins.get_x(), mins.get_y(), maxs.get_z() ) )
-    lines.move_to( Point3( maxs.get_x(), mins.get_y(), maxs.get_z() ) )
-    lines.draw_to( maxs )
-    lines.draw_to( Point3( mins.get_x(), maxs.get_y(), maxs.get_z() ) )
-    lines.move_to( maxs )
-    lines.draw_to( Point3( maxs.get_x(), maxs.get_y(), mins.get_z() ) )
-    lines.draw_to( Point3( mins.get_x(), maxs.get_y(), mins.get_z() ) )
-    lines.move_to( Point3( maxs.get_x(), maxs.get_y(), mins.get_z() ) )
-    lines.draw_to( Point3( maxs.get_x(), mins.get_y(), mins.get_z() ) )
-    return lines.create()

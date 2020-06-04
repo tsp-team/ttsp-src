@@ -20,6 +20,10 @@ class BSPBase(ShowBase):
         builtins.loader = self.loader
         self.graphicsEngine.setDefaultLoader(self.loader.loader)
 
+        # Make all of our graphics pipes and create a GSG now.
+        self.makeAllPipes()
+        self.gsg = self.pipe.makeCallbackGsg(self.graphicsEngine)
+
         from panda3d.core import RenderAttribRegistry
         from panda3d.core import ShaderAttrib, TransparencyAttrib
         from panda3d.bsp import BSPMaterialAttrib
@@ -40,6 +44,11 @@ class BSPBase(ShowBase):
 
         self.initialize()
 
+    def openDefaultWindow(self, *args, **kwargs):
+        # Use the GSG we created at init.
+        kwargs['gsg'] = self.gsg
+        ShowBase.openDefaultWindow(*args, **kwargs)
+
     def setAmbientOcclusion(self, toggle):
         self.aoToggle = toggle
 
@@ -59,7 +68,7 @@ class BSPBase(ShowBase):
         self.bloomToggle = flag
 
     def initStuff(self):
-        self.shaderGenerator = BSPShaderGenerator(self.win, self.win.getGsg(), self.camera, self.render)
+        self.shaderGenerator = BSPShaderGenerator(self.gsg, self.camera, self.render)
         self.win.getGsg().setShaderGenerator(self.shaderGenerator)
         vlg = VertexLitGenericSpec()    # models
         ulg = UnlitGenericSpec()        # ui elements, particles, etc
@@ -77,7 +86,7 @@ class BSPBase(ShowBase):
         self.shaderGenerator.addShader(dcm)
 
         self.shaderGenerator.setShaderQuality(CIGlobals.getSettingsMgr().getSetting("shaderquality").getValue())
-
+        
         self.filters = CIPostProcess()
         self.filters.startup(self.win)
         self.filters.addCamera(self.cam)
@@ -106,8 +115,6 @@ class BSPBase(ShowBase):
         return task.cont
 
     def initialize(self):
-        self.cam.node().getDisplayRegion(0).setClearDepthActive(1)
-
         gsg = self.win.getGsg()
 
         # Let's print out the Graphics information.
@@ -154,15 +161,3 @@ class BSPBase(ShowBase):
         self.setBackgroundColor(CIGlobals.DefaultBackgroundColor)
         self.disableMouse()
         self.enableParticles()
-
-        self.camLens.setNearFar(CIGlobals.DefaultCameraNear, CIGlobals.DefaultCameraFar)
-
-        # Any ComputeNodes should be parented to this node, not render.
-        # We isolate ComputeNodes to avoid traversing the same ComputeNodes
-        # when doing multi-pass rendering.
-        self.computeRoot = NodePath('computeRoot')
-        self.computeCam = self.makeCamera(base.win)
-        self.computeCam.node().setCameraMask(CIGlobals.ComputeCameraBitmask)
-        self.computeCam.node().setCullBounds(OmniBoundingVolume())
-        self.computeCam.node().setFinal(True)
-        self.computeCam.reparentTo(self.computeRoot)

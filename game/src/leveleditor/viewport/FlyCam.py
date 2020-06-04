@@ -5,10 +5,14 @@ from direct.showbase.InputStateGlobal import inputState
 
 import math
 
+from PyQt5 import QtWidgets, QtGui, QtCore
+
 class FlyCam(DirectObject):
 
-    def __init__(self):
+    def __init__(self, viewport):
         DirectObject.__init__(self)
+
+        self.viewport = viewport
 
         self.enabled = False
         self.mouseSensitivity = 0.3
@@ -35,13 +39,8 @@ class FlyCam(DirectObject):
         base.taskMgr.add(self.__flyCamTask, 'flyCam')
 
     def handleZ(self):
-        self.setEnabled(not self.enabled)
-
-    def centerCursor(self, center = None):
-        if not center:
-            center = Point2(base.win.getXSize() // 2, base.win.getYSize() // 2)
-
-        base.win.movePointer(0, int(center[0]), int(center[1]))
+        if self.viewport.mouseWatcher.hasMouse():
+            self.setEnabled(not self.enabled)
 
     def setEnabled(self, flag):
         if flag:
@@ -49,31 +48,36 @@ class FlyCam(DirectObject):
                 props = WindowProperties()
                 props.setCursorHidden(True)
                 props.setMouseMode(WindowProperties.MConfined)
-                base.win.requestProperties(props)
-                self.centerCursor()
+                QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+                self.viewport.win.requestProperties(props)
+                self.viewport.centerCursor()
         else:
             if self.enabled:
+                QtWidgets.QApplication.restoreOverrideCursor()
                 props = WindowProperties()
                 props.setCursorHidden(False)
                 props.setMouseMode(WindowProperties.MAbsolute)
-                base.win.requestProperties(props)
+                self.viewport.win.requestProperties(props)
 
         self.enabled = flag
 
     def __flyCamTask(self, task):
 
-        dt = globalClock.getDt()
+        camera = self.viewport.camNp
+        win = self.viewport.win
+
+        dt = base.globalClock.getDt()
         goalSpeeds = Vec3(0)
 
-        md = base.win.getPointer(0)
+        md = win.getPointer(0)
         if md.getInWindow():
             if self.enabled:
-                center = Point2(base.win.getXSize() // 2, base.win.getYSize() // 2)
+                center = Point2(win.getXSize() // 2, win.getYSize() // 2)
                 dx = center.getX() - md.getX()
                 dy = center.getY() - md.getY()
-                base.camera.setH(base.camera, dx * self.mouseSensitivity)
-                base.camera.setP(base.camera, dy * self.mouseSensitivity)
-                base.win.movePointer(0, int(center[0]), int(center[1]))#self.centerCursor(center)
+                camera.setH(camera, dx * self.mouseSensitivity)
+                camera.setP(camera, dy * self.mouseSensitivity)
+                win.movePointer(0, int(center[0]), int(center[1]))#self.centerCursor(center)
 
             # linear movement WASD+QE
             goalDir = Vec3(0)
@@ -106,7 +110,7 @@ class FlyCam(DirectObject):
                 goalRot[1] += 1
             if inputState.isSet("lookDown"):
                 goalRot[1] -= 1
-            base.camera.setHpr(base.camera, goalRot * self.cameraRotateSpeed * dt)
+            camera.setHpr(camera, goalRot * self.cameraRotateSpeed * dt)
 
             goalSpeeds = goalDir * self.cameraSpeed
 
@@ -114,11 +118,11 @@ class FlyCam(DirectObject):
         if not goalSpeeds.almostEqual(self.lastSpeeds, 0.01):
             speeds *= dt
             # dont have float value be affected by direction, always completely up or down
-            base.camera.setPos(base.camera.getPos() + base.camera.getQuat().xform(Vec3(speeds[0], speeds[1], 0)))
-            base.camera.setZ(base.camera, speeds[2])
+            camera.setPos(camera.getPos() + camera.getQuat().xform(Vec3(speeds[0], speeds[1], 0)))
+            camera.setZ(camera, speeds[2])
 
         # should never have a roll in the camera
-        base.camera.setR(0)
+        camera.setR(0)
 
         self.lastSpeeds = speeds
 

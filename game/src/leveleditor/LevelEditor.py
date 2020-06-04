@@ -18,7 +18,7 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         area.addSubWindow(self)
         layout = QtWidgets.QGridLayout(self)
         self.setLayout(layout)
-        self.setWindowTitle("3D View")
+        self.setWindowTitle("Game View")
         self.resize(640, 480)
         self.show()
         
@@ -85,15 +85,6 @@ class LevelEditor(BSPBase):
         BSPBase.__init__(self)
         self.loader.mountMultifiles()
         self.loader.mountMultifile("resources/mod.mf")
-
-        # Collision stuff for selecting out of the viewport.
-        self.clickRay = CollisionRay()
-        self.clickNode = CollisionNode('viewportClickRay')
-        self.clickNode.addSolid(self.clickRay)
-        self.clickNP = NodePath(self.clickNode)
-        self.clickQueue = CollisionHandlerQueue()
-        self.clickTrav = CollisionTraverser()
-        self.clickTrav.addCollider(NodePath(self.clickNode), self.clickQueue)
         
         #toon.setY(10)
 
@@ -119,18 +110,17 @@ class LevelEditor(BSPBase):
         self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
 
         self.currentTool = None
-        self.grid = Grid()
-        #self.grid.update()
-        self.flyCam = FlyCam()
 
         self.tools = []
+
+        self.viewports = []
 
         self.mapRoot = render.attachNewNode('mapRoot')
         self.mapRoot.setScale(16.0)
 
-        from src.leveleditor.mapobject.MapObject import MapObject
-        mo = MapObject()
-        mo.setClassname("prop_static")
+        #from src.leveleditor.mapobject.MapObject import MapObject
+        #mo = MapObject()
+        #mo.setClassname("prop_static")
         #toon.setX(4)
 
         self.entityEdit = None
@@ -141,19 +131,6 @@ class LevelEditor(BSPBase):
 
     def editEntity(self, ent):
         self.entityEdit = EntityEdit(ent)
-
-    def click(self, mask):
-        if not self.mouseWatcherNode.hasMouse():
-            return None
-
-        self.clickNP.reparentTo(base.camera)
-        self.clickRay.setFromLens(self.camNode, self.mouseWatcherNode.getMouse())
-        self.clickNode.setFromCollideMask(mask)
-        self.clickQueue.clearEntries()
-        self.clickTrav.traverse(self.mapRoot)
-        self.clickQueue.sortEntries()
-        self.clickNP.reparentTo(NodePath())
-        return self.clickQueue.getEntries()
 
     def addTool(self, toolInst):
         toolInst.createButton()
@@ -174,15 +151,6 @@ class LevelEditor(BSPBase):
         #self.shaderGenerator.setSunLight(self.dlnp)
 
         self.addTools()
-
-    def openDefaultWindow(self, *args, **kwargs):
-        props = WindowProperties.getDefault()
-        props.setParentWindow(int(self.qtApp.window.gameViewWind.winId()))
-        props.setOpen(True)
-        props.setForeground(True)
-        props.setOrigin(0, 0)
-        kwargs['props'] = props
-        BSPBase.openDefaultWindow(self, *args, **kwargs)
 
     def run(self):
         self.mainloopTimer.start(0)
