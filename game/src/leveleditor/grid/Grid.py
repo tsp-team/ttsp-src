@@ -11,26 +11,12 @@ class Grid:
 
     def __init__(self, viewport):
         self.viewport = viewport
-        self.step = GridSettings.DefaultStep
 
         self.gridNp = None
 
         self.lastStep = 0
 
-        #base.qtApp.window.ui.actionToggleGrid.setChecked(self.enabled)
-        #base.qtApp.window.ui.actionToggleGrid.toggled.connect(self.setEnabled)
-        #base.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.incGridSize)
-        #base.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.decGridSize)
-
         self.updateTask = base.taskMgr.add(self.update, 'gridUpdate')
-
-    def incGridSize(self):
-        self.step *= 2
-        self.step = min(256, self.step)
-
-    def decGridSize(self):
-        self.step //= 2
-        self.step = max(1, self.step)
 
     def removeCurrentGrid(self):
         if self.gridNp and not self.gridNp.isEmpty():
@@ -41,15 +27,15 @@ class Grid:
         raise NotImplementedError
 
     def update(self, task):
-        if not GridSettings.Enabled:
+        if not GridSettings.EnableGrid:
             self.removeCurrentGrid()
             return task.cont
         
         zoom = self.calcZoom()
-        step = self.step
+        step = GridSettings.DefaultStep
         low = GridSettings.Low
         high = GridSettings.High
-        actualDist = self.step * zoom
+        actualDist = step * zoom
         if GridSettings.HideSmallerToggle:
             while actualDist < GridSettings.HideSmallerThan:
                 step *= GridSettings.HideFactor
@@ -63,7 +49,7 @@ class Grid:
         self.lastStep = step
 
         if step in GridsByStep:
-            self.gridNp = self.gridsByStep[step].copyTo(self.viewport.gridRoot)
+            self.gridNp = GridsByStep[step].copyTo(self.viewport.gridRoot)
             return task.cont
         
         segs = LineSegs()
@@ -98,6 +84,7 @@ class Grid:
         segs.drawTo(Point3(high, 0, low))
 
         np = NodePath(segs.create())
+        #loader.loadModel("models/smiley.egg.pz").reparentTo(np)
         GridsByStep[step] = np
         self.gridNp = np.copyTo(self.viewport.gridRoot)
 

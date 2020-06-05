@@ -3,8 +3,8 @@
 
 from panda3d.core import Camera, BitMask32, WindowProperties, GraphicsPipe, FrameBufferProperties
 from panda3d.core import MouseAndKeyboard, ButtonThrower, MouseWatcher, KeyboardButton, NodePath
-from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
-from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2
+from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser, Mat4
+from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2, ModelNode, LVector2i, LPoint2i
 
 from direct.showbase.DirectObject import DirectObject
 
@@ -19,12 +19,13 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         DirectObject.__init__(self)
         QtWidgets.QWidget.__init__(self, window)
 
-        self.window = parent
+        self.window = window
         self.type = vpType
 
         self.lens = None
+        self.camNode = None
+        self.camera = None
         self.cam = None
-        self.camNp = None
         self.win = None
         self.mouseWatcher = None
         self.buttonThrower = None
@@ -39,6 +40,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.gridRoot = base.render.attachNewNode("gridRoot")
         self.gridRoot.setLightOff(1)
         self.gridRoot.setFogOff(1)
+        self.gridRoot.hide(BitMask32.allOn())
         self.gridRoot.showThrough(self.getViewportMask())
 
         self.grid = None
@@ -54,10 +56,11 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
     def initialize(self):
         self.lens = self.makeLens()
-        self.cam = Camera("viewportCamera")
-        self.cam.setLens(self.lens)
-        self.cam.setCameraMask(self.getViewportMask())
-        self.camNp = base.render.attachNewNode(self.cam)
+        self.camera = base.render.attachNewNode(ModelNode("viewportCameraParent"))
+        self.camNode = Camera("viewportCamera")
+        self.camNode.setLens(self.lens)
+        self.camNode.setCameraMask(self.getViewportMask())
+        self.cam = self.camera.attachNewNode(self.camNode)
 
         winprops = WindowProperties.getDefault()
         winprops.setOrigin(0, 0)
@@ -66,7 +69,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         winprops.setForeground(True)
 
         output = base.graphicsEngine.makeOutput(
-            base.graphicsPipe, "viewportOutput", 0,
+            base.pipe, "viewportOutput", 0,
             FrameBufferProperties.getDefault(),
             winprops, (GraphicsPipe.BFFbPropsOptional | GraphicsPipe.BFRequireWindow),
             base.gsg
@@ -81,7 +84,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         dr.setClearColor(Vec4(0, 0, 0, 1))
         dr.setClearColorActive(True)
         dr.setClearDepthActive(True)
-        dr.setCamera(self.camNp)
+        dr.setCamera(self.cam)
 
         self.win = output
 
@@ -115,11 +118,38 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         self.makeGrid()
 
-        self.tickTask = base.taskMgr.add(self.__tickTask, "viewportTick")
+    def mouse1Up(self):
+        pass
 
-    def __tickTask(self, task):
-        self.tick()
-        return task.cont
+    def mouse1Down(self):
+        pass
+
+    def mouse2Up(self):
+        pass
+
+    def mouse2Down(self):
+        pass
+
+    def mouse3Up(self):
+        pass
+
+    def mouse3Down(self):
+        pass
+
+    def mouseEnter(self):
+        pass
+
+    def mouseExit(self):
+        pass
+
+    def mouseMove(self):
+        pass
+
+    def wheelUp(self):
+        pass
+
+    def wheelDown(self):
+        pass
 
     def tick(self):
         pass
@@ -128,7 +158,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         return "Unknown"
 
     def getViewportCenterPixels(self):
-        return Point2(self.win.getXSize() // 2, self.win.getYSize() // 2)
+        return LPoint2i(self.win.getXSize() // 2, self.win.getYSize() // 2)
 
     def centerCursor(self):
         center = self.getViewportCenterPixels()
@@ -140,14 +170,14 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.lens.extrude(viewport, front, back)
         world = (front + back) / 2
 
-        worldMat = self.camNp.getMat()
+        worldMat = self.cam.getMat()
         world = worldMat.xformPoint(world)
 
         return world
 
     def worldToViewport(self, world):
         # move into local camera space
-        invMat = self.camNp.getMat()
+        invMat = Mat4(self.cam.getMat())
         invMat.invertInPlace()
 
         local = invMat.xformPoint(world)
@@ -166,7 +196,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         self.clickRay.setFromLens(self.cam, self.mouseWatcher.getMouse())
         self.clickNode.setFromCollideMask(mask)
-        self.clickNp.reparentTo(self.camNp)
+        self.clickNp.reparentTo(self.cam)
         self.clickQueue.clearEntries()
         self.clickTrav.traverse(base.render)
         self.clickQueue.sortEntries()
@@ -176,7 +206,10 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
     def adjustZoom(self, scrolled = False, delta = 0):
         before = Point3()
-        md = self.mouseWatcher.getMouse()
+        if self.mouseWatcher.hasMouse():
+            md = self.mouseWatcher.getMouse()
+        else:
+            scrolled = False
 
         if scrolled:
             before = self.viewportToWorld(md)
@@ -190,13 +223,13 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         if scrolled:
             after = self.viewportToWorld(md)
-            self.camNp.setPos(self.camNp.getPos() - (after - before))
+            self.cam.setPos(self.cam.getPos() - (after - before))
 
     def resizeEvent(self, event):
         if not self.win:
             return
 
-        newsize = Vec2(event.size().width(), event.size().height())
+        newsize = LVector2i(event.size().width(), event.size().height())
 
         props = WindowProperties()
         props.setSize(newsize)

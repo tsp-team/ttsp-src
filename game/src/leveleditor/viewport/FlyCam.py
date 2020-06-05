@@ -63,10 +63,10 @@ class FlyCam(DirectObject):
 
     def __flyCamTask(self, task):
 
-        camera = self.viewport.camNp
+        camera = self.viewport.camera
         win = self.viewport.win
 
-        dt = base.globalClock.getDt()
+        dt = globalClock.getDt()
         goalSpeeds = Vec3(0)
 
         md = win.getPointer(0)

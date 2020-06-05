@@ -33,10 +33,10 @@ class BaseTool(DirectObject):
     def enable(self):
         print("Enable", self.Name)
         self.enabled = True
-        base.currentTool = self
+        base.toolMgr.currentTool = self
 
     def disable(self):
         print("Disable", self.Name)
         self.ignoreAll()
         self.enabled = False
-        base.currentTool = None
+        base.toolMgr.currentTool = None

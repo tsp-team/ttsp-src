@@ -1,10 +1,12 @@
-from panda3d.core import Vec3, OrthographicLens, Quat
+from panda3d.core import Vec3, OrthographicLens, Quat, Point2, Point3
 
 from .Viewport import Viewport
 from .ViewportType import *
 
 from src.leveleditor import LEUtils
 from src.leveleditor.grid.Grid2D import Grid2D
+
+from PyQt5 import QtCore
 
 class Viewport2D(Viewport):
 
@@ -16,25 +18,42 @@ class Viewport2D(Viewport):
             VIEWPORT_2D_SIDE: "2D Side"
         }
 
-    def initialize(self):
-        Viewport.initialize(self)
-        self.accept('wheel_up', self.zoomIn)
-        self.accept('wheel_down', self.zoomOut)
+        self.dragging = False
+        self.dragCamStart = Point3()
+        self.dragCamMouseStart = Point3()
 
-    def zoomIn(self):
-        if self.mouseWatcher.hasMouse():
-            self.adjustZoom(True, 1)
+    def wheelUp(self):
+        self.adjustZoom(True, 1)
 
-    def zoomOut(self):
-        if self.mouseWatcher.hasMouse():
-            self.adjustZoom(True, -1)
+    def wheelDown(self):
+        self.adjustZoom(True, -1)
+
+    def mouse2Down(self):
+        self.setCursor(QtCore.Qt.DragMoveCursor)
+        self.dragging = True
+        mouse = self.mouseWatcher.getMouse()
+        self.dragCamStart = self.camera.getPos()
+        mouseStart = self.viewportToWorld(mouse)
+        self.dragCamMouseStart = mouseStart
+        self.worldMouseStartDelta = mouseStart - self.dragCamStart
+
+    def mouseMove(self):
+        if self.dragging:
+            mouse = self.mouseWatcher.getMouse()
+            worldPos = self.viewportToWorld(mouse)
+            delta = worldPos - self.dragCamMouseStart
+            self.camera.setPos(self.dragCamStart - delta)
+
+    def mouse2Up(self):
+        self.setCursor(QtCore.Qt.ArrowCursor)
+        self.dragging = False
 
     def getViewHpr(self):
-        if self.vpType == VIEWPORT_2D_FRONT:
+        if self.type == VIEWPORT_2D_FRONT:
             return Vec3(0, 0, 0)
-        elif self.vpType == VIEWPORT_2D_SIDE:
+        elif self.type == VIEWPORT_2D_SIDE:
             return Vec3(90, 0, 0)
-        elif self.vpType == VIEWPORT_2D_TOP:
+        elif self.type == VIEWPORT_2D_TOP:
             return Vec3(0, -90, 0)
         
         return None
@@ -76,4 +95,4 @@ class Viewport2D(Viewport):
         return LEUtils.zeroParallelAxis(point, quat)
 
     def getViewportName(self):
-        self.names.get(self.type, "2D Unknown")
+        return self.names.get(self.type, "2D Unknown")

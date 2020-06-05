@@ -17,14 +17,12 @@ class Viewport3D(Viewport):
         self.flyCam = FlyCam(self)
 
         # Ugh
-        base.camera = self.camNp
-        base.cam = self.camNp
-        base.camNode = self.cam
+        base.camera = self.camera
+        base.cam = self.cam
+        base.camNode = self.camNode
         base.camLens = self.lens
         base.win = self.win
-        base.render2d = NodePath("r2d_dummy")
-        base.aspect2d = NodePath("a2d_dummy")
-        base.render2dp = NodePath("r2dp_dummy")
+        base.gsg = self.win.getGsg()
 
     def makeLens(self):
         return PerspectiveLens()

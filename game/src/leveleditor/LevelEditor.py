@@ -2,8 +2,14 @@ from panda3d.core import WindowProperties, NativeWindowHandle, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
 
 from src.coginvasion.base.BSPBase import BSPBase
-from src.leveleditor.Grid import Grid
-from src.leveleditor.FlyCam import FlyCam
+from src.leveleditor.viewport.QuadSplitter import QuadSplitter
+from src.leveleditor.viewport.Viewport2D import Viewport2D
+from src.leveleditor.viewport.Viewport3D import Viewport3D
+from src.leveleditor.viewport.ViewportType import *
+from src.leveleditor.viewport.ViewportManager import ViewportManager
+from src.leveleditor.tools.ToolManager import ToolManager
+from src.leveleditor import LEUtils
+from src.leveleditor.grid.GridSettings import GridSettings
 from .EntityEdit import EntityEdit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -14,23 +20,34 @@ import builtins
 class LevelEditorSubWind(QtWidgets.QWidget):
 
     def __init__(self, area):
-        QtWidgets.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self, area)
         area.addSubWindow(self)
-        layout = QtWidgets.QGridLayout(self)
-        self.setLayout(layout)
+        self.layout = QtWidgets.QGridLayout(self)
         self.setWindowTitle("Game View")
         self.resize(640, 480)
-        self.show()
-        
-    def resizeEvent(self, event):
-        if not hasattr(builtins, 'base'):
-            return
-        if not hasattr(base, 'win'):
-            return
 
-        props = WindowProperties()
-        props.setSize(event.size().width(), event.size().height())
-        base.win.requestProperties(props)
+        self.splitter = QuadSplitter(self)
+
+        self.layout.addWidget(self.splitter)
+
+        self.setLayout(self.layout)
+
+        self.show()
+
+    def addViewports(self):
+        vp3d = Viewport3D(VIEWPORT_3D, self.splitter)
+        vp3d.initialize()
+        vp2df = Viewport2D(VIEWPORT_2D_FRONT, self.splitter)
+        vp2df.initialize()
+        vp2ds = Viewport2D(VIEWPORT_2D_SIDE, self.splitter)
+        vp2ds.initialize()
+        vp2dt = Viewport2D(VIEWPORT_2D_TOP, self.splitter)
+        vp2dt.initialize()
+
+        self.splitter.addWidget(vp3d, 0, 0)
+        self.splitter.addWidget(vp2df, 0, 1)
+        self.splitter.addWidget(vp2ds, 1, 0)
+        self.splitter.addWidget(vp2dt, 1, 1)
 
 class LevelEditorWindow(QtWidgets.QMainWindow):
 
@@ -46,11 +63,14 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
 
         self.gameViewWind = LevelEditorSubWind(self.ui.gameViewArea)
 
+    def closeEvent(self, event):
+        base.running = False
+
 class LevelEditorApp(QtWidgets.QApplication):
 
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
-
+        
         self.setStyle("Fusion")
 
 
@@ -72,16 +92,17 @@ class LevelEditorApp(QtWidgets.QApplication):
 
         self.setPalette(dark_palette)
 
-        self.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
-
+        self.setStyleSheet("QToolTip { color: #000000 }")
+        
         self.window = LevelEditorWindow()
         self.window.show()
 
 class LevelEditor(BSPBase):
 
     def __init__(self):
-        self.qtApp = LevelEditorApp()
-
+        
+        self.gsg = None
+        
         BSPBase.__init__(self)
         self.loader.mountMultifiles()
         self.loader.mountMultifile("resources/mod.mf")
@@ -103,17 +124,11 @@ class LevelEditor(BSPBase):
         render.setLight(alnp)
 
         # Timer to run the panda mainloop
-        self.mainloopTimer = QtCore.QTimer()
-        self.mainloopTimer.timeout.connect(self.taskMgr.step)
-        self.mainloopTimer.setSingleShot(False)
+        #self.mainloopTimer = QtCore.QTimer()
+        #self.mainloopTimer.timeout.connect(self.taskMgr.step)
+        #self.mainloopTimer.setSingleShot(False)
 
-        self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
-
-        self.currentTool = None
-
-        self.tools = []
-
-        self.viewports = []
+        self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')        
 
         self.mapRoot = render.attachNewNode('mapRoot')
         self.mapRoot.setScale(16.0)
@@ -128,21 +143,36 @@ class LevelEditor(BSPBase):
         #render.setScale(1 / 16.0)
 
         base.setBackgroundColor(0, 0, 0)
+    
+    def snapToGrid(self, point):
+        if GridSettings.GridSnap:
+            return LEUtils.snapToGrid(GridSettings.DefaultStep, point)
+        return point
+
+    def initialize(self):
+        self.viewportMgr = ViewportManager()
+        self.toolMgr = ToolManager()
+        self.qtApp = LevelEditorApp()
+        self.qtApp.window.gameViewWind.addViewports()
+        self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)
+        self.qtApp.window.ui.actionToggleGrid.toggled.connect(self.__toggleGrid)
+        self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
+        self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
+        BSPBase.initialize(self)
+
+    def __toggleGrid(self):
+        GridSettings.EnableGrid = not GridSettings.EnableGrid
+
+    def __incGridSize(self):
+        GridSettings.DefaultStep *= 2
+        GridSettings.DefaultStep = min(256, GridSettings.DefaultStep)
+
+    def __decGridSize(self):
+        GridSettings.DefaultStep //= 2
+        GridSettings.DefaultStep = max(1, GridSettings.DefaultStep)
 
     def editEntity(self, ent):
         self.entityEdit = EntityEdit(ent)
-
-    def addTool(self, toolInst):
-        toolInst.createButton()
-        self.tools.append(toolInst)
-
-    def addTools(self):
-        from src.leveleditor.tools.SelectTool import SelectTool
-        from src.leveleditor.tools.EntityTool import EntityTool
-        self.addTool(SelectTool())
-        self.addTool(EntityTool())
-
-        self.qtApp.window.toolBar.addActions(self.qtApp.window.toolGroup.actions())
 
     def initStuff(self):
         BSPBase.initStuff(self)
@@ -150,8 +180,10 @@ class LevelEditor(BSPBase):
         self.camLens.setNearFar(0.1, 10000)
         #self.shaderGenerator.setSunLight(self.dlnp)
 
-        self.addTools()
+        self.toolMgr.addTools()
 
     def run(self):
-        self.mainloopTimer.start(0)
-        self.qtApp.exec_()
+        self.running = True
+        while self.running:
+            self.qtApp.processEvents()
+            self.taskMgr.step()

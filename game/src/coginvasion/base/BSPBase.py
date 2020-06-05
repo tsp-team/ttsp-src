@@ -19,10 +19,8 @@ class BSPBase(ShowBase):
         self.loader = CogInvasionLoader(self)
         builtins.loader = self.loader
         self.graphicsEngine.setDefaultLoader(self.loader.loader)
-
-        # Make all of our graphics pipes and create a GSG now.
+        
         self.makeAllPipes()
-        self.gsg = self.pipe.makeCallbackGsg(self.graphicsEngine)
 
         from panda3d.core import RenderAttribRegistry
         from panda3d.core import ShaderAttrib, TransparencyAttrib
@@ -44,11 +42,6 @@ class BSPBase(ShowBase):
 
         self.initialize()
 
-    def openDefaultWindow(self, *args, **kwargs):
-        # Use the GSG we created at init.
-        kwargs['gsg'] = self.gsg
-        ShowBase.openDefaultWindow(*args, **kwargs)
-
     def setAmbientOcclusion(self, toggle):
         self.aoToggle = toggle
 
@@ -68,7 +61,7 @@ class BSPBase(ShowBase):
         self.bloomToggle = flag
 
     def initStuff(self):
-        self.shaderGenerator = BSPShaderGenerator(self.gsg, self.camera, self.render)
+        self.shaderGenerator = BSPShaderGenerator(self.win, self.win.getGsg(), self.camera, self.render)
         self.win.getGsg().setShaderGenerator(self.shaderGenerator)
         vlg = VertexLitGenericSpec()    # models
         ulg = UnlitGenericSpec()        # ui elements, particles, etc

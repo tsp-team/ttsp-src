@@ -21,6 +21,7 @@ from panda3d.core import loadPrcFile, loadPrcFileData, ConfigVariableString, Con
 loadPrcFile('config/Confauto.prc')
 loadPrcFile('config/config_client.prc')
 loadPrcFileData('', 'model-path ./resources') # Don't require mounting of phases
+loadPrcFileData('', 'window-type none')
 
 from src.coginvasion.settings.SettingsManager import SettingsManager
 from src.coginvasion.settings.Setting import SHOWBASE_PREINIT, SHOWBASE_POSTINIT
