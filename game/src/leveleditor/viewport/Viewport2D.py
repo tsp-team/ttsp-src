@@ -1,4 +1,4 @@
-from panda3d.core import Vec3, OrthographicLens, Quat, Point2, Point3
+from panda3d.core import Vec3, OrthographicLens, Quat, Point2, Point3, Mat4
 
 from .Viewport import Viewport
 from .ViewportType import *
@@ -35,7 +35,6 @@ class Viewport2D(Viewport):
         self.dragCamStart = self.camera.getPos()
         mouseStart = self.viewportToWorld(mouse)
         self.dragCamMouseStart = mouseStart
-        self.worldMouseStartDelta = mouseStart - self.dragCamStart
 
     def mouseMove(self):
         if self.dragging:
@@ -58,6 +57,17 @@ class Viewport2D(Viewport):
         
         return None
 
+    def getViewQuat(self):
+        quat = Quat()
+        quat.setHpr(self.getViewHpr())
+
+    def getViewMatrix(self):
+        quat = Quat()
+        quat.setHpr(self.getViewHpr())
+        mat = Mat4()
+        quat.extractToMatrix(mat)
+        return mat
+
     def makeGrid(self):
         self.grid = Grid2D(self)
         self.gridRoot.setHpr(self.getViewHpr())
@@ -77,6 +87,30 @@ class Viewport2D(Viewport):
             vec[1] = 0.0
         elif self.type == VIEWPORT_2D_TOP:
             vec[2] = 0.0
+
+    def flatten(self, point):
+        if self.type == VIEWPORT_2D_TOP:
+            return Point3(point[0], point[1], 0)
+        elif self.type == VIEWPORT_2D_FRONT:
+            return Point3(point[0], point[2], 0)
+        elif self.type == VIEWPORT_2D_SIDE:
+            return Point3(point[1], point[2], 0)
+
+    def expand(self, point):
+        if self.type == VIEWPORT_2D_TOP:
+            return Point3(point[0], point[1], 0)
+        elif self.type == VIEWPORT_2D_FRONT:
+            return Point3(point[0], 0, point[1])
+        elif self.type == VIEWPORT_2D_SIDE:
+            return Point3(0, point[0], point[1])
+
+    def getUnusedCoordinate(self, point):
+        if self.type == VIEWPORT_2D_TOP:
+            return Point3(0, 0, point[2])
+        elif self.type == VIEWPORT_2D_FRONT:
+            return Point3(0, point[1], 0)
+        elif self.type == VIEWPORT_2D_SIDE:
+            return Point3(point[0], 0, 0)
 
     def rotate(self, point):
         quat = Quat()
