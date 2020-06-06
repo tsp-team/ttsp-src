@@ -6,6 +6,8 @@ from panda3d.core import MouseAndKeyboard, ButtonThrower, MouseWatcher, Keyboard
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser, Mat4
 from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2, ModelNode, LVector2i, LPoint2i
 
+from .ViewportType import *
+
 from direct.showbase.DirectObject import DirectObject
 
 from PyQt5 import QtWidgets
@@ -44,6 +46,15 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.gridRoot.showThrough(self.getViewportMask())
 
         self.grid = None
+
+    def getMouse(self):
+        return self.mouseWatcher.getMouse()
+
+    def is3D(self):
+        return self.type == VIEWPORT_3D
+
+    def is2D(self):
+        return self.type != VIEWPORT_3D
 
     def makeGrid(self):
         raise NotImplementedError

@@ -12,8 +12,10 @@ class ToolManager:
     def addTools(self):
         from src.leveleditor.tools.SelectTool import SelectTool
         from src.leveleditor.tools.EntityTool import EntityTool
+        from src.leveleditor.tools.BoxTool import BoxTool
         self.addTool(SelectTool())
         self.addTool(EntityTool())
+        self.addTool(BoxTool())
 
         base.qtApp.window.toolBar.addActions(base.qtApp.window.toolGroup.actions())
 

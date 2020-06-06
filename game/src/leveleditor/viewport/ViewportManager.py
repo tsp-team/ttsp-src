@@ -61,13 +61,16 @@ class ViewportManager(DirectObject):
 
         if active and not self.activeViewport:
             active.mouseEnter()
+            messenger.send('mouseEnter', [active])
         elif not active and self.activeViewport:
             self.activeViewport.mouseExit()
+            messenger.send('mouseExit', [self.activeViewport])
 
         if active and active == self.activeViewport:
             mouse = active.mouseWatcher.getMouse()
             if not self.lastMouse or self.lastMouse != mouse:
                 active.mouseMove()
+                messenger.send('mouseMoved', [active])
             self.lastMouse = Point2(mouse)
 
         self.activeViewport = active

@@ -49,9 +49,9 @@ class Viewport2D(Viewport):
 
     def getViewHpr(self):
         if self.type == VIEWPORT_2D_FRONT:
-            return Vec3(0, 0, 0)
-        elif self.type == VIEWPORT_2D_SIDE:
             return Vec3(90, 0, 0)
+        elif self.type == VIEWPORT_2D_SIDE:
+            return Vec3(0, 0, 0)
         elif self.type == VIEWPORT_2D_TOP:
             return Vec3(0, -90, 0)
         
@@ -82,9 +82,9 @@ class Viewport2D(Viewport):
 
     def zeroUnusedCoordinate(self, vec):
         if self.type == VIEWPORT_2D_SIDE:
-            vec[0] = 0.0
-        elif self.type == VIEWPORT_2D_FRONT:
             vec[1] = 0.0
+        elif self.type == VIEWPORT_2D_FRONT:
+            vec[0] = 0.0
         elif self.type == VIEWPORT_2D_TOP:
             vec[2] = 0.0
 
@@ -92,24 +92,24 @@ class Viewport2D(Viewport):
         if self.type == VIEWPORT_2D_TOP:
             return Point3(point[0], point[1], 0)
         elif self.type == VIEWPORT_2D_FRONT:
-            return Point3(point[0], point[2], 0)
-        elif self.type == VIEWPORT_2D_SIDE:
             return Point3(point[1], point[2], 0)
+        elif self.type == VIEWPORT_2D_SIDE:
+            return Point3(point[0], point[2], 0)
 
     def expand(self, point):
         if self.type == VIEWPORT_2D_TOP:
             return Point3(point[0], point[1], 0)
         elif self.type == VIEWPORT_2D_FRONT:
-            return Point3(point[0], 0, point[1])
-        elif self.type == VIEWPORT_2D_SIDE:
             return Point3(0, point[0], point[1])
+        elif self.type == VIEWPORT_2D_SIDE:
+            return Point3(point[0], 0, point[1])
 
     def getUnusedCoordinate(self, point):
         if self.type == VIEWPORT_2D_TOP:
             return Point3(0, 0, point[2])
-        elif self.type == VIEWPORT_2D_FRONT:
-            return Point3(0, point[1], 0)
         elif self.type == VIEWPORT_2D_SIDE:
+            return Point3(0, point[1], 0)
+        elif self.type == VIEWPORT_2D_FRONT:
             return Point3(point[0], 0, 0)
 
     def rotate(self, point):
