@@ -229,6 +229,17 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         return self.clickQueue.getEntries()
 
+    def fixRatio(self, size = None):
+        if not self.lens:
+            return
+
+        if size is None:
+            ratio = self.win.getXSize() / self.win.getYSize()
+        else:
+            ratio = size.x / size.y
+        zoomFactor = (1.0 / self.zoom) * 100.0
+        self.lens.setFilmSize(zoomFactor * ratio, zoomFactor)
+
     def adjustZoom(self, scrolled = False, delta = 0):
         before = Point3()
         if self.mouseWatcher.hasMouse():
@@ -241,10 +252,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             self.zoom *= math.pow(1.2, float(delta))
             self.zoom = min(256.0, max(0.01, self.zoom))
 
-        if self.lens:
-            ratio = self.win.getXSize() / self.win.getYSize()
-            zoomFactor = (1.0 / self.zoom) * 100.0
-            self.lens.setFilmSize(zoomFactor * ratio, zoomFactor)
+        self.fixRatio()
 
         if scrolled:
             after = self.viewportToWorld(md)
@@ -262,7 +270,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         self.win.requestProperties(props)
 
-        self.adjustZoom()
+        self.fixRatio(newsize)
 
     def draw(self):
         pass
