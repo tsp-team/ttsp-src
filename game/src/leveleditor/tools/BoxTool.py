@@ -170,7 +170,7 @@ class BoxTool(BaseTool):
 
     def __init__(self):
         BaseTool.__init__(self)
-        self.handleWidth = 12
+        self.handleWidth = 1
         self.boxColor = Vec4(1)
         self.state = BoxState()
 
@@ -348,8 +348,6 @@ class BoxTool(BaseTool):
         now = base.snapToGrid(vp.viewportToWorld(vp.getMouse()))
         cstart = vp.flatten(self.state.boxStart)
         cend = vp.flatten(self.state.boxEnd)
-
-        self.x = 0
 
         # Proportional scaling
         ostart = vp.flatten(self.state.preTransformBoxStart if self.state.preTransformBoxStart else Vec3.zero())

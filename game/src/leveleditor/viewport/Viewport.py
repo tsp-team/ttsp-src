@@ -193,14 +193,14 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.lens.extrude(viewport, front, back)
         world = (front + back) / 2
 
-        worldMat = self.cam.getMat()
+        worldMat = self.cam.getMat(render)
         world = worldMat.xformPoint(world)
 
         return world
 
     def worldToViewport(self, world):
         # move into local camera space
-        invMat = Mat4(self.cam.getMat())
+        invMat = Mat4(self.cam.getMat(render))
         invMat.invertInPlace()
 
         local = invMat.xformPoint(world)

@@ -35,7 +35,7 @@ class Viewport2D(Viewport):
 
         if scrolled:
             after = self.viewportToWorld(md)
-            self.cam.setPos(self.cam.getPos() - (after - before))
+            self.camera.setPos(self.camera.getPos() - (after - before))
 
     def wheelUp(self):
         self.adjustZoom(True, 1)
@@ -44,7 +44,7 @@ class Viewport2D(Viewport):
         self.adjustZoom(True, -1)
 
     def mouse2Down(self):
-        self.setCursor(QtCore.Qt.DragMoveCursor)
+        self.setCursor(QtCore.Qt.ClosedHandCursor)
         self.dragging = True
         mouse = self.mouseWatcher.getMouse()
         self.dragCamStart = self.camera.getPos()
@@ -63,10 +63,7 @@ class Viewport2D(Viewport):
         self.dragging = False
 
     def getViewHpr(self):
-        if self.type in VIEWPORT_VIEW_HPR:
-            return VIEWPORT_VIEW_HPR[self.type]
-
-        return None
+        return VIEWPORT_VIEW_HPR[self.type]
 
     def getViewQuat(self):
         quat = Quat()
@@ -92,31 +89,32 @@ class Viewport2D(Viewport):
         return lens
 
     def zeroUnusedCoordinate(self, vec):
-        if self.type in VIEWPORT_AXIS_UNUSED:
-            vec[VIEWPORT_AXIS_UNUSED[self.type]] = 0
+        vec[VIEWPORT_AXIS_UNUSED[self.type]] = 0
 
     def flatten(self, point):
-        unused = self.zeroUnusedCoordinate(point)
-        args = []
-        for axis in point:
-            if axis == unused:
+        unusedAxis = VIEWPORT_AXIS_UNUSED[self.type]
+        newPoint = Point3(0, 0, 0)
+
+        currIdx = 0
+        for i in range(3):
+            if i == unusedAxis:
                 continue
-            args.append(axis)
-        return Point3(*args, 0)
+            newPoint[currIdx] = point[currIdx]
+            currIdx += 1
+
+        return newPoint
 
     def expand(self, point):
-        # TODO: fix this, if statements bad
-        if self.type == VIEWPORT_2D_TOP:
-            return Point3(point[0], point[1], 0)
-        elif self.type == VIEWPORT_2D_FRONT:
-            return Point3(0, point[0], point[1])
-        elif self.type == VIEWPORT_2D_SIDE:
-            return Point3(point[0], 0, point[1])
+        newPoint = Point3(point)
+        axis = VIEWPORT_AXIS_UNUSED[self.type]
+        newPoint[axis] = 0.0
+        return newPoint
 
     def getUnusedCoordinate(self, point):
-        new_point = Point3(0, 0, 0)
-        new_point[self.type] = point[self.type]
-        return new_point
+        newPoint = Point3(0, 0, 0)
+        axis = VIEWPORT_AXIS_UNUSED[self.type]
+        newPoint[axis] = point[axis]
+        return newPoint
 
     def rotate(self, point):
         quat = Quat()
