@@ -59,7 +59,7 @@ class BoxState:
 
         vp = self.activeViewport
 
-        assert len(self.boxStart) != len(self.boxEnd), "This literally should not happen. (BoxTool)"
+        assert len(self.boxStart) == len(self.boxEnd), "This literally should not happen. (BoxTool)"
         for i in range(len(self.boxStart)):
             start = self.boxStart[i]
             end = self.boxEnd[i]
