@@ -1,4 +1,4 @@
-from panda3d.core import LineSegs, NodePath, Vec4, Point3
+from panda3d.core import LineSegs, NodePath, Vec4, Point3, AntialiasAttrib
 
 from src.coginvasion.globals import CIGlobals
 
@@ -30,7 +30,7 @@ class Grid:
         if not GridSettings.EnableGrid:
             self.removeCurrentGrid()
             return task.cont
-        
+
         zoom = self.calcZoom()
         step = GridSettings.DefaultStep
         low = GridSettings.Low
@@ -51,7 +51,7 @@ class Grid:
         if step in GridsByStep:
             self.gridNp = GridsByStep[step].copyTo(self.viewport.gridRoot)
             return task.cont
-        
+
         segs = LineSegs()
         i = low
         while i <= high:
@@ -87,5 +87,6 @@ class Grid:
         #loader.loadModel("models/smiley.egg.pz").reparentTo(np)
         GridsByStep[step] = np
         self.gridNp = np.copyTo(self.viewport.gridRoot)
+        self.gridNp.setAntialias(AntialiasAttrib.MLine)
 
         return task.cont
