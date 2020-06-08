@@ -14,12 +14,6 @@ class Viewport2D(Viewport):
 
     def __init__(self, vpType, window):
         Viewport.__init__(self, vpType, window)
-        self.names = {
-            VIEWPORT_2D_TOP: "2D Top",
-            VIEWPORT_2D_FRONT: "2D Front",
-            VIEWPORT_2D_SIDE: "2D Side"
-        }
-
         self.dragging = False
         self.dragCamStart = Point3()
         self.dragCamMouseStart = Point3()
@@ -69,12 +63,8 @@ class Viewport2D(Viewport):
         self.dragging = False
 
     def getViewHpr(self):
-        if self.type == VIEWPORT_2D_FRONT:
-            return Vec3(90, 0, 0)
-        elif self.type == VIEWPORT_2D_SIDE:
-            return Vec3(0, 0, 0)
-        elif self.type == VIEWPORT_2D_TOP:
-            return Vec3(0, -90, 0)
+        if self.type in VIEWPORT_VIEW_HPR:
+            return VIEWPORT_VIEW_HPR[self.type]
 
         return None
 
@@ -102,22 +92,20 @@ class Viewport2D(Viewport):
         return lens
 
     def zeroUnusedCoordinate(self, vec):
-        if self.type == VIEWPORT_2D_SIDE:
-            vec[1] = 0.0
-        elif self.type == VIEWPORT_2D_FRONT:
-            vec[0] = 0.0
-        elif self.type == VIEWPORT_2D_TOP:
-            vec[2] = 0.0
+        if self.type in VIEWPORT_AXIS_UNUSED:
+            vec[VIEWPORT_AXIS_UNUSED[self.type]] = 0
 
     def flatten(self, point):
-        if self.type == VIEWPORT_2D_TOP:
-            return Point3(point[0], point[1], 0)
-        elif self.type == VIEWPORT_2D_FRONT:
-            return Point3(point[1], point[2], 0)
-        elif self.type == VIEWPORT_2D_SIDE:
-            return Point3(point[0], point[2], 0)
+        unused = self.zeroUnusedCoordinate(point)
+        args = []
+        for axis in point:
+            if axis == unused:
+                continue
+            args.append(axis)
+        return Point3(*args, 0)
 
     def expand(self, point):
+        # TODO: fix this, if statements bad
         if self.type == VIEWPORT_2D_TOP:
             return Point3(point[0], point[1], 0)
         elif self.type == VIEWPORT_2D_FRONT:
@@ -126,12 +114,9 @@ class Viewport2D(Viewport):
             return Point3(point[0], 0, point[1])
 
     def getUnusedCoordinate(self, point):
-        if self.type == VIEWPORT_2D_TOP:
-            return Point3(0, 0, point[2])
-        elif self.type == VIEWPORT_2D_SIDE:
-            return Point3(0, point[1], 0)
-        elif self.type == VIEWPORT_2D_FRONT:
-            return Point3(point[0], 0, 0)
+        new_point = Point3(0, 0, 0)
+        new_point[self.type] = point[self.type]
+        return new_point
 
     def rotate(self, point):
         quat = Quat()
@@ -144,13 +129,8 @@ class Viewport2D(Viewport):
         quat.setHpr(self.getViewHpr())
         return LEUtils.makeForwardAxis(point, quat)
 
-    def flatten(self, point):
-        quat = Quat()
-        quat.setHpr(self.getViewHpr())
-        return LEUtils.zeroParallelAxis(point, quat)
-
     def getViewportName(self):
-        return self.names.get(self.type, "2D Unknown")
+        return VIEWPORT_NAMES.get(self.type, "2D Unknown")
 
     def draw(self):
         messenger.send('draw2D', [self])
