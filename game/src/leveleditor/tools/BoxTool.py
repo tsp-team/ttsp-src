@@ -56,34 +56,20 @@ class BoxState:
             return
         if not isinstance(self.activeViewport, Viewport2D):
             return
-        
+
         vp = self.activeViewport
 
-        if self.boxStart[0] > self.boxEnd[0]:
-            temp = self.boxStart[0]
-            self.boxStart[0] = self.boxEnd[0]
-            self.boxEnd[0] = temp
-            flat = vp.flatten(Vec3.right())
-            if flat[0] == 1:
-                self.swapHandle("Left", "Right")
-            if flat[1] == 1:
-                self.swapHandle("Top", "Bottom")
-
-        if self.boxStart[1] > self.boxEnd[1]:
-            temp = self.boxStart[1]
-            self.boxStart[1] = self.boxEnd[1]
-            self.boxEnd[1] = temp
-            flat = vp.flatten(Vec3.forward())
-            if flat[0] == 1:
-                self.swapHandle("Left", "Right")
-            if flat[1] == 1:
-                self.swapHandle("Top", "Bottom")
-
-        if self.boxStart[2] > self.boxEnd[2]:
-            temp = self.boxStart[2]
-            self.boxStart[2] = self.boxEnd[2]
-            self.boxEnd[2] = temp
-            flat = vp.flatten(Vec3.up())
+        assert len(self.boxStart) != len(self.boxEnd), "This literally should not happen. (BoxTool)"
+        for i in range(len(self.boxStart)):
+            start = self.boxStart[i]
+            end = self.boxEnd[i]
+            if start > end:
+                tmp = start
+                self.boxStart[i] = end
+                vec = Vec3(0, 0, 0)
+                vec[i] = 1
+                flat = vp.flatten(vec)
+            # FIXME: There has to be a better way of doing this.
             if flat[0] == 1:
                 self.swapHandle("Left", "Right")
             if flat[1] == 1:
@@ -94,60 +80,6 @@ class BoxState:
             self.handle = ResizeHandle[self.handle.name.replace(one, two)]
         elif two in self.handle.name:
             self.handle = ResizeHandle[self.handle.name.replace(two, one)]
-
-# FIXME: should static geometry be used instead? seems more annoying tbh
-class ViewportDrawer:
-
-    def __init__(self, tool, vp):
-        self.vp = vp
-        self.tool = tool
-
-        self.vpRoot = NodePath("BoxToolVPRoot")
-        self.vpRoot.showThrough(vp.getViewportMask())
-        self.vpRoot.reparentTo(tool.boxRoot)
-
-        # Setup dynamic 2D box geometry
-        fmt = GeomVertexFormat.getV3c4()
-        vdata = GeomVertexData("box", fmt, Geom.UHDynamic)
-        vdata.setNumRows(4)
-        # Fill in color now
-        cwriter = GeomVertexWriter(vdata, InternalName.getColor())
-        cwriter.addData4f(tool.boxColor)
-        cwriter.addData4f(tool.boxColor)
-        cwriter.addData4f(tool.boxColor)
-        cwriter.addData4f(tool.boxColor)
-        lines = GeomLines(Geom.UHDynamic)
-        lines.addVertices(0, 1)
-        lines.closePrimitive()
-        lines.addVertices(1, 2)
-        lines.closePrimitive()
-        lines.addVertices(2, 3)
-        lines.closePrimitive()
-        lines.addVertices(3, 0)
-        lines.closePrimitive()
-        geom = Geom(vdata)
-        geom.addPrimitive(lines)
-        node = GeomNode("boxLines")
-        node.addGeom(geom)
-        self.boxRoot = NodePath(node)
-        self.boxRoot.reparentTo(self.vpRoot)
-        self.boxRoot.setDepthWrite(0)
-        self.boxRoot.setDepthTest(0)
-
-        self.boxVData = vdata
-
-        if vp.is2D():
-            self.boxRoot.setShader(Shader.load(Shader.SLGLSL, "resources/shaders/editor/lineStipple.vert.glsl",
-                                               "resources/shaders/editor/lineStipple.frag.glsl"))
-            self.boxRoot.setShaderInput("stippleParams", Vec2(0xAAAA, 10))
-            self.boxRoot.setBin("fixed", 1000)
-
-        self.handleDrawer = MeshDrawer()
-        self.handleDrawer.setBudget(18)
-        self.handleRoot = self.handleDrawer.getRoot()
-        self.handleRoot.reparentTo(self.vpRoot)
-        if vp.is2D():
-            self.handleRoot.setBin("fixed", 1001)
 
 class BoxTool(BaseTool):
 
@@ -365,7 +297,7 @@ class BoxTool(BaseTool):
         self.state.boxStart = coords[0]
         self.state.boxEnd = coords[1]
         self.onBoxChanged()
-        
+
     def mouseDraggingToDraw(self):
         self.state.action = BoxAction.Drawing
         self.resizeBoxDrag()

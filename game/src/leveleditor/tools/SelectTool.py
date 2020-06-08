@@ -9,10 +9,10 @@ class SelectTool(BaseTool):
 
     def enable(self):
         BaseTool.enable(self)
-        self.accept('mouse1', self.selectSomething)
+        self.accept('mouse1', self.__select)
         self.selectedObjects = []
 
-    def selectSomething(self):
+    def __select(self):
         entries = base.viewportMgr.activeViewport.click(LEGlobals.EntityMask)
         if len(entries) == 0:
             self.deselectAll()
