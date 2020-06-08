@@ -37,6 +37,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.camera = None
         self.cam = None
         self.win = None
+        self.displayRegion = None
         self.mouseWatcher = None
         self.buttonThrower = None
         self.clickRay = None
@@ -103,11 +104,12 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         output.setClearColorActive(False)
         output.setClearDepthActive(False)
 
-        dr = output.makeDisplayRegion()
+        dr = output.makeMonoDisplayRegion()
         dr.setClearColor(Vec4(0, 0, 0, 1))
         dr.setClearColorActive(True)
         dr.setClearDepthActive(True)
         dr.setCamera(self.cam)
+        self.displayRegion = dr
 
         self.win = output
 
@@ -264,4 +266,3 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
     def draw(self):
         pass
-    

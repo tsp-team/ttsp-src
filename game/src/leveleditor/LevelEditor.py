@@ -24,7 +24,7 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         area.addSubWindow(self)
         self.layout = QtWidgets.QGridLayout(self)
         self.setWindowTitle("Game View")
-        self.resize(640, 480)
+
 
         self.splitter = QuadSplitter(self)
 
@@ -32,7 +32,7 @@ class LevelEditorSubWind(QtWidgets.QWidget):
 
         self.setLayout(self.layout)
 
-        self.show()
+        self.showMaximized()
 
     def addViewports(self):
         vp3d = Viewport3D(VIEWPORT_3D, self.splitter)
@@ -70,7 +70,7 @@ class LevelEditorApp(QtWidgets.QApplication):
 
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
-        
+
         self.setStyle("Fusion")
 
 
@@ -93,20 +93,20 @@ class LevelEditorApp(QtWidgets.QApplication):
         self.setPalette(dark_palette)
 
         self.setStyleSheet("QToolTip { color: #000000 }")
-        
+
         self.window = LevelEditorWindow()
         self.window.show()
 
 class LevelEditor(BSPBase):
 
     def __init__(self):
-        
+
         self.gsg = None
-        
+
         BSPBase.__init__(self)
         self.loader.mountMultifiles()
         self.loader.mountMultifile("resources/mod.mf")
-        
+
         #toon.setY(10)
 
         #base.enableMouse()
@@ -128,7 +128,7 @@ class LevelEditor(BSPBase):
         #self.mainloopTimer.timeout.connect(self.taskMgr.step)
         #self.mainloopTimer.setSingleShot(False)
 
-        self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')        
+        self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
 
         self.mapRoot = render.attachNewNode('mapRoot')
         self.mapRoot.setScale(16.0)
@@ -143,7 +143,7 @@ class LevelEditor(BSPBase):
         #render.setScale(1 / 16.0)
 
         base.setBackgroundColor(0, 0, 0)
-    
+
     def snapToGrid(self, point):
         if GridSettings.GridSnap:
             return LEUtils.snapToGrid(GridSettings.DefaultStep, point)
