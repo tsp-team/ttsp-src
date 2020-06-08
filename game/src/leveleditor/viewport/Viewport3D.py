@@ -33,3 +33,6 @@ class Viewport3D(Viewport):
 
     def getViewportName(self):
         return "3D Perspective"
+
+    def draw(self):
+        messenger.send('draw3D', [self])

@@ -242,23 +242,12 @@ class BoxTool(BaseTool):
         self.boxColor = Vec4(1)
         self.state = BoxState()
 
-        self.boxRoot = NodePath(self.Name + "Root")
-        self.boxRoot.setLightOff(1)
-        self.boxRoot.setFogOff(1)
-        self.boxRoot.hide(BitMask32.allOn())
-        self.boxRoot.setTwoSided(True)
-
-        self.drawers = []
-        for vp in base.viewportMgr.viewports:
-            self.drawers.append(ViewportDrawer(self, vp))
-
     def onBoxChanged(self):
         self.state.fixBoxBounds()
         # TODO: mediator.selectionBoxChanged
 
     def enable(self):
         BaseTool.enable(self)
-        self.boxRoot.reparentTo(render)
         self.accept('mouse1', self.mouseDown)
         self.accept('mouse1-up', self.mouseUp)
         self.accept('mouseMoved', self.mouseMove)
@@ -270,7 +259,6 @@ class BoxTool(BaseTool):
     def disable(self):
         BaseTool.disable(self)
         self.maybeCancel()
-        self.boxRoot.reparentTo(NodePath())
 
     def mouseDown(self):
         vp = base.viewportMgr.activeViewport
@@ -528,29 +516,13 @@ class BoxTool(BaseTool):
     def shouldDrawBox(self):
         return self.state.action in self.DrawActions
 
-    def renderBox(self, drawer, start, end):
-        #print(start, end)
-        vwriter = GeomVertexWriter(drawer.boxVData, InternalName.getVertex())
-        vwriter.addData3f(start.x, start.y, start.z)
-        vwriter.addData3f(end.x, start.y, start.z)
-        vwriter.addData3f(end.x, end.y, start.z)
-        vwriter.addData3f(start.x, end.y, start.z)
-
-    def draw2D(self, drawer):
+    def draw2D(self, vp):
         if self.state.action in [BoxAction.ReadyToDraw, BoxAction.DownToDraw]:
             return
-        start = drawer.vp.flatten(self.state.boxStart)
-        end = drawer.vp.flatten(self.state.boxEnd)
+        start = vp.flatten(self.state.boxStart)
+        end = vp.flatten(self.state.boxEnd)
         if self.shouldDrawBox():
-            self.renderBox(drawer, start, end)
+            vp.renderer.drawRect(start, end)
 
-    def draw3D(self, drawer):
+    def draw3D(self, vp):
         pass
-
-    def update(self):
-        print(self.state.action, self.state.handle)
-        for drawer in self.drawers:
-            if drawer.vp.is3D():
-                self.draw3D(drawer)
-            else:
-                self.draw2D(drawer)

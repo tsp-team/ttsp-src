@@ -130,3 +130,6 @@ class Viewport2D(Viewport):
 
     def getViewportName(self):
         return self.names.get(self.type, "2D Unknown")
+
+    def draw(self):
+        messenger.send('draw2D', [self])

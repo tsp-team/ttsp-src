@@ -6,6 +6,8 @@ from panda3d.core import MouseAndKeyboard, ButtonThrower, MouseWatcher, Keyboard
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser, Mat4
 from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2, ModelNode, LVector2i, LPoint2i
 
+from panda3d.bsp import DynamicRender
+
 from .ViewportType import *
 
 from direct.showbase.DirectObject import DirectObject
@@ -20,9 +22,15 @@ class Viewport(DirectObject, QtWidgets.QWidget):
     def __init__(self, vpType, window):
         DirectObject.__init__(self)
         QtWidgets.QWidget.__init__(self, window)
+        self.renderer = DynamicRender()
 
         self.window = window
         self.type = vpType
+
+        self.renderer.setDrawMask(self.getViewportMask())
+        self.renderer.getDynamicRenderNodePath().reparentTo(base.render)
+
+        base.taskMgr.add(self.__resetRenderer, "viewportReset", sort = -100)
 
         self.lens = None
         self.camNode = None
@@ -46,6 +54,10 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.gridRoot.showThrough(self.getViewportMask())
 
         self.grid = None
+
+    def __resetRenderer(self, task):
+        self.renderer.reset()
+        return task.cont
 
     def getMouse(self):
         return self.mouseWatcher.getMouse()
@@ -249,4 +261,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.win.requestProperties(props)
 
         self.adjustZoom()
+
+    def draw(self):
+        pass
     

@@ -1,8 +1,22 @@
-class ToolManager:
+from direct.showbase.DirectObject import DirectObject
+
+class ToolManager(DirectObject):
 
     def __init__(self):
+        DirectObject.__init__(self)
+        
         self.tools = []
         self.currentTool = None
+        self.accept('draw2D', self.__draw2D)
+        self.accept('draw3D', self.__draw3D)
+
+    def __draw2D(self, vp):
+        if self.currentTool:
+            self.currentTool.draw2D(vp)
+    
+    def __draw3D(self, vp):
+        if self.currentTool:
+            self.currentTool.draw3D(vp)
 
     def addTool(self, tool):
         if not tool in self.tools:

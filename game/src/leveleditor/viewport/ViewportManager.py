@@ -11,6 +11,8 @@ class ViewportManager(DirectObject):
         self.lastMouse = None
         base.taskMgr.add(self.__update, 'updateViewports')
 
+        base.taskMgr.add(self.__draw, 'drawViewports', sort = 30)
+
         self.accept('mouse1', self.m1Down)
         self.accept('mouse1-up', self.m1Up)
         self.accept('mouse2', self.m2Down)
@@ -51,6 +53,11 @@ class ViewportManager(DirectObject):
     def wheelUp(self):
         if self.activeViewport:
             self.activeViewport.wheelUp()
+
+    def __draw(self, task):
+        for vp in self.viewports:
+            vp.draw()
+        return task.cont
 
     def __update(self, task):
         active = None

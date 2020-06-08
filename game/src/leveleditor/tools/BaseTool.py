@@ -23,6 +23,12 @@ class BaseTool(DirectObject):
         self.enabled = False
         self.button = None
 
+    def draw2D(self, vp):
+        pass
+
+    def draw3D(self, vp):
+        pass
+
     def createButton(self):
         if self.WantButton:
             self.button = QtWidgets.QAction(base.qtApp.window.toolGroup)
