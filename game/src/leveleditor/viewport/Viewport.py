@@ -14,8 +14,6 @@ from direct.showbase.DirectObject import DirectObject
 
 from PyQt5 import QtWidgets
 
-import math
-
 # Base viewport class
 class Viewport(DirectObject, QtWidgets.QWidget):
 

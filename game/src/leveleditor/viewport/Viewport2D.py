@@ -8,6 +8,8 @@ from src.leveleditor.grid.Grid2D import Grid2D
 
 from PyQt5 import QtCore
 
+import math
+
 class Viewport2D(Viewport):
 
     def __init__(self, vpType, window):
