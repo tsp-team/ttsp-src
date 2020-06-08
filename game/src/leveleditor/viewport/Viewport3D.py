@@ -23,6 +23,10 @@ class Viewport3D(Viewport):
         base.camLens = self.lens
         base.win = self.win
         base.gsg = self.win.getGsg()
+        
+        # Set a default camera position + angle
+        self.camera.setPos(193, 247, 124)
+        self.camera.setHpr(143, -18, 0)
 
     def makeLens(self):
         return PerspectiveLens()
@@ -30,9 +34,6 @@ class Viewport3D(Viewport):
     def makeGrid(self):
         self.grid = Grid3D(self)
         self.gridRoot.setP(-90)
-
-    def getViewportName(self):
-        return "3D Perspective"
 
     def draw(self):
         messenger.send('draw3D', [self])

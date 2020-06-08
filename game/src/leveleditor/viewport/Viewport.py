@@ -5,6 +5,7 @@ from panda3d.core import Camera, BitMask32, WindowProperties, GraphicsPipe, Fram
 from panda3d.core import MouseAndKeyboard, ButtonThrower, MouseWatcher, KeyboardButton, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser, Mat4
 from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2, ModelNode, LVector2i, LPoint2i
+from panda3d.core import OmniBoundingVolume
 
 from panda3d.bsp import DynamicRender
 
@@ -25,8 +26,14 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.window = window
         self.type = vpType
 
+        self.spec = VIEWPORT_SPECS[self.type]
+
+        np = self.renderer.getDynamicRenderNodePath()
+        np.node().setBounds(OmniBoundingVolume())
+        np.node().setFinal(True)
+        np.reparentTo(base.render)
+
         self.renderer.setDrawMask(self.getViewportMask())
-        self.renderer.getDynamicRenderNodePath().reparentTo(base.render)
 
         base.taskMgr.add(self.__resetRenderer, "viewportReset", sort = -100)
 
@@ -49,6 +56,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.gridRoot = base.render.attachNewNode("gridRoot")
         self.gridRoot.setLightOff(1)
         self.gridRoot.setFogOff(1)
+        self.gridRoot.setDepthWrite(False)
         self.gridRoot.hide(BitMask32.allOn())
         self.gridRoot.showThrough(self.getViewportMask())
 
@@ -102,7 +110,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         output.setClearColorActive(False)
         output.setClearDepthActive(False)
 
-        dr = output.makeMonoDisplayRegion()
+        dr = output.makeDisplayRegion()
         dr.setClearColor(Vec4(0, 0, 0, 1))
         dr.setClearColorActive(True)
         dr.setClearDepthActive(True)
@@ -115,7 +123,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         mak = MouseAndKeyboard(self.win, 0, "mouse")
         mouse = base.dataRoot.attachNewNode(mak)
         self.mouseWatcher = MouseWatcher()
-        self.mouseWatcher.setDisplayRegion(dr)
+        self.mouseWatcher.setDisplayRegion(self.displayRegion)
         mw = mouse.attachNewNode(self.mouseWatcher)
 
         # listen for keyboard and mouse events in this viewport
@@ -178,7 +186,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         pass
 
     def getViewportName(self):
-        return "Unknown"
+        return self.spec.name
 
     def getViewportCenterPixels(self):
         return LPoint2i(self.win.getXSize() // 2, self.win.getYSize() // 2)
@@ -187,14 +195,17 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         center = self.getViewportCenterPixels()
         self.win.movePointer(0, center[0], center[1])
 
-    def viewportToWorld(self, viewport):
+    def viewportToWorld(self, viewport, vec = False):
         front = Point3()
         back = Point3()
         self.lens.extrude(viewport, front, back)
         world = (front + back) / 2
 
         worldMat = self.cam.getMat(render)
-        world = worldMat.xformPoint(world)
+        if vec:
+            world = worldMat.xformVec(world)
+        else:
+            world = worldMat.xformPoint(world)
 
         return world
 

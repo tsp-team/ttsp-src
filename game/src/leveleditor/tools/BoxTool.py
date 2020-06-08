@@ -4,6 +4,7 @@ from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomLines, GeomVertex
 from .BaseTool import BaseTool, ToolUsage
 from src.leveleditor.viewport.Viewport2D import Viewport2D
 from src.coginvasion.globals import CIGlobals
+from src.leveleditor import RenderModes
 
 from enum import IntEnum
 
@@ -70,9 +71,9 @@ class BoxState:
                 vec[i] = 1
                 flat = vp.flatten(vec)
                 # FIXME: There has to be a better way of doing this.
-                if flat[0] == 1:
+                if flat.x == 1:
                     self.swapHandle("Left", "Right")
-                if flat[1] == 1:
+                if flat.z == 1:
                     self.swapHandle("Top", "Bottom")
 
     def swapHandle(self, one, two):
@@ -138,40 +139,40 @@ class BoxTool(BaseTool):
 
     @staticmethod
     def getHandle(current, boxStart, boxEnd, hitbox):
-        start = Point3(min(boxStart[0], boxEnd[0]), min(boxStart[1], boxEnd[1]), 0)
-        end = Point3(max(boxStart[0], boxEnd[0]), max(boxStart[1], boxEnd[1]), 0)
+        start = Point3(min(boxStart[0], boxEnd[0]), 0, min(boxStart[2], boxEnd[2]))
+        end = Point3(max(boxStart[0], boxEnd[0]), 0, max(boxStart[2], boxEnd[2]))
 
-        if BoxTool.handleHitTestPoint(current[0], current[1], start[0], start[1], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], start[0], start[2], hitbox):
             return ResizeHandle.BottomLeft
 
-        if BoxTool.handleHitTestPoint(current[0], current[1], end[0], start[1], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], end[0], start[2], hitbox):
             return ResizeHandle.BottomRight
 
-        if BoxTool.handleHitTestPoint(current[0], current[1], start[0], end[1], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], start[0], end[2], hitbox):
             return ResizeHandle.TopLeft
 
-        if BoxTool.handleHitTestPoint(current[0], current[1], end[0], end[1], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], end[0], end[2], hitbox):
             return ResizeHandle.TopRight
 
-        if BoxTool.handleHitTestLine(current[0], current[1], start[0], start[1], end[0], start[1], hitbox):
+        if BoxTool.handleHitTestLine(current[0], current[2], start[0], start[2], end[0], start[2], hitbox):
             return ResizeHandle.Bottom
 
-        if BoxTool.handleHitTestLine(current[0], current[1], start[0], end[1], end[0], end[1], hitbox):
+        if BoxTool.handleHitTestLine(current[0], current[2], start[0], end[2], end[0], end[2], hitbox):
             return ResizeHandle.Top
 
-        if BoxTool.handleHitTestLine(current[0], current[1], start[0], start[1], start[0], end[1], hitbox):
+        if BoxTool.handleHitTestLine(current[0], current[2], start[0], start[2], start[0], end[2], hitbox):
             return ResizeHandle.Left
 
-        if BoxTool.handleHitTestLine(current[0], current[1], end[0], start[1], end[0], end[1], hitbox):
+        if BoxTool.handleHitTestLine(current[0], current[2], end[0], start[2], end[0], end[2], hitbox):
             return ResizeHandle.Right
 
-        if current[0] > start[0] and current[0] < end[0] and current[1] > start[1] and current[1] < end[1]:
+        if current[0] > start[0] and current[0] < end[0] and current[2] > start[2] and current[2] < end[2]:
             return ResizeHandle.Center
 
     def __init__(self):
         BaseTool.__init__(self)
         self.handleWidth = 1
-        self.boxColor = Vec4(1)
+        self.boxColor = Vec4(1, 1, 0, 1)
         self.state = BoxState()
 
     def onBoxChanged(self):
@@ -213,7 +214,9 @@ class BoxTool(BaseTool):
         mouse = vp.getMouse()
         self.state.activeViewport = vp
         self.state.action = BoxAction.DownToDraw
-        self.state.boxStart = base.snapToGrid(vp.expand(vp.viewportToWorld(mouse)))
+        toWorld = vp.viewportToWorld(mouse)
+        expanded = vp.expand(toWorld)
+        self.state.boxStart = base.snapToGrid(expanded)
         self.state.boxEnd = self.state.boxStart
         self.state.handle = ResizeHandle.BottomLeft
         self.onBoxChanged()
@@ -276,11 +279,6 @@ class BoxTool(BaseTool):
         if not self.state.isValidAndApplicable(vp):
             return
 
-        mouse = vp.getMouse()
-
-        # FIXME
-        #print(abs(mouse.x - self.state.clickStart.x), abs(mouse.y - self.state.clickStart.y))
-
         if self.state.action in [BoxAction.Drawing, BoxAction.DownToDraw]:
             self.mouseDraggingToDraw()
         elif self.state.action in [BoxAction.Drawn, BoxAction.ReadyToResize]:
@@ -330,7 +328,7 @@ class BoxTool(BaseTool):
             return None
         st = vp.flatten(self.state.preTransformBoxStart)
         ed = vp.flatten(self.state.preTransformBoxEnd)
-        points = [st, ed, Point3(st.x, ed.y, 0), Point3(ed.x, st.y, 0)]
+        points = [st, ed, Point3(st.x, 0, ed.z), Point3(ed.x, 0, st.z)]
         points.sort(key = lambda x: (self.state.moveStart - x).lengthSquared())
         return points[0]
 
@@ -353,18 +351,18 @@ class BoxTool(BaseTool):
         ostart = vp.flatten(self.state.preTransformBoxStart if self.state.preTransformBoxStart else Vec3.zero())
         oend = vp.flatten(self.state.preTransformBoxEnd if self.state.preTransformBoxEnd else Vec3.zero())
         owidth = oend.x - ostart.x
-        oheight = oend.y - ostart.y
+        oheight = oend.z - ostart.z
         proportional = vp.mouseWatcher.isButtonDown(KeyboardButton.control()) and \
             self.state.action == BoxAction.Resizing and owidth != 0 and oheight != 0
 
         if self.state.handle == ResizeHandle.TopLeft:
             cstart.x = now.x
-            cend.y = now.y
+            cend.z = now.z
         elif self.state.handle == ResizeHandle.Top:
-            cend.y = now.y
+            cend.z = now.z
         elif self.state.handle == ResizeHandle.TopRight:
             cend.x = now.x
-            cend.y = now.y
+            cend.z = now.z
         elif self.state.handle == ResizeHandle.Left:
             cstart.x = now.x
         elif self.state.handle == ResizeHandle.Center:
@@ -380,16 +378,16 @@ class BoxTool(BaseTool):
             cend.x = now.x
         elif self.state.handle == ResizeHandle.BottomLeft:
             cstart.x = now.x
-            cstart.y = now.y
+            cstart.z = now.z
         elif self.state.handle == ResizeHandle.Bottom:
-            cstart.y = now.y
+            cstart.z = now.z
         elif self.state.handle == ResizeHandle.BottomRight:
             cend.x = now.x
-            cstart.y = now.y
+            cstart.z = now.z
 
         if proportional:
             nwidth = cend.x - cstart.x
-            nheight = cent.y - cstart.y
+            nheight = cent.z - cstart.z
             mult = max(nwidth / owidth, nheight / oheight)
             pwidth = owidth * mult
             pheight = oheight * mult
@@ -397,16 +395,16 @@ class BoxTool(BaseTool):
             hdiff = pheight - nheight
             if self.state.handle == ResizeHandle.TopLeft:
                 cstart.x -= wdiff
-                cend.y += hdiff
+                cend.z += hdiff
             elif self.state.handle == ResizeHandle.TopRight:
                 cend.x += wdiff
-                cend.y += hdiff
+                cend.z += hdiff
             elif self.state.handle == ResizeHandle.BottomLeft:
                 cstart.x -= wdiff
-                cstart.y -= hdiff
+                cstart.z -= hdiff
             elif self.state.handle == ResizeHandle.BottomRight:
                 cend.x += wdiff
-                cstart.y -= hdiff
+                cstart.z -= hdiff
 
         cstart = vp.expand(cstart) + vp.getUnusedCoordinate(self.state.boxStart)
         cend = vp.expand(cend) + vp.getUnusedCoordinate(self.state.boxEnd)
@@ -452,6 +450,8 @@ class BoxTool(BaseTool):
         start = vp.flatten(self.state.boxStart)
         end = vp.flatten(self.state.boxEnd)
         if self.shouldDrawBox():
+            vp.renderer.renderState(RenderModes.DashedLineNoZ())
+            vp.renderer.color(self.boxColor)
             vp.renderer.drawRect(start, end)
 
     def draw3D(self, vp):
