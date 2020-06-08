@@ -240,24 +240,6 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         zoomFactor = (1.0 / self.zoom) * 100.0
         self.lens.setFilmSize(zoomFactor * ratio, zoomFactor)
 
-    def adjustZoom(self, scrolled = False, delta = 0):
-        before = Point3()
-        if self.mouseWatcher.hasMouse():
-            md = self.mouseWatcher.getMouse()
-        else:
-            scrolled = False
-
-        if scrolled:
-            before = self.viewportToWorld(md)
-            self.zoom *= math.pow(1.2, float(delta))
-            self.zoom = min(256.0, max(0.01, self.zoom))
-
-        self.fixRatio()
-
-        if scrolled:
-            after = self.viewportToWorld(md)
-            self.cam.setPos(self.cam.getPos() - (after - before))
-
     def resizeEvent(self, event):
         if not self.win:
             return

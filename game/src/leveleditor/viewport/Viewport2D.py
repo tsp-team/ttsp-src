@@ -22,6 +22,25 @@ class Viewport2D(Viewport):
         self.dragCamStart = Point3()
         self.dragCamMouseStart = Point3()
 
+
+    def adjustZoom(self, scrolled = False, delta = 0):
+        before = Point3()
+        if self.mouseWatcher.hasMouse():
+            md = self.mouseWatcher.getMouse()
+        else:
+            scrolled = False
+
+        if scrolled:
+            before = self.viewportToWorld(md)
+            self.zoom *= math.pow(1.2, float(delta))
+            self.zoom = min(256.0, max(0.01, self.zoom))
+
+        self.fixRatio()
+
+        if scrolled:
+            after = self.viewportToWorld(md)
+            self.cam.setPos(self.cam.getPos() - (after - before))
+
     def wheelUp(self):
         self.adjustZoom(True, 1)
 
@@ -54,7 +73,7 @@ class Viewport2D(Viewport):
             return Vec3(0, 0, 0)
         elif self.type == VIEWPORT_2D_TOP:
             return Vec3(0, -90, 0)
-        
+
         return None
 
     def getViewQuat(self):
