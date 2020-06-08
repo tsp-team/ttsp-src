@@ -69,11 +69,11 @@ class BoxState:
                 vec = Vec3(0, 0, 0)
                 vec[i] = 1
                 flat = vp.flatten(vec)
-            # FIXME: There has to be a better way of doing this.
-            if flat[0] == 1:
-                self.swapHandle("Left", "Right")
-            if flat[1] == 1:
-                self.swapHandle("Top", "Bottom")
+                # FIXME: There has to be a better way of doing this.
+                if flat[0] == 1:
+                    self.swapHandle("Left", "Right")
+                if flat[1] == 1:
+                    self.swapHandle("Top", "Bottom")
 
     def swapHandle(self, one, two):
         if one in self.handle.name:
