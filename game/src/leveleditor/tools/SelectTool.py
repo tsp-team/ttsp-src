@@ -13,13 +13,13 @@ class SelectTool(BaseTool):
         self.selectedObjects = []
 
     def selectSomething(self):
-        entries = base.click(LEGlobals.EntityMask)
+        entries = base.viewportMgr.activeViewport.click(LEGlobals.EntityMask)
         if len(entries) == 0:
             self.deselectAll()
         else:
             for i in range(len(entries)):
                 entry = entries[i]
-                
+
                 np = entry.getIntoNodePath()
                 if np.hasPythonTag("mapobject"):
                     obj = np.getPythonTag("mapobject")

@@ -219,7 +219,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         if not self.mouseWatcher.hasMouse():
             return None
 
-        self.clickRay.setFromLens(self.cam, self.mouseWatcher.getMouse())
+        self.clickRay.setFromLens(self.camNode, self.mouseWatcher.getMouse())
         self.clickNode.setFromCollideMask(mask)
         self.clickNp.reparentTo(self.cam)
         self.clickQueue.clearEntries()
