@@ -27,17 +27,16 @@ from src.coginvasion.settings.SettingsManager import SettingsManager
 from src.coginvasion.settings.Setting import SHOWBASE_PREINIT, SHOWBASE_POSTINIT
 jsonFile = "settings.json"
 
+# Initialize settings manager, but don't actually load any settings.
+# The settings don't matter to the editor, but I need to define it
+# because there might be code that relies on this being defined.
 sm = SettingsManager()
 
 from src.coginvasion.globals import CIGlobals
 CIGlobals.SettingsMgr = sm
-sm.loadFile(jsonFile)
-sm.doSunriseFor(sunrise = SHOWBASE_PREINIT)
 
 from src.leveleditor.LevelEditor import LevelEditor
 base = LevelEditor()
-
-sm.doSunriseFor(sunrise = SHOWBASE_POSTINIT)
 
 ConfigVariableDouble('decompressor-step-time').setValue(0.01)
 ConfigVariableDouble('extractor-step-time').setValue(0.01)
