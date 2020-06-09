@@ -164,7 +164,7 @@ class BoxTool(BaseTool):
         start[0] += offset
         start[2] += offset
         end[0] -= offset
-        end[2] += offset
+        end[2] -= offset
 
         if current[0] > start[0] and current[0] < end[0] \
             and current[2] > start[2] and current[2] < end[2]:
