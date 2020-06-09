@@ -107,6 +107,8 @@ class LevelEditor(BSPBase):
         self.loader.mountMultifiles()
         self.loader.mountMultifile("resources/mod.mf")
 
+        self.document = None
+
         #toon.setY(10)
 
         #base.enableMouse()
