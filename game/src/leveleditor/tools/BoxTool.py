@@ -7,6 +7,7 @@ from src.coginvasion.globals import CIGlobals
 from src.leveleditor import RenderModes
 
 from enum import IntEnum
+import py_linq
 
 from PyQt5 import QtCore
 
@@ -31,6 +32,10 @@ class ResizeHandle(IntEnum):
     BottomLeft = 6
     Bottom = 7
     BottomRight = 8
+
+class HandleType(IntEnum):
+    Square = 0
+    Circle = 1
 
 class BoxState:
 
@@ -124,23 +129,12 @@ class BoxTool(BaseTool):
             hitY >= testY - hitbox and hitY <= testY + hitbox)
 
     @staticmethod
-    def handleHitTestLine(hitX, hitY, test1X, test1Y, test2X, test2Y, hitbox):
-        if test1X != test2X and test1Y != test2Y:
-            return # only works on straight lines
-        sx = min(test1X, test2X)
-        sy = min(test1Y, test2Y)
-        ex = max(test1X, test2X)
-        ey = max(test1Y, test2Y)
-        hoz = test1Y == test2Y
-        if hoz:
-            return hitX >= sx and hitX <= ex and hitY >= sy - hitbox and hitY <= sy + hitbox
-        else:
-            return hitY >= sy and hitY <= ey and hitX >= sx - hitbox and hitX <= sx + hitbox
-
-    @staticmethod
-    def getHandle(current, boxStart, boxEnd, hitbox):
-        start = Point3(min(boxStart[0], boxEnd[0]), 0, min(boxStart[2], boxEnd[2]))
-        end = Point3(max(boxStart[0], boxEnd[0]), 0, max(boxStart[2], boxEnd[2]))
+    def getHandle(current, boxStart, boxEnd, hitbox, offset, zoom):
+        offset /= zoom
+        hitbox /= zoom
+        start = Point3(min(boxStart[0], boxEnd[0]) - offset, 0, min(boxStart[2], boxEnd[2]) - offset)
+        end = Point3(max(boxStart[0], boxEnd[0]) + offset, 0, max(boxStart[2], boxEnd[2]) + offset)
+        center = (end + start) / 2
 
         if BoxTool.handleHitTestPoint(current[0], current[2], start[0], start[2], hitbox):
             return ResizeHandle.BottomLeft
@@ -154,25 +148,34 @@ class BoxTool(BaseTool):
         if BoxTool.handleHitTestPoint(current[0], current[2], end[0], end[2], hitbox):
             return ResizeHandle.TopRight
 
-        if BoxTool.handleHitTestLine(current[0], current[2], start[0], start[2], end[0], start[2], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], center[0], start[2], hitbox):
             return ResizeHandle.Bottom
 
-        if BoxTool.handleHitTestLine(current[0], current[2], start[0], end[2], end[0], end[2], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], center[0], end[2], hitbox):
             return ResizeHandle.Top
 
-        if BoxTool.handleHitTestLine(current[0], current[2], start[0], start[2], start[0], end[2], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], start[0], center[2], hitbox):
             return ResizeHandle.Left
 
-        if BoxTool.handleHitTestLine(current[0], current[2], end[0], start[2], end[0], end[2], hitbox):
+        if BoxTool.handleHitTestPoint(current[0], current[2], end[0], center[2], hitbox):
             return ResizeHandle.Right
 
-        if current[0] > start[0] and current[0] < end[0] and current[2] > start[2] and current[2] < end[2]:
+        # Remove the offset padding for testing if we are inside the box itself
+        start[0] += offset
+        start[2] += offset
+        end[0] -= offset
+        end[2] += offset
+
+        if current[0] > start[0] and current[0] < end[0] \
+            and current[2] > start[2] and current[2] < end[2]:
             return ResizeHandle.Center
 
     def __init__(self):
         BaseTool.__init__(self)
         self.handleWidth = 1
-        self.boxColor = Vec4(1, 1, 0, 1)
+        self.handleOffset = 1.6
+        self.handleType = HandleType.Square
+        self.boxColor = Vec4(1, 1, 1, 1)
         self.state = BoxState()
 
     def onBoxChanged(self):
@@ -312,7 +315,7 @@ class BoxTool(BaseTool):
         now = vp.viewportToWorld(vp.getMouse())
         start = vp.flatten(self.state.boxStart)
         end = vp.flatten(self.state.boxEnd)
-        handle = BoxTool.getHandle(now, start, end, self.handleWidth / vp.zoom)
+        handle = BoxTool.getHandle(now, start, end, self.handleWidth, self.handleOffset, vp.zoom)
         if handle is not None:
             vp.setCursor(self.cursorForHandle(handle))
             self.state.handle = handle
@@ -444,6 +447,44 @@ class BoxTool(BaseTool):
     def shouldDrawBox(self):
         return self.state.action in self.DrawActions
 
+    def getHandles(self, start, end, zoom, offset = None):
+        if offset is None:
+            offset = self.handleOffset
+
+        half = (end - start) / 2
+        dist = offset / zoom
+
+        return py_linq.Enumerable([
+            (ResizeHandle.TopLeft, start.x - dist, end.z + dist),
+            (ResizeHandle.TopRight, end.x + dist, end.z + dist),
+            (ResizeHandle.BottomLeft, start.x - dist, start.z - dist),
+            (ResizeHandle.BottomRight, end.x + dist, start.z - dist),
+
+            (ResizeHandle.Top, start.x + half.x, end.z + dist),
+            (ResizeHandle.Left, start.x - dist, start.z + half.z),
+            (ResizeHandle.Right, end.x + dist, start.z + half.z),
+            (ResizeHandle.Bottom, start.x + half.x, start.z - dist)
+        ])
+
+    def filterHandle(self, handle):
+        return True
+
+    def shouldDrawHandles(self):
+        return self.state.action in [BoxAction.ReadyToResize, BoxAction.Drawn]
+
+    def drawHandles(self, vp, start, end):
+        z = vp.zoom
+        handles = self.getHandles(start, end, vp.zoom) \
+            .where(lambda x: self.filterHandle(x[0])) \
+            .select(lambda x: Point3(x[1], 0, x[2])) \
+            .to_list()
+
+        for handle in handles:
+            if self.handleType == HandleType.Square:
+                vp.renderer.renderState(RenderModes.DoubleSidedNoZ())
+                vp.renderer.drawFilledRectRadius(handle, 1, z, True)
+            # TODO: circles
+
     def draw2D(self, vp):
         if self.state.action in [BoxAction.ReadyToDraw, BoxAction.DownToDraw]:
             return
@@ -453,6 +494,8 @@ class BoxTool(BaseTool):
             vp.renderer.renderState(RenderModes.DashedLineNoZ())
             vp.renderer.color(self.boxColor)
             vp.renderer.drawRect(start, end)
+        if self.shouldDrawHandles():
+            self.drawHandles(vp, start, end)
 
     def draw3D(self, vp):
         pass

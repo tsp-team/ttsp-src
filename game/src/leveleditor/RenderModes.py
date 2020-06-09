@@ -1,4 +1,4 @@
-from panda3d.core import RenderState, DepthTestAttrib, DepthWriteAttrib, ShaderAttrib, ColorAttrib, Shader, LightAttrib, FogAttrib
+from panda3d.core import RenderState, DepthTestAttrib, DepthWriteAttrib, ShaderAttrib, ColorAttrib, Shader, LightAttrib, FogAttrib, CullFaceAttrib
 from panda3d.core import LVector2i, Vec4
 from panda3d.bsp import BSPMaterial, BSPMaterialAttrib
 
@@ -12,6 +12,18 @@ def DashedLineNoZ():
         _DashedLineNoZ = RenderState.make(
             shattr,
             DepthTestAttrib.make(DepthTestAttrib.MOff),
-            DepthWriteAttrib.make(DepthWriteAttrib.MOff)
+            DepthWriteAttrib.make(DepthWriteAttrib.MOff),
+            CullFaceAttrib.make(CullFaceAttrib.MCullNone)
         )
     return _DashedLineNoZ
+
+_DoubleSidedNoZ = None
+def DoubleSidedNoZ():
+    global _DoubleSidedNoZ
+    if not _DoubleSidedNoZ:
+        _DoubleSidedNoZ = RenderState.make(
+            CullFaceAttrib.make(CullFaceAttrib.MCullNone),
+            DepthTestAttrib.make(DepthTestAttrib.MOff),
+            DepthWriteAttrib.make(DepthWriteAttrib.MOff)
+        )
+    return _DoubleSidedNoZ
