@@ -84,9 +84,9 @@ class Grid:
         segs.drawTo(Point3(high, 0, low))
 
         np = NodePath(segs.create())
+        #np.setAntialias(AntialiasAttrib.MLine)
         #loader.loadModel("models/smiley.egg.pz").reparentTo(np)
         GridsByStep[step] = np
         self.gridNp = np.copyTo(self.viewport.gridRoot)
-        self.gridNp.setAntialias(AntialiasAttrib.MLine)
 
         return task.cont

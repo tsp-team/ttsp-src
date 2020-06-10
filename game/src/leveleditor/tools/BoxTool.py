@@ -1,10 +1,16 @@
 from panda3d.core import Point2, Vec3, Vec4, KeyboardButton, NodePath, LineSegs, MeshDrawer, BitMask32, Shader, Vec2
 from panda3d.core import Geom, GeomNode, GeomVertexFormat, GeomLines, GeomVertexWriter, GeomVertexData, InternalName, Point3
+from panda3d.core import TextNode
 
 from .BaseTool import BaseTool, ToolUsage
 from src.leveleditor.viewport.Viewport2D import Viewport2D
+from src.leveleditor.viewport.ViewportType import *
 from src.coginvasion.globals import CIGlobals
 from src.leveleditor import RenderModes
+from src.leveleditor.geometry.Handles import Handles, HandleType
+from src.leveleditor.geometry.Box import Box
+from src.leveleditor.geometry.Rect import Rect
+from src.leveleditor.geometry.GeomView import GeomView
 
 from enum import IntEnum
 import py_linq
@@ -32,10 +38,6 @@ class ResizeHandle(IntEnum):
     BottomLeft = 6
     Bottom = 7
     BottomRight = 8
-
-class HandleType(IntEnum):
-    Square = 0
-    Circle = 1
 
 class BoxState:
 
@@ -86,6 +88,76 @@ class BoxState:
             self.handle = ResizeHandle[self.handle.name.replace(one, two)]
         elif two in self.handle.name:
             self.handle = ResizeHandle[self.handle.name.replace(two, one)]
+
+# We need this class for each 2D viewport since it has to render different things
+class BoxToolViewport:
+
+    def __init__(self, tool, vp):
+        self.vp = vp
+        self.tool = tool
+
+        # Set up the resize handles for this 2d viewport
+        squareHandles = Handles(HandleType.Square)
+        squareHandles.np.setHpr(vp.getViewHpr())
+        squareHandles.addView(
+            GeomView.Triangles, vp.getViewportMask(),
+            renderState = RenderModes.DoubleSidedNoZ())
+        squareHandles.generateGeometry()
+        self.handlesList = {
+            HandleType.Square: squareHandles
+        }
+
+        self.handles = squareHandles
+
+        # Measurement text
+        ttext = TextNode("boxToolTopText")
+        ttext.setAlign(TextNode.ABoxedCenter)
+        self.topText = NodePath(ttext)
+        self.topText.setHpr(vp.getViewHpr())
+        self.topText.hide(~vp.getViewportMask())
+
+        ltext = TextNode("boxToolLeftText")
+        ltext.setAlign(TextNode.ABoxedRight)
+        self.leftText = NodePath(ltext)
+        self.leftText.setHpr(vp.getViewHpr())
+        self.leftText.hide(~vp.getViewportMask())
+
+    def updateHandles(self, handles):
+        self.handles.setHandles(handles)
+
+    def updateTextPosScale(self):
+        start = self.vp.flatten(self.tool.state.boxStart)
+        end = self.vp.flatten(self.tool.state.boxEnd)
+        center = (start + end) / 2
+        offset = 4 / self.vp.zoom
+        scale = 3.25 / self.vp.zoom
+
+        self.topText.setPos(self.vp.expand(Point3(center.x, 0, end.z + offset)))
+        self.topText.setScale(scale)
+        self.leftText.setPos(self.vp.expand(Point3(start.x - offset, 0, center.z)))
+        self.leftText.setScale(scale)
+
+    def updateText(self):
+        start = self.vp.flatten(self.tool.state.boxStart)
+        end = self.vp.flatten(self.tool.state.boxEnd)
+        width = abs(end.x - start.x)
+        height = abs(end.z - start.z)
+        self.topText.node().setText("%.1f" % width)
+        self.leftText.node().setText("%.1f" % height)
+
+    def showText(self):
+        self.topText.reparentTo(base.render)
+        self.leftText.reparentTo(base.render)
+
+    def hideText(self):
+        self.topText.reparentTo(NodePath())
+        self.leftText.reparentTo(NodePath())
+
+    def showHandles(self):
+        self.handles.np.reparentTo(base.render)
+
+    def hideHandles(self):
+        self.handles.np.reparentTo(NodePath())
 
 class BoxTool(BaseTool):
 
@@ -172,14 +244,62 @@ class BoxTool(BaseTool):
 
     def __init__(self):
         BaseTool.__init__(self)
-        self.handleWidth = 1
+        self.handleWidth = 0.9
         self.handleOffset = 1.6
         self.handleType = HandleType.Square
         self.boxColor = Vec4(1, 1, 1, 1)
         self.state = BoxState()
 
+        self.vps = []
+        for vp in base.viewportMgr.viewports:
+            if vp.is2D():
+                self.vps.append(BoxToolViewport(self, vp))
+
+        # Representation of the box we are drawing
+        self.box = Box()
+        # Render as solid lines in 3D viewport
+        self.box.addView(GeomView.Lines, VIEWPORT_3D_MASK)
+        # Render as dashed lines in 2D viewports
+        self.box.addView(GeomView.Lines, VIEWPORT_2D_MASK, state = RenderModes.DashedLineNoZ())
+        self.box.generateGeometry()
+
+    def showHandles(self):
+        for vp in self.vps:
+            vp.showHandles()
+
+    def hideHandles(self):
+        for vp in self.vps:
+            vp.hideHandles()
+
+    def hideText(self):
+        for vp in self.vps:
+            vp.hideText()
+
+    def showText(self):
+        for vp in self.vps:
+            vp.showText()
+
+    def showBox(self):
+        self.box.np.reparentTo(base.render)
+
+    def hideBox(self):
+        self.box.np.reparentTo(NodePath())
+
+    def updateHandles(self, vp):
+        start = vp.vp.flatten(self.state.boxStart)
+        end = vp.vp.flatten(self.state.boxEnd)
+        handles = self.getHandles(start, end, vp.vp.zoom)
+        vp.handles.setHandles(handles, vp.vp.zoom)
+
     def onBoxChanged(self):
         self.state.fixBoxBounds()
+
+        # Fix up the text
+        for vp in self.vps:
+            vp.updateText()
+            self.updateHandles(vp)
+        self.box.setMinMax(self.state.boxStart, self.state.boxEnd)
+
         # TODO: mediator.selectionBoxChanged
 
     def enable(self):
@@ -213,6 +333,9 @@ class BoxTool(BaseTool):
         pass
 
     def leftMouseDownToDraw(self):
+        self.hideText()
+        self.hideBox()
+        self.hideHandles()
         vp = base.viewportMgr.activeViewport
         mouse = vp.getMouse()
         self.state.activeViewport = vp
@@ -225,6 +348,7 @@ class BoxTool(BaseTool):
         self.onBoxChanged()
 
     def leftMouseDownToResize(self):
+        self.hideHandles()
         vp = base.viewportMgr.activeViewport
         self.state.action = BoxAction.DownToResize
         self.state.moveStart = vp.viewportToWorld(vp.getMouse())
@@ -257,6 +381,7 @@ class BoxTool(BaseTool):
         self.state.action = BoxAction.Drawn
         self.state.boxStart = corrected[0]
         self.state.boxEnd = corrected[1]
+        self.showHandles()
         self.onBoxChanged()
 
     def leftMouseUpDrawing(self):
@@ -298,8 +423,11 @@ class BoxTool(BaseTool):
         self.state.boxStart = coords[0]
         self.state.boxEnd = coords[1]
         self.onBoxChanged()
+        #render.ls()
 
     def mouseDraggingToDraw(self):
+        self.showBox()
+        self.showText()
         self.state.action = BoxAction.Drawing
         self.resizeBoxDrag()
 
@@ -420,6 +548,9 @@ class BoxTool(BaseTool):
             self.state.activeViewport.setCursor(QtCore.Qt.ArrowCursor)
             self.state.activeViewport = None
         self.state.action = BoxAction.ReadyToDraw
+        self.hideText()
+        self.hideBox()
+        self.hideHandles()
         return True
 
     def enterDown(self):
@@ -444,9 +575,6 @@ class BoxTool(BaseTool):
         if self.state.activeViewport:
             self.state.activeViewport.setCursor(QtCore.Qt.ArrowCursor)
 
-    def shouldDrawBox(self):
-        return self.state.action in self.DrawActions
-
     def getHandles(self, start, end, zoom, offset = None):
         if offset is None:
             offset = self.handleOffset
@@ -464,38 +592,17 @@ class BoxTool(BaseTool):
             (ResizeHandle.Left, start.x - dist, start.z + half.z),
             (ResizeHandle.Right, end.x + dist, start.z + half.z),
             (ResizeHandle.Bottom, start.x + half.x, start.z - dist)
-        ])
+        ]).where(lambda x: self.filterHandle(x[0])) \
+            .select(lambda x: Point3(x[1], 0, x[2])) \
+            .to_list()
 
     def filterHandle(self, handle):
         return True
 
-    def shouldDrawHandles(self):
-        return self.state.action in [BoxAction.ReadyToResize, BoxAction.Drawn]
+    def update(self):
+        for vp in self.vps:
+            if self.state.action != BoxAction.ReadyToDraw:
+                vp.updateTextPosScale()
+            if self.state.action in [BoxAction.ReadyToResize, BoxAction.Drawn]:
+                self.updateHandles(vp)
 
-    def drawHandles(self, vp, start, end):
-        z = vp.zoom
-        handles = self.getHandles(start, end, vp.zoom) \
-            .where(lambda x: self.filterHandle(x[0])) \
-            .select(lambda x: Point3(x[1], 0, x[2])) \
-            .to_list()
-
-        for handle in handles:
-            if self.handleType == HandleType.Square:
-                vp.renderer.renderState(RenderModes.DoubleSidedNoZ())
-                vp.renderer.drawFilledRectRadius(handle, 1, z, True)
-            # TODO: circles
-
-    def draw2D(self, vp):
-        if self.state.action in [BoxAction.ReadyToDraw, BoxAction.DownToDraw]:
-            return
-        start = vp.flatten(self.state.boxStart)
-        end = vp.flatten(self.state.boxEnd)
-        if self.shouldDrawBox():
-            vp.renderer.renderState(RenderModes.DashedLineNoZ())
-            vp.renderer.color(self.boxColor)
-            vp.renderer.drawRect(start, end)
-        if self.shouldDrawHandles():
-            self.drawHandles(vp, start, end)
-
-    def draw3D(self, vp):
-        pass

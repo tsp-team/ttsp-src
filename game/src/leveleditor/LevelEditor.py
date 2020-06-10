@@ -1,5 +1,6 @@
 from panda3d.core import WindowProperties, NativeWindowHandle, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
+from panda3d.core import TextNode
 
 from src.coginvasion.base.BSPBase import BSPBase
 from src.leveleditor.viewport.QuadSplitter import QuadSplitter
@@ -45,9 +46,9 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         vp2dt.initialize()
 
         self.splitter.addWidget(vp3d, 0, 0)
-        self.splitter.addWidget(vp2df, 0, 1)
-        self.splitter.addWidget(vp2ds, 1, 0)
-        self.splitter.addWidget(vp2dt, 1, 1)
+        self.splitter.addWidget(vp2df, 1, 0)
+        self.splitter.addWidget(vp2ds, 1, 1)
+        self.splitter.addWidget(vp2dt, 0, 1)
 
 class LevelEditorWindow(QtWidgets.QMainWindow):
 
@@ -112,6 +113,8 @@ class LevelEditor(BSPBase):
         #toon.setY(10)
 
         #base.enableMouse()
+
+        TextNode.setDefaultFont(loader.loadFont("resources/models/fonts/consolas.ttf"))
 
         from panda3d.core import DirectionalLight, AmbientLight
         dlight = DirectionalLight('dlight')

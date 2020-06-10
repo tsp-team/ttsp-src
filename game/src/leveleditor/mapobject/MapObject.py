@@ -1,8 +1,7 @@
 from panda3d.core import NodePath, CollisionBox, CollisionNode, Vec4
 from panda3d.core import Point3, CKeyValues
 
-from direct.showbase.DirectObject import DirectObject
-
+from .MapWritable import MapWritable
 from src.leveleditor import LEGlobals
 
 entPropertyExclusions = [
@@ -11,10 +10,11 @@ entPropertyExclusions = [
 ]
 
 # Map object aka entity
-class MapObject(DirectObject):
+class MapObject(MapWritable):
 
-    def __init__(self, keyvalues = None):
-        self._id = 0
+    def __init__(self, id = 0):
+        MapWritable.__init__(self)
+        self._id = id
         self.selected = False
         self.classname = ""
         self.parent = None
@@ -31,6 +31,7 @@ class MapObject(DirectObject):
         self.boundsVis = None
         self.boundsColor = Vec4(1, 1, 0, 1)
 
+    def initialize(self, keyvalues = None):
         if keyvalues:
             self.readKeyValues(keyvalues)
 

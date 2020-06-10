@@ -1,8 +1,13 @@
-from panda3d.core import Vec3
+from panda3d.core import Vec3, BitMask32
 VIEWPORT_3D         = 0
 VIEWPORT_2D_FRONT   = 6
 VIEWPORT_2D_SIDE    = 7
 VIEWPORT_2D_TOP     = 8
+
+VIEWPORT_3D_MASK = BitMask32.bit(VIEWPORT_3D)
+VIEWPORT_2D_MASK = BitMask32.bit(VIEWPORT_2D_FRONT) | \
+    BitMask32.bit(VIEWPORT_2D_SIDE) | \
+    BitMask32.bit(VIEWPORT_2D_TOP)
 
 class ViewportSpec:
     def __init__(self, type, name):

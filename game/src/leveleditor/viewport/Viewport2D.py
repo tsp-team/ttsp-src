@@ -1,4 +1,5 @@
 from panda3d.core import Vec3, OrthographicLens, Quat, Point2, Point3, Mat4, OmniBoundingVolume
+from panda3d.core import RenderState, FogAttrib, LightAttrib
 
 from .Viewport import Viewport
 from .ViewportType import *
@@ -15,11 +16,14 @@ class Viewport2D(Viewport):
     def __init__(self, vpType, window):
         Viewport.__init__(self, vpType, window)
         self.zoom = 0.25
-        np = self.renderer.getDynamicRenderNodePath()
-        np.setHpr(self.getViewHpr())
         self.dragging = False
         self.dragCamStart = Point3()
         self.dragCamMouseStart = Point3()
+
+    def initialize(self):
+        Viewport.initialize(self)
+        self.camNode.setInitialState(
+            RenderState.make(FogAttrib.makeOff(), LightAttrib.makeAllOff()))
 
     def adjustZoom(self, scrolled = False, delta = 0):
         before = Point3()

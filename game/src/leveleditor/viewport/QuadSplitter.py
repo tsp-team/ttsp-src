@@ -18,9 +18,6 @@ class AdvSplitter(QtWidgets.QWidget):
         self.center = False
         self.splitter = splitter
 
-        self.lbl = QtWidgets.QLabel("Testing, testing, testing", self)
-        self.lbl.show()
-
         self.mousePos = QtCore.QPoint(0, 0)
 
         self.setMouseTracking(True)
@@ -248,7 +245,7 @@ class QuadSplitter(QtWidgets.QFrame):
         if self.grid[0][1]:
             self.grid[0][1].setGeometry(self.realSpacing() + columnWidth + self.splittersSpacing, self.realSpacing(),
                 self.realWidth() - columnWidth, columnHeight)
-        
+
         if self.grid[1][0]:
             self.grid[1][0].setGeometry(self.realSpacing(), self.realSpacing() + columnHeight + self.splittersSpacing,
                 columnWidth, self.realHeight() - columnHeight)
@@ -274,4 +271,3 @@ class QuadSplitter(QtWidgets.QFrame):
             splitter.setPercent(newY / self.realHeight())
 
         self.arrange()
-        

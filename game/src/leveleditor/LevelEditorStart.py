@@ -12,6 +12,12 @@ except ImportError:
     print("ERROR: You need to pull in fgdtools via pip to use the level editor")
     sys.exit(1)
 
+try:
+    import py_linq
+except ImportError:
+    print("ERROR: You need to pull in py_linq via pip to use the level editor")
+    sys.exit(1)
+
 import builtins
 from src.coginvasion.base.Metadata import Metadata
 metadata = Metadata()
