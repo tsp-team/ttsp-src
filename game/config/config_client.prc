@@ -154,7 +154,7 @@ ctmusic-numsongs 1
 
 want-pstats 1
 pstats-gpu-timing 0
-pstats-host 127.0.0.1
+#pstats-host 127.0.0.1
 pstats-view-on-server 1
 pstats-eventmanager 1
 
