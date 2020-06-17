@@ -72,6 +72,8 @@ class LevelEditorApp(QtWidgets.QApplication):
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
 
+        self.setWindowIcon(QtGui.QIcon("resources/icons/hammer.ico"))
+
         self.setStyle("Fusion")
 
 

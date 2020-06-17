@@ -294,11 +294,12 @@ class BoxTool(BaseTool):
     def onBoxChanged(self):
         self.state.fixBoxBounds()
 
-        # Fix up the text
-        for vp in self.vps:
-            vp.updateText()
-            self.updateHandles(vp)
-        self.box.setMinMax(self.state.boxStart, self.state.boxEnd)
+        if self.state.action in [BoxAction.Drawing, BoxAction.Resizing]:
+            # Fix up the text
+            for vp in self.vps:
+                vp.updateText()
+                self.updateHandles(vp)
+            self.box.setMinMax(self.state.boxStart, self.state.boxEnd)
 
         # TODO: mediator.selectionBoxChanged
 
