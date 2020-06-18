@@ -47,6 +47,8 @@ base = LevelEditor()
 ConfigVariableDouble('decompressor-step-time').setValue(0.01)
 ConfigVariableDouble('extractor-step-time').setValue(0.01)
 
+print("taha")
+
 base.initStuff()
 
 base.run()

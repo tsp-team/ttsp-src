@@ -112,6 +112,8 @@ class LevelEditor(BSPBase):
 
         self.document = None
 
+        self.setFrameRateMeter(True)
+
         #toon.setY(10)
 
         #base.enableMouse()

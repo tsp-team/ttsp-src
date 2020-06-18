@@ -8,9 +8,11 @@ class Geometry:
     def __init__(self, name, format = GeomVertexFormat.getV3()):
         self.views = []
         self.vertexBuffer = GeomVertexData(name + "-vdata", format, GeomEnums.UHDynamic)
+
         self.np = NodePath(name)
         self.np.node().setBounds(OmniBoundingVolume())
         self.np.node().setFinal(1)
+        # taha was here
 
     def generateIndices(self, firstVertex = 0, numVerts = None):
         if numVerts is None:
@@ -26,8 +28,7 @@ class Geometry:
         self.generateIndices()
 
     def generateVertices(self):
-        # Force panda to recompute the bounding volume when we change vertices
-        self.np.node().getBounds()
+        pass
 
     def cleanup(self):
         for view in self.views:

@@ -66,7 +66,7 @@ class ViewportManager(DirectObject):
                 active = vp
             vp.tick()
 
-        if active and not self.activeViewport:
+        if active and (not self.activeViewport or self.activeViewport != active):
             active.mouseEnter()
             messenger.send('mouseEnter', [active])
         elif not active and self.activeViewport:
