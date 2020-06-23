@@ -11,6 +11,8 @@ from src.leveleditor.viewport.ViewportManager import ViewportManager
 from src.leveleditor.tools.ToolManager import ToolManager
 from src.leveleditor import LEUtils
 from src.leveleditor.grid.GridSettings import GridSettings
+from src.leveleditor.Document import Document
+from src.leveleditor.ui import About
 from .EntityEdit import EntityEdit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -24,7 +26,7 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self, area)
         area.addSubWindow(self)
         self.layout = QtWidgets.QGridLayout(self)
-        self.setWindowTitle("Game View")
+        self.setWindowTitle("")
 
 
         self.splitter = QuadSplitter(self)
@@ -63,6 +65,15 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.toolGroup = QtWidgets.QActionGroup(self.ui.leftBar)
 
         self.gameViewWind = LevelEditorSubWind(self.ui.gameViewArea)
+
+        self.ui.actionAbout.triggered.connect(self.__showAbout)
+
+    def __showAbout(self):
+        dlg = QtWidgets.QDialog(self)
+        ui = About.Ui_Dialog()
+        ui.setupUi(dlg)
+        dlg.setModal(True)
+        dlg.show()
 
     def closeEvent(self, event):
         base.running = False
@@ -110,9 +121,7 @@ class LevelEditor(BSPBase):
         self.loader.mountMultifiles()
         self.loader.mountMultifile("resources/mod.mf")
 
-        self.document = None
-
-        self.setFrameRateMeter(True)
+        #self.setFrameRateMeter(True)
 
         #toon.setY(10)
 
@@ -153,6 +162,12 @@ class LevelEditor(BSPBase):
 
         base.setBackgroundColor(0, 0, 0)
 
+    def setEditorWindowTitle(self, title):
+        if len(title):
+    	    self.qtApp.window.gameViewWind.setWindowTitle(self.document.getMapName() + " - " + title)
+        else:
+            self.qtApp.window.gameViewWind.setWindowTitle(self.document.getMapName())
+
     def snapToGrid(self, point):
         if GridSettings.GridSnap:
             return LEUtils.snapToGrid(GridSettings.DefaultStep, point)
@@ -168,6 +183,10 @@ class LevelEditor(BSPBase):
         self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
         self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
         BSPBase.initialize(self)
+
+        # Open a blank document
+        self.document = Document()
+        self.document.open()
 
     def __toggleGrid(self):
         GridSettings.EnableGrid = not GridSettings.EnableGrid

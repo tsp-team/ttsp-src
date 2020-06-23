@@ -5,20 +5,27 @@ from panda3d.core import Camera, BitMask32, WindowProperties, GraphicsPipe, Fram
 from panda3d.core import MouseAndKeyboard, ButtonThrower, MouseWatcher, KeyboardButton, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser, Mat4
 from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2, ModelNode, LVector2i, LPoint2i
-from panda3d.core import OmniBoundingVolume
+from panda3d.core import OmniBoundingVolume, OrthographicLens
+
+from src.coginvasion.globals import CIGlobals
 
 from .ViewportType import *
+from .ViewportGizmo import ViewportGizmo
 
 from direct.showbase.DirectObject import DirectObject
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 
 # Base viewport class
 class Viewport(DirectObject, QtWidgets.QWidget):
 
+    ClearColor = CIGlobals.vec3GammaToLinear(Vec4(0.361, 0.361, 0.361, 1.0))
+
     def __init__(self, vpType, window):
         DirectObject.__init__(self)
         QtWidgets.QWidget.__init__(self, window)
+
+        self.qtWindow = None
 
         self.window = window
         self.type = vpType
@@ -40,15 +47,46 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.clickTrav = None
         self.tickTask = None
         self.zoom = 1.0
+        self.gizmo = None
+
+        # 2D stuff copied from ShowBase :(
+        self.camera2d = None
+        self.cam2d = None
+        self.render2d = None
+        self.aspect2d = None
+        self.a2dBackground = None
+        self.a2dTop = None
+        self.a2dBottom = None
+        self.a2dLeft = None
+        self.a2dRight = None
+        self.a2dTopCenter = None
+        self.a2dTopCenterNs = None
+        self.a2dBottomCenter = None
+        self.a2dBottomCenterNs = None
+        self.a2dRightCenter = None
+        self.a2dRightCenterNs = None
+        self.a2dTopLeft = None
+        self.a2dTopLeftNs = None
+        self.a2dTopRight = None
+        self.a2dTopRightNs = None
+        self.a2dBottomLeft = None
+        self.a2dBottomLeftNs = None
+        self.a2dBottomRight = None
+        self.a2dBottomRightNs = None
+        self.__oldAspectRatio = None
 
         self.gridRoot = base.render.attachNewNode("gridRoot")
         self.gridRoot.setLightOff(1)
-        self.gridRoot.setFogOff(1)
-        self.gridRoot.setDepthWrite(False)
+        self.gridRoot.setBSPMaterial("resources/phase_14/materials/unlit.mat")
+        self.gridRoot.setDepthWrite(False, 1)
+        self.gridRoot.setBin("background", 0)
         self.gridRoot.hide(BitMask32.allOn())
         self.gridRoot.showThrough(self.getViewportMask())
 
         self.grid = None
+
+    def getGizmoAxes(self):
+        raise NotImplementedError
 
     def getMouse(self):
         return self.mouseWatcher.getMouse()
@@ -68,6 +106,12 @@ class Viewport(DirectObject, QtWidgets.QWidget):
     def makeLens(self):
         raise NotImplementedError
 
+    def getGridAxes(self):
+        raise NotImplementedError
+
+    def expand(self, point):
+        return point
+
     def initialize(self):
         self.lens = self.makeLens()
         self.camera = base.render.attachNewNode(ModelNode("viewportCameraParent"))
@@ -80,7 +124,8 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         winprops.setOrigin(0, 0)
         winprops.setParentWindow(int(self.winId()))
         winprops.setOpen(True)
-        winprops.setForeground(True)
+        winprops.setForeground(False)
+        winprops.setUndecorated(True)
 
         output = base.graphicsEngine.makeOutput(
             base.pipe, "viewportOutput", 0,
@@ -91,11 +136,14 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         assert output is not None, "Unable to create viewport output!"
 
+        self.qtWindow = QtGui.QWindow.fromWinId(output.getWindowHandle().getIntHandle())
+        print(self.qtWindow)
+
         output.setClearColorActive(False)
         output.setClearDepthActive(False)
 
         dr = output.makeDisplayRegion()
-        dr.setClearColor(Vec4(0, 0, 0, 1))
+        dr.setClearColor(self.ClearColor)
         dr.setClearColorActive(True)
         dr.setClearDepthActive(True)
         dr.setCamera(self.cam)
@@ -112,6 +160,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         # listen for keyboard and mouse events in this viewport
         bt = ButtonThrower("kbEvents")
+        bt.setPrefix("vp%i-" % self.spec.type)
         mods = ModifierButtons()
         mods.addButton(KeyboardButton.shift())
         mods.addButton(KeyboardButton.control())
@@ -129,9 +178,126 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.clickTrav = CollisionTraverser("viewportClickTraverser")
         self.clickTrav.addCollider(self.clickNp, self.clickQueue)
 
+        self.setupRender2d()
+        self.setupCamera2d()
+
+        self.gizmo = ViewportGizmo(self)
+
         base.viewportMgr.addViewport(self)
 
         self.makeGrid()
+
+    def getAspectRatio(self):
+        return self.win.getXSize() / self.win.getYSize()
+
+    def setupRender2d(self):
+        ## This is the root of the 2-D scene graph.
+        self.render2d = NodePath("viewport-render2d")
+
+        # Set up some overrides to turn off certain properties which
+        # we probably won't need for 2-d objects.
+
+        # It's probably important to turn off the depth test, since
+        # many 2-d objects will be drawn over each other without
+        # regard to depth position.
+
+        # We used to avoid clearing the depth buffer before drawing
+        # render2d, but nowadays we clear it anyway, since we
+        # occasionally want to put 3-d geometry under render2d, and
+        # it's simplest (and seems to be easier on graphics drivers)
+        # if the 2-d scene has been cleared first.
+
+        self.render2d.setDepthTest(0)
+        self.render2d.setDepthWrite(0)
+        self.render2d.setMaterialOff(1)
+        self.render2d.setTwoSided(1)
+
+        self.aspect2d = self.render2d.attachNewNode("viewport-aspect2d")
+
+        aspectRatio = self.getAspectRatio()
+        self.aspect2d.setScale(1.0 / aspectRatio, 1.0, 1.0)
+
+        self.a2dBackground = self.aspect2d.attachNewNode("a2dBackground")
+
+        ## The Z position of the top border of the aspect2d screen.
+        self.a2dTop = 1.0
+        ## The Z position of the bottom border of the aspect2d screen.
+        self.a2dBottom = -1.0
+        ## The X position of the left border of the aspect2d screen.
+        self.a2dLeft = -aspectRatio
+        ## The X position of the right border of the aspect2d screen.
+        self.a2dRight = aspectRatio
+
+        self.a2dTopCenter = self.aspect2d.attachNewNode("a2dTopCenter")
+        self.a2dTopCenterNs = self.aspect2d.attachNewNode("a2dTopCenterNS")
+        self.a2dBottomCenter = self.aspect2d.attachNewNode("a2dBottomCenter")
+        self.a2dBottomCenterNs = self.aspect2d.attachNewNode("a2dBottomCenterNS")
+        self.a2dLeftCenter = self.aspect2d.attachNewNode("a2dLeftCenter")
+        self.a2dLeftCenterNs = self.aspect2d.attachNewNode("a2dLeftCenterNS")
+        self.a2dRightCenter = self.aspect2d.attachNewNode("a2dRightCenter")
+        self.a2dRightCenterNs = self.aspect2d.attachNewNode("a2dRightCenterNS")
+
+        self.a2dTopLeft = self.aspect2d.attachNewNode("a2dTopLeft")
+        self.a2dTopLeftNs = self.aspect2d.attachNewNode("a2dTopLeftNS")
+        self.a2dTopRight = self.aspect2d.attachNewNode("a2dTopRight")
+        self.a2dTopRightNs = self.aspect2d.attachNewNode("a2dTopRightNS")
+        self.a2dBottomLeft = self.aspect2d.attachNewNode("a2dBottomLeft")
+        self.a2dBottomLeftNs = self.aspect2d.attachNewNode("a2dBottomLeftNS")
+        self.a2dBottomRight = self.aspect2d.attachNewNode("a2dBottomRight")
+        self.a2dBottomRightNs = self.aspect2d.attachNewNode("a2dBottomRightNS")
+
+        # Put the nodes in their places
+        self.a2dTopCenter.setPos(0, 0, self.a2dTop)
+        self.a2dTopCenterNs.setPos(0, 0, self.a2dTop)
+        self.a2dBottomCenter.setPos(0, 0, self.a2dBottom)
+        self.a2dBottomCenterNs.setPos(0, 0, self.a2dBottom)
+        self.a2dLeftCenter.setPos(self.a2dLeft, 0, 0)
+        self.a2dLeftCenterNs.setPos(self.a2dLeft, 0, 0)
+        self.a2dRightCenter.setPos(self.a2dRight, 0, 0)
+        self.a2dRightCenterNs.setPos(self.a2dRight, 0, 0)
+
+        self.a2dTopLeft.setPos(self.a2dLeft, 0, self.a2dTop)
+        self.a2dTopLeftNs.setPos(self.a2dLeft, 0, self.a2dTop)
+        self.a2dTopRight.setPos(self.a2dRight, 0, self.a2dTop)
+        self.a2dTopRightNs.setPos(self.a2dRight, 0, self.a2dTop)
+        self.a2dBottomLeft.setPos(self.a2dLeft, 0, self.a2dBottom)
+        self.a2dBottomLeftNs.setPos(self.a2dLeft, 0, self.a2dBottom)
+        self.a2dBottomRight.setPos(self.a2dRight, 0, self.a2dBottom)
+        self.a2dBottomRightNs.setPos(self.a2dRight, 0, self.a2dBottom)
+
+    def setupCamera2d(self, sort = 10, displayRegion = (0, 1, 0, 1),
+                      coords = (-1, 1, -1, 1)):
+        dr = self.win.makeMonoDisplayRegion(*displayRegion)
+        dr.setSort(10)
+
+        # Enable clearing of the depth buffer on this new display
+        # region (see the comment in setupRender2d, above).
+        dr.setClearDepthActive(1)
+
+        # Make any texture reloads on the gui come up immediately.
+        dr.setIncompleteRender(False)
+
+        left, right, bottom, top = coords
+
+        # Now make a new Camera node.
+        cam2dNode = Camera('cam2d')
+
+        lens = OrthographicLens()
+        lens.setFilmSize(right - left, top - bottom)
+        lens.setFilmOffset((right + left) * 0.5, (top + bottom) * 0.5)
+        lens.setNearFar(-1000, 1000)
+        cam2dNode.setLens(lens)
+
+        # self.camera2d is the analog of self.camera, although it's
+        # not as clear how useful it is.
+        self.camera2d = self.render2d.attachNewNode('camera2d')
+
+        camera2d = self.camera2d.attachNewNode(cam2dNode)
+        dr.setCamera(camera2d)
+
+        self.cam2d = camera2d
+
+        return camera2d
 
     def mouse1Up(self):
         pass
@@ -227,11 +393,48 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             return
 
         if size is None:
-            ratio = self.win.getXSize() / self.win.getYSize()
+            aspectRatio = self.win.getXSize() / self.win.getYSize()
         else:
-            ratio = size.x / size.y
+            aspectRatio = size.x / size.y
         zoomFactor = (1.0 / self.zoom) * 100.0
-        self.lens.setFilmSize(zoomFactor * ratio, zoomFactor)
+        self.lens.setFilmSize(zoomFactor * aspectRatio, zoomFactor)
+
+        if aspectRatio != self.__oldAspectRatio:
+            self.__oldAspectRatio = aspectRatio
+            # Fix up some anything that depends on the aspectRatio
+            if aspectRatio < 1:
+                # If the window is TALL, lets expand the top and bottom
+                self.aspect2d.setScale(1.0, aspectRatio, aspectRatio)
+                self.a2dTop = 1.0 / aspectRatio
+                self.a2dBottom = - 1.0 / aspectRatio
+                self.a2dLeft = -1
+                self.a2dRight = 1.0
+            else:
+                # If the window is WIDE, lets expand the left and right
+                self.aspect2d.setScale(1.0 / aspectRatio, 1.0, 1.0)
+                self.a2dTop = 1.0
+                self.a2dBottom = -1.0
+                self.a2dLeft = -aspectRatio
+                self.a2dRight = aspectRatio
+
+            # Reposition the aspect2d marker nodes
+            self.a2dTopCenter.setPos(0, 0, self.a2dTop)
+            self.a2dTopCenterNs.setPos(0, 0, self.a2dTop)
+            self.a2dBottomCenter.setPos(0, 0, self.a2dBottom)
+            self.a2dBottomCenterNs.setPos(0, 0, self.a2dBottom)
+            self.a2dLeftCenter.setPos(self.a2dLeft, 0, 0)
+            self.a2dLeftCenterNs.setPos(self.a2dLeft, 0, 0)
+            self.a2dRightCenter.setPos(self.a2dRight, 0, 0)
+            self.a2dRightCenterNs.setPos(self.a2dRight, 0, 0)
+
+            self.a2dTopLeft.setPos(self.a2dLeft, 0, self.a2dTop)
+            self.a2dTopLeftNs.setPos(self.a2dLeft, 0, self.a2dTop)
+            self.a2dTopRight.setPos(self.a2dRight, 0, self.a2dTop)
+            self.a2dTopRightNs.setPos(self.a2dRight, 0, self.a2dTop)
+            self.a2dBottomLeft.setPos(self.a2dLeft, 0, self.a2dBottom)
+            self.a2dBottomLeftNs.setPos(self.a2dLeft, 0, self.a2dBottom)
+            self.a2dBottomRight.setPos(self.a2dRight, 0, self.a2dBottom)
+            self.a2dBottomRightNs.setPos(self.a2dRight, 0, self.a2dBottom)
 
     def resizeEvent(self, event):
         if not self.win:

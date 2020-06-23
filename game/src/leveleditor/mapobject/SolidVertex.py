@@ -12,13 +12,13 @@ class SolidVertex(MapWritable):
         self.face = face
 
     def readKeyValues(self, kv):
-        self.pos = CKeyValues.to3f(kv["Location"])
-        self.uv = LTexCoord(float(kv["TextureU"]), float(kv["TextureV"]))
+        self.pos = CKeyValues.to3f(kv.getKeyValue("location"))
+        self.uv = LTexCoord(float(kv.getKeyValue("textureu")), float(kv.getKeyValue("texturev")))
 
     def writeKeyValues(self, kv):
-        kv["Location"] = CKeyValues.toString(self.pos)
-        kv["TextureU"] = str(self.uv.getX())
-        kv["TextureV"] = str(self.uv.getY())
+        kv.setKeyValue("location", CKeyValues.toString(self.pos))
+        kv.setKeyValue("textureu", str(self.uv.getX()))
+        kv.setKeyValue("texturev", str(self.uv.getY()))
 
     def clone(self):
         vtx = SolidVertex(self.pos, self.face)

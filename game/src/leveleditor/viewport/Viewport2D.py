@@ -22,6 +22,7 @@ class Viewport2D(Viewport):
 
     def initialize(self):
         Viewport.initialize(self)
+        self.gizmo.np.setHpr(self.getViewHpr())
         self.camNode.setInitialState(
             RenderState.make(FogAttrib.makeOff(), LightAttrib.makeAllOff()))
 
@@ -90,7 +91,7 @@ class Viewport2D(Viewport):
 
     def makeGrid(self):
         self.grid = Grid2D(self)
-        self.gridRoot.setHpr(self.getViewHpr())
+        #self.gridRoot.setHpr(self.getViewHpr())
 
     def makeLens(self):
         lens = OrthographicLens()
@@ -117,6 +118,12 @@ class Viewport2D(Viewport):
                 continue
             newPoint[i] = point[idx]
         return newPoint
+
+    def getGridAxes(self):
+        return self.spec.flattenIndices
+
+    def getGizmoAxes(self):
+        return self.spec.flattenIndices
 
     def getUnusedCoordinate(self, point):
         newPoint = Point3(0, 0, 0)
