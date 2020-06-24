@@ -160,7 +160,6 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         # listen for keyboard and mouse events in this viewport
         bt = ButtonThrower("kbEvents")
-        bt.setPrefix("vp%i-" % self.spec.type)
         mods = ModifierButtons()
         mods.addButton(KeyboardButton.shift())
         mods.addButton(KeyboardButton.control())

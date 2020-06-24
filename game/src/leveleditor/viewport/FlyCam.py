@@ -20,26 +20,27 @@ class FlyCam(DirectObject):
         self.cameraRotateSpeed = 75.0
         self.cameraSmooth = 0.7
         self.slideFactor = 0.75
+        self.maxPitch = 90
+        self.minPitch = -90
         self.diagonalFactor = math.sqrt(2.0) / 2.0
         self.lastSpeeds = Vec3(0)
 
-        inputState.watchWithModifiers("forward", "raw-w")
-        inputState.watchWithModifiers("reverse", "raw-s")
-        inputState.watchWithModifiers("slideLeft", "raw-a")
-        inputState.watchWithModifiers("slideRight", "raw-d")
-        inputState.watchWithModifiers("floatDown", "raw-q")
-        inputState.watchWithModifiers("floatUp", "raw-e")
-        inputState.watchWithModifiers("lookUp", "raw-arrow_up")
-        inputState.watchWithModifiers("lookDown", "araw-rrow_down")
-        inputState.watchWithModifiers("lookRight", "raw-arrow_right")
-        inputState.watchWithModifiers("lookLeft", "raw-arrow_left")
+        inputState.watchWithModifiers("forward", "w")
+        inputState.watchWithModifiers("reverse", "s")
+        inputState.watchWithModifiers("slideLeft", "a")
+        inputState.watchWithModifiers("slideRight", "d")
+        inputState.watchWithModifiers("floatDown", "q")
+        inputState.watchWithModifiers("floatUp", "e")
+        inputState.watchWithModifiers("lookUp", "arrow_up")
+        inputState.watchWithModifiers("lookDown", "arrow_down")
+        inputState.watchWithModifiers("lookRight", "arrow_right")
+        inputState.watchWithModifiers("lookLeft", "arrow_left")
 
-        self.accept('raw-z', self.handleZ)
+        self.accept('z', self.handleZ)
 
         base.taskMgr.add(self.__flyCamTask, 'flyCam')
 
     def handleZ(self):
-        print("handleZ")
         if self.viewport.mouseWatcher.hasMouse():
             self.setEnabled(not self.enabled)
 
@@ -76,11 +77,9 @@ class FlyCam(DirectObject):
                 center = Point2(win.getXSize() // 2, win.getYSize() // 2)
                 dx = center.getX() - md.getX()
                 dy = center.getY() - md.getY()
-                #dx = md.getX()
-                #dy = md.getY()
-                camera.setH(camera, dx * self.mouseSensitivity)
-                camera.setP(camera, dy * self.mouseSensitivity)
-                win.movePointer(0, int(center[0]), int(center[1]))#self.centerCursor(center)
+                camera.setH(camera.getH() + (dx * self.mouseSensitivity))
+                camera.setP(camera.getP() + (dy * self.mouseSensitivity))
+                win.movePointer(0, int(center[0]), int(center[1]))
 
             # linear movement WASD+QE
             goalDir = Vec3(0)
@@ -113,7 +112,14 @@ class FlyCam(DirectObject):
                 goalRot[1] += 1
             if inputState.isSet("lookDown"):
                 goalRot[1] -= 1
-            camera.setHpr(camera, goalRot * self.cameraRotateSpeed * dt)
+            camera.setH(camera.getH() + (goalRot[0] * self.cameraRotateSpeed * dt))
+            camera.setP(camera.getP() + (goalRot[1] * self.cameraRotateSpeed * dt))
+
+            # Limit the camera pitch so it doesn't go crazy
+            if camera.getP() > self.maxPitch:
+                camera.setP(self.maxPitch)
+            elif camera.getP() < self.minPitch:
+                camera.setP(self.minPitch)
 
             goalSpeeds = goalDir * self.cameraSpeed
 

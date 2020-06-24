@@ -15,8 +15,10 @@ class Viewport3D(Viewport):
     def tick(self):
         Viewport.tick(self)
         if self.gizmo:
-            hpr = self.cam.getHpr(render)
-            self.gizmo.np.setHpr(hpr.x, hpr.y, 0)
+            quat = render.getQuat(self.cam)
+            self.gizmo.xNp.lookAt(quat.getRight())
+            self.gizmo.yNp.lookAt(quat.getForward())
+            self.gizmo.zNp.lookAt(quat.getUp())
 
     def initialize(self):
         Viewport.initialize(self)
