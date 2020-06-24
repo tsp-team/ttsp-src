@@ -72,6 +72,10 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         dlg = QtWidgets.QDialog(self)
         ui = About.Ui_Dialog()
         ui.setupUi(dlg)
+        img = QtWidgets.QLabel(dlg)
+        img.setAlignment(QtCore.Qt.AlignCenter)
+        img.setPixmap(QtGui.QPixmap('resources/maps/flippy-hammer.png'))
+        ui.gridLayout.addWidget(img, 4, 0, 1, 1)
         dlg.setModal(True)
         dlg.show()
 
@@ -85,28 +89,22 @@ class LevelEditorApp(QtWidgets.QApplication):
 
         self.setWindowIcon(QtGui.QIcon("resources/icons/hammer.ico"))
 
-        self.setStyle("Fusion")
-
-
+        self.setStyle("fusion")
         dark_palette = QtGui.QPalette()
-
-        dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
+        dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(68, 68, 68))
         dark_palette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
-        dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(25, 25, 25))
-        dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
-        dark_palette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.white)
-        dark_palette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
+        dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(82, 82, 82))
+        dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(68, 68, 68))
+        dark_palette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.black)
         dark_palette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
-        dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
+        dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(68, 68, 68))
         dark_palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
         dark_palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
-        dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(42, 130, 218))
-        dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(42, 130, 218))
-        dark_palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
-
+        dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(76, 130, 168))
+        dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(76, 130, 168))
+        dark_palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.white)
+        dark_palette.setColor(QtGui.QPalette.Shadow, QtCore.Qt.black)
         self.setPalette(dark_palette)
-
-        self.setStyleSheet("QToolTip { color: #000000 }")
 
         self.window = LevelEditorWindow()
         self.window.show()
