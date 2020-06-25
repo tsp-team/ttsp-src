@@ -78,7 +78,7 @@ class Document(DirectObject):
         self.world = self.createObject(World)
         self.world.np.reparentTo(base.render)
         propStatic = self.createObject(Entity, "prop_static", parent = self.world)
-        propStatic.updateProperties({'model': 'phase_4/models/neighborhoods/toontown_central.bam'})
+        propStatic.updateProperties({'model': 'phase_7/models/modules/boss_suit_office.bam'})
         base.setEditorWindowTitle()
 
     def open(self, filename = None):

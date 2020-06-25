@@ -16,6 +16,7 @@ from src.leveleditor.ui import About
 from .EntityEdit import EntityEdit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtWidgets import QMessageBox
 from fgdtools import FgdParse
 
 import builtins
@@ -28,7 +29,6 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         self.layout = QtWidgets.QGridLayout(self)
         self.setWindowTitle("")
 
-
         self.splitter = QuadSplitter(self)
 
         self.layout.addWidget(self.splitter)
@@ -36,6 +36,12 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
         self.showMaximized()
+
+    def closeEvent(self, event):
+        # We don't want to let the user close the viewport subwindow,
+        # but we can't remove the X button from the title bar. Just
+        # ignore the close event.
+        event.ignore()
 
     def addViewports(self):
         vp3d = Viewport3D(VIEWPORT_3D, self.splitter)
@@ -69,25 +75,71 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.ui.actionAbout.triggered.connect(self.__showAbout)
         self.ui.actionSave.triggered.connect(self.__save)
         self.ui.actionSaveAs.triggered.connect(self.__saveAs)
+        self.ui.actionClose.triggered.connect(self.__close)
+        self.ui.actionExit.triggered.connect(self.close)
+        self.ui.actionOpen.triggered.connect(self.__open)
+
+    def askSaveIfUnsaved(self):
+        if base.document.unsaved:
+            msg = QMessageBox(parent = self, icon = QMessageBox.Warning)
+            msg.setWindowTitle("TTSP Editor")
+            msg.setModal(True)
+            msg.setText("Do you want to save changes to '%s' before closing?" % base.document.getMapName())
+            msg.setInformativeText("Your changes will be lost if you don't save them.")
+            msg.setStandardButtons(QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+            msg.setDefaultButton(QMessageBox.Save)
+
+            ret = msg.exec_()
+
+            if ret == QMessageBox.Save:
+                return self.__save()
+            elif ret == QMessageBox.Cancel:
+                return False
+            elif ret == QMessageBox.Discard:
+                # Not saving the changes
+                return True
+
+        return True
+
+    def __close(self):
+        if not self.askSaveIfUnsaved():
+            # User decided against closing
+            return False
+        base.document.close()
+        return True
 
     def __save(self):
         if not base.document.filename:
-            self.doSaveAs()
-            return
+            return self.doSaveAs()
 
         base.document.save()
+        return True
 
     def __saveAs(self):
-        self.doSaveAs()
+        return self.doSaveAs()
 
     def doSaveAs(self):
         selectedFilename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save As')
         if len(selectedFilename[0]) == 0:
             # Save as was cancelled
-            return
+            return False
         # Convert to a panda filename
         filename = Filename.fromOsSpecific(selectedFilename[0])
         base.document.save(filename)
+        return True
+
+    def __open(self):
+        selectedFilename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open', filter=('Panda3D map file (*.pmap)'))
+        if len(selectedFilename[0]) == 0:
+            # Save as was cancelled
+            return False
+        # Close the current document
+        self.__close()
+        # Convert to a panda filename
+        filename = Filename.fromOsSpecific(selectedFilename[0])
+        # Open it!
+        base.document.open(filename)
+        return True
 
     def __showAbout(self):
         dlg = QtWidgets.QDialog(self)
@@ -101,6 +153,11 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         dlg.show()
 
     def closeEvent(self, event):
+        if not self.__close():
+            event.ignore()
+            return
+
+        event.accept()
         base.running = False
 
 class LevelEditorApp(QtWidgets.QApplication):
