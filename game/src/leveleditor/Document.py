@@ -82,8 +82,6 @@ class Document(DirectObject):
         self.createIDAllocator()
         self.world = self.createObject(World)
         self.world.np.reparentTo(base.render)
-        propStatic = self.createObject(Entity, "prop_static", parent = self.world)
-        propStatic.updateProperties({'model': 'phase_7/models/modules/boss_suit_office.bam'})
         base.setEditorWindowTitle()
 
     def createIDAllocator(self):
@@ -113,8 +111,12 @@ class Document(DirectObject):
         root = CKeyValues.load(filename)
         worldKv = root.getChild(root.findChild(World.ObjectName))
         self.world = self.r_open(worldKv)
+        self.world.np.reparentTo(base.render)
         self.unsaved = False
+        self.filename = filename
         base.setEditorWindowTitle()
+
+        render.ls()
 
     def isUnsaved(self):
         return self.unsaved

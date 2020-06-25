@@ -100,4 +100,4 @@ class Entity(MapObject):
             value = kv.getValue(i)
             if key in self.MetaDataExclusions:
                 continue
-            self.entityData[key] = self.getPropDataType(key)(value)
+            self.updateProperties({key: self.getPropDataType(key)(value)})
