@@ -4,6 +4,7 @@ from direct.showbase.DirectObject import DirectObject
 
 from src.leveleditor.mapobject.World import World
 from src.leveleditor.mapobject.Entity import Entity
+from src.leveleditor.mapobject import MapObjectFactory
 
 models = [
     "models/cogB_robot/cogB_robot.bam",
@@ -47,6 +48,10 @@ class Document(DirectObject):
     def getNextID(self):
         return self.idAllocator.allocate()
 
+    def reserveID(self, id):
+        #self.idAllocator.initialReserveId(id)
+        pass
+
     def freeID(self, id):
         self.idAllocator.free(id)
 
@@ -74,17 +79,42 @@ class Document(DirectObject):
 
     def __newMap(self):
         self.unsaved = True
-        self.idAllocator = UniqueIdAllocator(0, 0xFFFF)
+        self.createIDAllocator()
         self.world = self.createObject(World)
         self.world.np.reparentTo(base.render)
         propStatic = self.createObject(Entity, "prop_static", parent = self.world)
         propStatic.updateProperties({'model': 'phase_7/models/modules/boss_suit_office.bam'})
         base.setEditorWindowTitle()
 
+    def createIDAllocator(self):
+        self.idAllocator = UniqueIdAllocator(0, 0xFFFF)
+
+    def r_open(self, kv, parent = None):
+        cls = MapObjectFactory.MapObjectsByName.get(kv.getName())
+        if not cls:
+            return
+        obj = self.createObject(cls, keyValues = kv, parent = parent)
+        for i in range(kv.getNumChildren()):
+            self.r_open(kv.getChild(i), obj)
+
+        if not parent:
+            # Return the root level object (the world)
+            return obj
+
     def open(self, filename = None):
         # if filename is none, this is a new document/map
         if not filename:
             self.__newMap()
+            return
+
+        # opening a map from disk, read through the keyvalues and
+        # generate the objects
+        self.createIDAllocator()
+        root = CKeyValues.load(filename)
+        worldKv = root.getChild(root.findChild(World.ObjectName))
+        self.world = self.r_open(worldKv)
+        self.unsaved = False
+        base.setEditorWindowTitle()
 
     def isUnsaved(self):
         return self.unsaved

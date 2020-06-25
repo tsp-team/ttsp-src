@@ -87,5 +87,6 @@ class MapObject(MapWritable):
         keyvalues.setKeyValue("classname", self.classname)
 
     def readKeyValues(self, keyvalues):
-        self.id = int(keyvalues.getKeyValue("id"))
-        self.classname = keyvalues.getKeyValue("classname")
+        self.id = int(keyvalues.getValue("id"))
+        base.document.reserveID(self.id)
+        self.classname = keyvalues.getValue("classname")

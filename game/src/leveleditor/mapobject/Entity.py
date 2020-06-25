@@ -53,7 +53,7 @@ class Entity(MapObject):
 
     def getPropDataType(self, key):
         return self.MetaDataType.get(
-            self.metaData.property_by_name(key).get('type'),
+            self.metaData.property_by_name(key).value_type,
             str)
 
     def getClassType(self):
@@ -91,9 +91,9 @@ class Entity(MapObject):
             kv.setKeyValue(key, str(value))
 
     def readKeyValues(self, kv):
-        MapObject.readKeyValues(self)
+        MapObject.readKeyValues(self, kv)
 
-        self.setClassname(kv.getKeyValue("classname"))
+        self.setClassname(kv.getValue("classname"))
 
         for i in range(kv.getNumKeys()):
             key = kv.getKey(i)

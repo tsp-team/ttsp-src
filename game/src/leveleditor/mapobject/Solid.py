@@ -1,5 +1,5 @@
 from .MapObject import MapObject
-from .Face import Face
+from .SolidFace import SolidFace
 
 # A brush
 class Solid(MapObject):
