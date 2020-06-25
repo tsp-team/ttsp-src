@@ -1,124 +1,91 @@
-from panda3d.core import NodePath, CollisionBox, CollisionNode, Vec4
+from panda3d.core import NodePath, CollisionBox, CollisionNode, Vec4, ModelNode, BoundingBox, Vec3
 from panda3d.core import Point3, CKeyValues
 
 from .MapWritable import MapWritable
 from src.leveleditor import LEGlobals
 
-entPropertyExclusions = [
-    'classname',
-    'id'
-]
-
-# Map object aka entity
+# Base class for any object in the map (brush, entity, etc)
 class MapObject(MapWritable):
 
-    def __init__(self, id = 0):
+    ObjectName = "object"
+
+    def __init__(self):
         MapWritable.__init__(self)
-        self._id = id
+        self.id = None
         self.selected = False
         self.classname = ""
         self.parent = None
+        self.children = []
         self.np = None
-
-        self.modelNp = None
-
-        self.fgd = None
-        self.entProperties = {}
-
-        self.collBox = None
-        self.collNp = None
-
-        self.boundsVis = None
-        self.boundsColor = Vec4(1, 1, 0, 1)
-
-    def initialize(self, keyvalues = None):
-        if keyvalues:
-            self.readKeyValues(keyvalues)
-
-        self.setupNode()
+        self.boundingBox = BoundingBox(Vec3(-0.5, -0.5, -0.5), Vec3(0.5, 0.5, 0.5))
 
     def setClassname(self, classname):
         self.classname = classname
-        self.entProperties = {}
-        self.fgd = base.fgd.entity_by_name(classname)
-        assert self.fgd is not None, "Unknown classname %s" % classname
-        
-        for prop in self.fgd.schema['properties']:
-            if prop['name'] in entPropertyExclusions:
-                continue
-            self.entProperties[prop['name']] = prop['default_value']
 
-        self.entPropertiesModified()
-
-    def clearModel(self):
-        if self.modelNp:
-            self.modelNp.removeNode()
-        self.modelNp = None
-
-    def setModel(self, path):
-        self.clearModel()
-        self.modelNp = loader.loadModel(path)
-        self.modelNp.reparentTo(self.np)
-        self.recalcBounds()
-
-    def entPropertyModified(self, name):
-        prop = self.fgd.property_by_name(name)
-        data = self.entProperties[name]
-        if prop.value_type == 'studio':
-            self.setModel(data)
-        elif name == 'scale':
-            self.np.setScale(CKeyValues.to3f(data))
-            self.recalcBounds()
-
-    def entPropertiesModified(self, names = None):
-        if names is None:
-            names = self.entProperties.keys()
-
-        for name in names:
-            self.entPropertyModified(name)
-
-    def recalcBounds(self):
-        if self.collNp:
-            self.collNp.removeNode()
-        if self.boundsVis:
-            self.boundsVis.removeNode()
-
+    def recalcBoundingBox(self):
         mins = Point3()
         maxs = Point3()
         self.np.calcTightBounds(mins, maxs)
+        self.boundingBox = BoundingBox(mins, maxs)
 
-        self.boundsVis = NodePath(LEGlobals.makeCubeOutline(mins, maxs, self.boundsColor))
-        self.boundsVis.setLightOff(1)
-        self.boundsVis.setFogOff(1)
+    # Called when the object first comes into existence, before the
+    # keyvalues are read
+    def generate(self):
+        self.np = NodePath(ModelNode("mapobject_unknown"))
+        self.np.setPythonTag("mapobject", self)
 
-        self.collBox = CollisionBox(mins, maxs)
-        collNode = CollisionNode('collBox')
-        collNode.addSolid(self.collBox)
-        self.collNp = self.np.attachNewNode(collNode)
-        self.collNp.setCollideMask(LEGlobals.EntityMask)
-        self.collNp.setPythonTag("mapobject", self)
+    # Called after the keyvalues have been read for this object
+    def announceGenerate(self):
+        self.np.setName("mapobject_%s.%i" % (self.classname, self.id))
 
-    def select(self):
-        self.selected = True
+    def delete(self):
+        # Take the children with us
+        for child in self.children:
+            base.document.deleteObject(child)
+        self.children = None
 
-        self.recalcBounds()
-        self.boundsVis.reparentTo(self.np)
+        self.reparentTo(None)
+        self.np.removeNode()
+        self.np = None
+        self.entityData = None
+        self.metaData = None
 
-    def deselect(self):
-        self.selected = False
+    def __clearParent(self):
+        if self.parent:
+            self.parent.__removeChild(self)
+            self.np.reparentTo(NodePath())
+            self.parent = None
 
-        if self.boundsVis:
-            self.boundsVis.reparentTo(NodePath())
+    def __setParent(self, other):
+        self.parent = other
+        if self.parent:
+            self.parent.__addChild(self)
+            self.np.reparentTo(self.parent.np)
 
-    def setupNode(self):
-        self.np = NodePath("mapobject.%s.%i" % (self.classname, self._id))
-        # FIXME
-        self.np.reparentTo(base.mapRoot)
+    def reparentTo(self, other):
+        self.__clearParent()
+        self.__setParent(other)
+
+    def __addChild(self, child):
+        if not child in self.children:
+            self.children.append(child)
+            self.recalcBoundingBox()
+
+    def __removeChild(self, child):
+        if child in self.children:
+            self.children.remove(child)
+            self.recalcBoundingBox()
+
+    def doWriteKeyValues(self, parent):
+        kv = CKeyValues(self.ObjectName, parent)
+        self.writeKeyValues(kv)
+        for child in self.children:
+            child.doWriteKeyValues(kv)
 
     def writeKeyValues(self, keyvalues):
-        keyvalues["id"] = str(self._id)
-        keyvalues["classname"] = self.classname
+        keyvalues.setKeyValue("id", str(self.id))
+        keyvalues.setKeyValue("classname", self.classname)
 
     def readKeyValues(self, keyvalues):
-        self._id = int(kevalues["id"])
-        self.classname = keyvalues["classname"]
+        self.id = int(keyvalues.getKeyValue("id"))
+        self.classname = keyvalues.getKeyValue("classname")

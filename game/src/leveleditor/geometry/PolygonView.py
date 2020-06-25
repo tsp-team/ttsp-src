@@ -5,7 +5,6 @@ class PolygonView(GeomView):
 
     def generateTriangleIndices(self, firstVertex, numVerts):
         for i in range(firstVertex + 1, firstVertex + (numVerts - 1)):
-            print(firstVertex, i, i + 1)
             self.indices.addVertices(firstVertex, i, i + 1)
             self.indices.closePrimitive()
 

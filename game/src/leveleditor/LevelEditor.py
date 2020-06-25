@@ -1,6 +1,6 @@
 from panda3d.core import WindowProperties, NativeWindowHandle, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
-from panda3d.core import TextNode
+from panda3d.core import TextNode, Filename
 
 from src.coginvasion.base.BSPBase import BSPBase
 from src.leveleditor.viewport.QuadSplitter import QuadSplitter
@@ -67,6 +67,27 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.gameViewWind = LevelEditorSubWind(self.ui.gameViewArea)
 
         self.ui.actionAbout.triggered.connect(self.__showAbout)
+        self.ui.actionSave.triggered.connect(self.__save)
+        self.ui.actionSaveAs.triggered.connect(self.__saveAs)
+
+    def __save(self):
+        if not base.document.filename:
+            self.doSaveAs()
+            return
+
+        base.document.save()
+
+    def __saveAs(self):
+        self.doSaveAs()
+
+    def doSaveAs(self):
+        selectedFilename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save As')
+        if len(selectedFilename[0]) == 0:
+            # Save as was cancelled
+            return
+        # Convert to a panda filename
+        filename = Filename.fromOsSpecific(selectedFilename[0])
+        base.document.save(filename)
 
     def __showAbout(self):
         dlg = QtWidgets.QDialog(self)
@@ -115,9 +136,10 @@ class LevelEditor(BSPBase):
 
         self.gsg = None
 
+        self.viewportTitle = ""
+        self.mapNameTitle = ""
+
         BSPBase.__init__(self)
-        self.loader.mountMultifiles()
-        self.loader.mountMultifile("resources/mod.mf")
 
         #self.setFrameRateMeter(True)
 
@@ -144,11 +166,6 @@ class LevelEditor(BSPBase):
         #self.mainloopTimer.timeout.connect(self.taskMgr.step)
         #self.mainloopTimer.setSingleShot(False)
 
-        self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
-
-        self.mapRoot = render.attachNewNode('mapRoot')
-        self.mapRoot.setScale(16.0)
-
         #from src.leveleditor.mapobject.MapObject import MapObject
         #mo = MapObject()
         #mo.setClassname("prop_static")
@@ -160,11 +177,20 @@ class LevelEditor(BSPBase):
 
         base.setBackgroundColor(0, 0, 0)
 
-    def setEditorWindowTitle(self, title):
-        if len(title):
-    	    self.qtApp.window.gameViewWind.setWindowTitle(self.document.getMapName() + " - " + title)
+    def setEditorWindowTitle(self, viewportTitle = None):
+        if viewportTitle is None:
+            viewportTitle = self.viewportTitle
+
+        mapName = self.document.getMapName()
+        if self.document.unsaved:
+            mapName += " *"
+
+        if len(viewportTitle):
+    	    self.qtApp.window.gameViewWind.setWindowTitle(mapName + " - " + viewportTitle)
         else:
-            self.qtApp.window.gameViewWind.setWindowTitle(self.document.getMapName())
+            self.qtApp.window.gameViewWind.setWindowTitle(mapName)
+
+        self.viewportTitle = viewportTitle
 
     def snapToGrid(self, point):
         if GridSettings.GridSnap:
@@ -172,6 +198,10 @@ class LevelEditor(BSPBase):
         return point
 
     def initialize(self):
+        self.loader.mountMultifiles()
+        self.loader.mountMultifile("resources/mod.mf")
+
+        self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
         self.viewportMgr = ViewportManager()
         self.toolMgr = ToolManager()
         self.qtApp = LevelEditorApp()

@@ -91,6 +91,7 @@ class Viewport2D(Viewport):
 
     def makeGrid(self):
         self.grid = Grid2D(self)
+        self.gridRoot.setDepthWrite(False, 1)
         #self.gridRoot.setHpr(self.getViewHpr())
 
     def makeLens(self):

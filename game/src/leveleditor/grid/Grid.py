@@ -90,8 +90,6 @@ class Grid:
         #segs.moveTo(self.viewport.expand(Point3(low, 0, low)))
         #segs.drawTo(self.viewport.expand(Point3(high, 0, low)))
 
-        print(segs)
-
         np = NodePath(segs.create())
         #np.setAntialias(AntialiasAttrib.MLine)
         #loader.loadModel("models/smiley.egg.pz").reparentTo(np)

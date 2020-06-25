@@ -78,7 +78,6 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.gridRoot = base.render.attachNewNode("gridRoot")
         self.gridRoot.setLightOff(1)
         self.gridRoot.setBSPMaterial("resources/phase_14/materials/unlit.mat")
-        self.gridRoot.setDepthWrite(False, 1)
         self.gridRoot.setBin("background", 0)
         self.gridRoot.hide(BitMask32.allOn())
         self.gridRoot.showThrough(self.getViewportMask())

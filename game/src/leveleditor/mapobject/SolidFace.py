@@ -7,6 +7,8 @@ from .MapWritable import MapWritable
 
 class SolidFace(MapWritable):
 
+    ObjectName = "side"
+
     def __init__(self, id):
         MapWritable.__init__(self)
         self.id = id
