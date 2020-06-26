@@ -85,6 +85,9 @@ class Document(DirectObject):
         self.createIDAllocator()
         self.createObject(World)
         self.isOpen = True
+        if base.toolMgr.selectTool:
+            # Open with the select tool by default
+            base.toolMgr.selectTool.toggle()
         base.setEditorWindowTitle()
 
     def createIDAllocator(self):
@@ -117,6 +120,8 @@ class Document(DirectObject):
         self.unsaved = False
         self.filename = filename
         self.isOpen = True
+        # Open with the select tool by default
+        base.toolMgr.selectTool.toggle()
         base.setEditorWindowTitle()
 
     def isUnsaved(self):

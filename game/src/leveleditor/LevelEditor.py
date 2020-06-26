@@ -69,6 +69,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
 
         self.toolBar = self.ui.leftBar
         self.toolGroup = QtWidgets.QActionGroup(self.ui.leftBar)
+        self.toolGroup.setExclusive(True)
 
         self.gameViewWind = LevelEditorSubWind(self.ui.gameViewArea)
 

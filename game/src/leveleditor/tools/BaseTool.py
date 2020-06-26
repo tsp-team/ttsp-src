@@ -23,6 +23,10 @@ class BaseTool(DirectObject):
         self.enabled = False
         self.button = None
 
+    def toggle(self):
+        if self.button:
+            self.button.toggle()
+
     def draw2D(self, vp):
         pass
 
