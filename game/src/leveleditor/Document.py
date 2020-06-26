@@ -4,6 +4,7 @@ from direct.showbase.DirectObject import DirectObject
 
 from src.leveleditor.mapobject.World import World
 from src.leveleditor.mapobject.Entity import Entity
+from src.leveleditor.mapobject.Root import Root
 from src.leveleditor.mapobject import MapObjectFactory
 
 models = [
@@ -23,7 +24,8 @@ class Document(DirectObject):
         self.filename = None
         self.unsaved = False
         self.idAllocator = None
-        self.world = None
+        self.root = Root()
+        self.isOpen = False
 
     def createObject(self, classDef, classname = None, id = None, keyValues = None, parent = None):
         obj = classDef()
@@ -37,8 +39,9 @@ class Document(DirectObject):
         obj.announceGenerate()
         if classname is not None:
             obj.setClassname(classname)
-        if parent is not None:
-            obj.reparentTo(parent)
+        if parent is None:
+            parent = self.root
+        obj.reparentTo(parent)
         return obj
 
     def deleteObject(self, obj):
@@ -60,28 +63,28 @@ class Document(DirectObject):
         if not filename:
             filename = self.filename
 
-        root = CKeyValues()
-
-        self.world.doWriteKeyValues(root)
-
-        root.write(filename, 4)
+        kv = self.root.doWriteKeyValues()
+        kv.write(filename, 4)
 
         self.filename = filename
         self.unsaved = False
         base.setEditorWindowTitle()
 
     def close(self):
-        self.deleteObject(self.world)
-        self.world = None
+        if not self.isOpen:
+            return
+
+        self.root.clear()
         self.idAllocator = None
         self.filename = None
         self.unsaved = False
+        self.isOpen = False
 
     def __newMap(self):
         self.unsaved = True
         self.createIDAllocator()
-        self.world = self.createObject(World)
-        self.world.np.reparentTo(base.render)
+        self.createObject(World)
+        self.isOpen = True
         base.setEditorWindowTitle()
 
     def createIDAllocator(self):
@@ -109,14 +112,12 @@ class Document(DirectObject):
         # generate the objects
         self.createIDAllocator()
         root = CKeyValues.load(filename)
-        worldKv = root.getChild(root.findChild(World.ObjectName))
-        self.world = self.r_open(worldKv)
-        self.world.np.reparentTo(base.render)
+        for i in range(root.getNumChildren()):
+            self.r_open(root.getChild(i))
         self.unsaved = False
         self.filename = filename
+        self.isOpen = True
         base.setEditorWindowTitle()
-
-        render.ls()
 
     def isUnsaved(self):
         return self.unsaved

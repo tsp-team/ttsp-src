@@ -1,4 +1,4 @@
-from panda3d.core import ModelNode, NodePath, Vec4
+from panda3d.core import ModelNode, NodePath, Vec4, CKeyValues, Vec3
 
 from .MapHelper import MapHelper
 
@@ -7,7 +7,15 @@ class ModelHelper(MapHelper):
     def __init__(self, mapObject):
         MapHelper.__init__(self, mapObject)
         self.modelRoot = NodePath(ModelNode("modelHelper"))
-        self.modelRoot.setScale(16)
+
+        # Model scale can be specified in entity data
+        scale = self.mapObject.entityData.get("scale")
+        if scale is not None:
+            scale = CKeyValues.to3f(scale)
+        else:
+            scale = Vec3(1.0)
+
+        self.modelRoot.setScale(scale * 16.0)
         self.modelRoot.reparentTo(self.mapObject.np)
 
     def generate(self, helperInfo):

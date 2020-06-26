@@ -44,8 +44,9 @@ class Handles(Geometry):
 
     def addView(self, primitiveType, drawMask, viewHpr = None, renderState = None):
         if self.handleType == HandleType.Square:
-            Geometry.addView(
+            return Geometry.addView(
                 self, SquareHandlesView(self, primitiveType, drawMask, viewHpr, renderState))
+        return None
 
     def setHandles(self, handles, zoom):
         if handles == self.handleOrigins and zoom == self.zoom:

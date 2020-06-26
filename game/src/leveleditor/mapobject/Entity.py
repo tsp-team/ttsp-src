@@ -1,3 +1,5 @@
+from panda3d.core import CKeyValues, Vec3
+
 from .MapObject import MapObject
 from src.leveleditor.maphelper import HelperFactory
 
@@ -41,9 +43,19 @@ class Entity(MapObject):
                 self.helpers.append(helper)
 
     def propertyChanged(self, key, oldValue, newValue):
-        if key == "model" and oldValue != newValue:
-            # Refresh our helpers if the model changed.
-            self.updateHelpers()
+        if oldValue != newValue:
+
+            if key == "model" or key == "scale":
+                # Refresh our helpers if the model changed.
+                self.updateHelpers()
+
+            elif key == "origin":
+                origin = CKeyValues.to3f(newValue)
+                self.np.setPos(origin)
+
+            elif key == "angles":
+                angles = CKeyValues.to3f(newValue)
+                self.np.setHpr(angles)
 
     def updateProperties(self, data):
         for key, value in data.items():
@@ -52,15 +64,24 @@ class Entity(MapObject):
             self.propertyChanged(key, oldValue, value)
 
     def getPropDataType(self, key):
-        return self.MetaDataType.get(
-            self.metaData.property_by_name(key).value_type,
-            str)
+        try:
+            return self.MetaDataType.get(
+                self.metaData.property_by_name(key).value_type,
+                str)
+        except:
+            return str
 
     def getClassType(self):
-        return self.metaData.schema['type']
+        return self.metaData.class_type
+
+    def isSolidEntity(self):
+        return self.metaData.class_type == 'SolidClass'
+
+    def isPointEntity(self):
+        return self.metaData.class_type == 'PointClass'
 
     def getDescription(self):
-        return self.metaData.schema['description']
+        return self.metaData.description
 
     def setClassname(self, classname):
         MapObject.setClassname(self, classname)
@@ -75,15 +96,19 @@ class Entity(MapObject):
     def setupEntityData(self):
         if not self.metaData:
             return
-        for prop in self.metaData.schema['properties']:
-            if prop['name'] in self.MetaDataExclusions or prop['name'] in self.entityData:
+        for prop in self.metaData.properties:
+            if prop.name in self.MetaDataExclusions or prop.name in self.entityData:
                 continue
-            self.updateProperties({prop['name']: prop['default_value']})
+            self.updateProperties({prop.name: prop.default_value})
 
     def writeKeyValues(self, kv):
         MapObject.writeKeyValues(self, kv)
 
         kv.setKeyValue("classname", self.classname)
+        if self.isPointEntity():
+            # Point entites have origins and angles
+            kv.setKeyValue("origin", CKeyValues.toString(self.np.getPos()))
+            kv.setKeyValue("angles", CKeyValues.toString(self.np.getHpr()))
         for key, value in self.entityData.items():
             if value is None:
                 # str(None) would become "None", which we don't want
@@ -100,4 +125,9 @@ class Entity(MapObject):
             value = kv.getValue(i)
             if key in self.MetaDataExclusions:
                 continue
-            self.updateProperties({key: self.getPropDataType(key)(value)})
+            dt = self.getPropDataType(key)
+            if len(value) == 0:
+                if dt == int:
+                    # Empty strings can't be cast to int
+                    value = "0"
+            self.updateProperties({key: dt(value)})

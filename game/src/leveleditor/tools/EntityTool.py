@@ -1,7 +1,174 @@
-from .BaseTool import BaseTool
+from panda3d.core import Point3, NodePath, BitMask32, RenderState, ColorAttrib, Vec4, LightAttrib, FogAttrib, LineSegs
+from panda3d.core import Vec3
 
+from .BaseTool import BaseTool
+from src.leveleditor.geometry.Box import Box
+from src.leveleditor.geometry.GeomView import GeomView
+from src.leveleditor.grid.GridSettings import GridSettings
+from src.leveleditor.mapobject.Entity import Entity
+
+VisState = RenderState.make(
+    ColorAttrib.makeFlat(Vec4(0, 1, 0, 1)),
+    LightAttrib.makeAllOff(),
+    FogAttrib.makeOff()
+)
+
+# Tool used to place an entity in the level.
 class EntityTool(BaseTool):
 
     Name = "Entity"
     ToolTip = "Entity Tool [SHIFT+E]"
     Shortcut = "shift+e"
+
+    def __init__(self):
+        BaseTool.__init__(self)
+        self.classname = "prop_static"
+        self.pos = Point3(0, 0, 0)
+
+        self.mouseIsDown = False
+        self.hasPlaced = False
+
+        # Maintain a constant visual scale for the box in 2D,
+        # but a constant physical scale in 3D.
+        self.size2D = 4
+        self.size3D = 32
+
+        self.boxSize = 0.5
+
+        # Setup the visualization of where our entity will be placed
+        # if we use the 2D viewport.
+        self.visRoot = NodePath("entityToolVis")
+        self.visRoot.setColor(Vec4(0, 1, 0, 1), 1)
+        self.visRoot.setLightOff(1)
+        self.visRoot.setFogOff(1)
+        self.box = Box()
+        for vp in base.viewportMgr.viewports:
+            view = self.box.addView(GeomView.Lines, vp.getViewportMask())
+            if vp.is3D():
+                view.np.setScale(self.size3D)
+            view.viewport = vp
+        self.box.setMinMax(Point3(-self.boxSize), Point3(self.boxSize))
+        self.box.np.reparentTo(self.visRoot)
+        self.box.generateGeometry()
+        lines = LineSegs()
+        lines.moveTo(Point3(-10000, 0, 0))
+        lines.drawTo(Point3(10000, 0, 0))
+        lines.moveTo(Point3(0, -10000, 0))
+        lines.drawTo(Point3(0, 10000, 0))
+        lines.moveTo(Point3(0, 0, -10000))
+        lines.drawTo(Point3(0, 0, 10000))
+        self.lines = self.visRoot.attachNewNode(lines.create())
+
+    def enable(self):
+        BaseTool.enable(self)
+        self.accept('mouse1', self.mouseDown)
+        self.accept('mouse1-up', self.mouseUp)
+        self.accept('mouseMoved', self.mouseMoved)
+        self.accept('enter', self.confirm)
+        self.accept('escape', self.reset)
+        self.accept('arrow_up', self.moveUp)
+        self.accept('arrow_down', self.moveDown)
+        self.accept('arrow_left', self.moveLeft)
+        self.accept('arrow_right', self.moveRight)
+        self.reset()
+
+    def disable(self):
+        BaseTool.disable(self)
+        self.reset()
+
+    def reset(self):
+        self.hideVis()
+        self.mouseIsDown = False
+        self.hasPlaced = False
+        self.pos = Point3(0, 0, 0)
+
+    def updatePosFromViewport(self, vp):
+        mouse = vp.getMouse()
+        pos = base.snapToGrid(vp.viewportToWorld(mouse, flatten = False))
+        # Only update the axes used by the viewport
+        for axis in vp.spec.flattenIndices:
+            self.pos[axis] = pos[axis]
+
+        self.visRoot.setPos(self.pos)
+
+    def updatePos(self, pos):
+        self.pos = pos
+        self.visRoot.setPos(pos)
+
+    def hideVis(self):
+        self.visRoot.reparentTo(NodePath())
+
+    def showVis(self):
+        self.visRoot.reparentTo(base.render)
+
+    def mouseDown(self):
+        vp = base.viewportMgr.activeViewport
+        if not vp:
+            return
+
+        if vp.is3D():
+            # TODO: raytrace to find entity position and place immediately
+            return
+
+        # The user clicked in the 2D viewport, draw the visualization where they clicked.
+        self.showVis()
+        self.updatePosFromViewport(vp)
+        self.mouseIsDown = True
+        self.hasPlaced = True
+
+    def mouseMoved(self, vp):
+        if not vp:
+            return
+        if vp.is2D() and self.mouseIsDown:
+            # If the mouse moved in the 2D viewport and the mouse is
+            # currently pressed, update the visualization at the new position
+            self.updatePosFromViewport(vp)
+
+    def mouseUp(self):
+        self.mouseIsDown = False
+
+    def confirm(self):
+        if not self.hasPlaced:
+            return
+
+        ent = base.document.createObject(Entity, classname = self.classname)
+        ent.np.setPos(self.pos)
+
+        self.reset()
+
+    def getMoveDelta(self, localDelta, vp):
+        return vp.rotate(localDelta) * GridSettings.DefaultStep
+
+    def moveUp(self):
+        vp = base.viewportMgr.activeViewport
+        if not vp or not vp.is2D():
+            return
+
+        self.updatePos(self.pos + self.getMoveDelta(Vec3.up(), vp))
+
+    def moveDown(self):
+        vp = base.viewportMgr.activeViewport
+        if not vp or not vp.is2D():
+            return
+
+        self.updatePos(self.pos + self.getMoveDelta(Vec3.down(), vp))
+
+    def moveLeft(self):
+        vp = base.viewportMgr.activeViewport
+        if not vp or not vp.is2D():
+            return
+
+        self.updatePos(self.pos + self.getMoveDelta(Vec3.left(), vp))
+
+    def moveRight(self):
+        vp = base.viewportMgr.activeViewport
+        if not vp or not vp.is2D():
+            return
+
+        self.updatePos(self.pos + self.getMoveDelta(Vec3.right(), vp))
+
+    def update(self):
+        # Maintain a constant size for the 2D views
+        for view in self.box.views:
+            if view.viewport.is2D():
+                view.np.setScale(self.size2D / view.viewport.zoom)

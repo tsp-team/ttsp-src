@@ -78,6 +78,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.ui.actionClose.triggered.connect(self.__close)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionOpen.triggered.connect(self.__open)
+        self.ui.actionNew_Map.triggered.connect(self.__close)
 
     def askSaveIfUnsaved(self):
         if base.document.unsaved:
@@ -101,11 +102,15 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
 
         return True
 
-    def __close(self):
+    def __close(self, openBlank = True):
         if not self.askSaveIfUnsaved():
             # User decided against closing
             return False
         base.document.close()
+        if openBlank:
+            # We are never actually without a document.
+            # When we close the current document, open a blank one.
+            base.document.open()
         return True
 
     def __save(self):
@@ -134,7 +139,8 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
             # Save as was cancelled
             return False
         # Close the current document
-        self.__close()
+        if not self.__close(False):
+            return False
         # Convert to a panda filename
         filename = Filename.fromOsSpecific(selectedFilename[0])
         # Open it!
@@ -165,7 +171,7 @@ class LevelEditorApp(QtWidgets.QApplication):
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
 
-        self.setWindowIcon(QtGui.QIcon("resources/icons/hammer.ico"))
+        self.setWindowIcon(QtGui.QIcon("resources/icons/ttsp-editor.ico"))
 
         self.setStyle("fusion")
         dark_palette = QtGui.QPalette()

@@ -40,6 +40,7 @@ class Geometry:
 
     def addView(self, view):
         self.views.append(view)
+        return view
 
     def removeView(self, view):
         if isinstance(view, int):

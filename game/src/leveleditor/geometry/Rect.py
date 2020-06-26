@@ -13,7 +13,7 @@ class Rect(Geometry):
         self.maxs = Point3(0)
 
     def addView(self, primitiveType, drawMask, viewHpr = None, state = None):
-        Geometry.addView(self, PolygonView(self, primitiveType, drawMask, viewHpr, state))
+        return Geometry.addView(self, PolygonView(self, primitiveType, drawMask, viewHpr, state))
 
     def setMinMax(self, mins, maxs):
         self.mins = mins
@@ -44,4 +44,3 @@ class Rect(Geometry):
         cwriter.setData4f(self.color)
 
         Geometry.generateVertices(self)
-

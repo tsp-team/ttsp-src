@@ -9,15 +9,33 @@ class SolidFace(MapWritable):
 
     ObjectName = "side"
 
-    def __init__(self, id):
+    def __init__(self):
         MapWritable.__init__(self)
-        self.id = id
+        self.id = 0
         self.material = None
         self.vertices = []
         self.isSelected = False
         self.plane = LPlane()
         self.color = Vec4(1, 1, 1, 1)
         self.solid = None
+
+    def readKeyValues(self, kv):
+        pass
+
+    def writeKeyValues(self, kv):
+        pass
+
+    def generate(self):
+        pass
+
+    def announceGenerate(self):
+        pass
+
+    def delete(self):
+        pass
+
+    def reparentTo(self, other):
+        pass
 
     def regenerateVertices(self):
         vwriter = GeomVertexWriter(self.vertexBuffer, InternalName.getVertex())

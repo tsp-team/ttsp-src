@@ -14,7 +14,7 @@ class Box(Geometry):
         self.calcBoxVertices()
 
     def addView(self, primitiveType, drawMask, viewHpr = None, state = None):
-        Geometry.addView(self, BoxView(self, primitiveType, drawMask, viewHpr, state))
+        return Geometry.addView(self, BoxView(self, primitiveType, drawMask, viewHpr, state))
 
     def setMinMax(self, mins, maxs):
         self.mins = mins
@@ -50,8 +50,6 @@ class Box(Geometry):
         ]
 
     def generateVertices(self):
-
-
         self.vertexBuffer.setNumRows(8)
 
         vwriter = GeomVertexWriter(self.vertexBuffer, "vertex")
