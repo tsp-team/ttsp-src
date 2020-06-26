@@ -47,9 +47,12 @@ def __saveScreenshot(shot):
     shot.write(Filename(now + '.png'))
     return
 
-def takeScreenshot():
-    shot = base.win.getScreenshot()
+def takeScreenshot(win = None, effect = True):
+    if not win:
+        win = base.win
+    shot = win.getScreenshot()
     thread = Thread(target = __saveScreenshot, args = (shot,))
     thread.start()
-    __doEffects()
-    #base.win.saveScreenshot('screenshot.png')
+    if effect:
+        __doEffects()
+
