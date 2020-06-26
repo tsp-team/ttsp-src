@@ -19,6 +19,7 @@ class EntityTool(BaseTool):
     Name = "Entity"
     ToolTip = "Entity Tool [SHIFT+E]"
     Shortcut = "shift+e"
+    Icon = "resources/icons/editor-entity.png"
 
     def __init__(self):
         BaseTool.__init__(self)
@@ -107,7 +108,14 @@ class EntityTool(BaseTool):
             return
 
         if vp.is3D():
-            # TODO: raytrace to find entity position and place immediately
+            entries = vp.click(BitMask32.allOn())
+            if entries and len(entries) > 0:
+                # We clicked on an object, use the contact point as the
+                # location of our new entity.
+                self.pos = entries[0].getSurfacePoint(base.render)
+                self.hasPlaced = True
+                # Create it!
+                self.confirm()
             return
 
         # The user clicked in the 2D viewport, draw the visualization where they clicked.

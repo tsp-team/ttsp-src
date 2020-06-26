@@ -6,6 +6,7 @@ class SelectTool(BaseTool):
     Name = "Select"
     ToolTip = "Select Tool [SHIFT+S]"
     Shortcut = "shift+s"
+    Icon = "resources/icons/editor-select.png"
 
     def enable(self):
         BaseTool.enable(self)

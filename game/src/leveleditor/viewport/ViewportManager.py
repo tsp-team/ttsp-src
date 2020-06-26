@@ -2,6 +2,8 @@ from panda3d.core import Point2, WindowProperties
 
 from direct.showbase.DirectObject import DirectObject
 
+from src.coginvasion.base import ScreenshotHandler
+
 class ViewportManager(DirectObject):
 
     def __init__(self):
@@ -21,6 +23,11 @@ class ViewportManager(DirectObject):
         self.accept('mouse3-up', self.m3Up)
         self.accept('wheel_down', self.wheelDown)
         self.accept('wheel_up', self.wheelUp)
+        self.accept('f9', self.screenshot)
+
+    def screenshot(self):
+        if self.activeViewport:
+            ScreenshotHandler.takeScreenshot(self.activeViewport.win, False)
 
     def m1Down(self):
         if self.activeViewport:

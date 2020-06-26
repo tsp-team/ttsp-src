@@ -68,6 +68,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         self.toolBar = self.ui.leftBar
+        self.toolBar.setIconSize(QtCore.QSize(48, 48))
         self.toolGroup = QtWidgets.QActionGroup(self.ui.leftBar)
         self.toolGroup.setExclusive(True)
 
@@ -185,8 +186,8 @@ class LevelEditorApp(QtWidgets.QApplication):
         dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(68, 68, 68))
         dark_palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
         dark_palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
-        dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(76, 130, 168))
-        dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(76, 130, 168))
+        dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(82, 175, 185))
+        dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(82, 175, 185))
         dark_palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.white)
         dark_palette.setColor(QtGui.QPalette.Shadow, QtCore.Qt.black)
         self.setPalette(dark_palette)

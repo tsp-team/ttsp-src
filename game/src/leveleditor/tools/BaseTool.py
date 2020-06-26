@@ -16,6 +16,7 @@ class BaseTool(DirectObject):
     Shortcut = None
     WantButton = True
     ToolTip = "Base tool"
+    Icon = None
     Usage = ToolUsage.Both
 
     def __init__(self):
@@ -41,6 +42,8 @@ class BaseTool(DirectObject):
             self.button.setCheckable(True)
             if self.Shortcut:
                 self.button.setShortcut(QtGui.QKeySequence.fromString(self.Shortcut))
+            if self.Icon:
+                self.button.setIcon(QtGui.QIcon(self.Icon))
             self.button.toggled.connect(self.__handleToggle)
 
     def __handleToggle(self, toggled):
