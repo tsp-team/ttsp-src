@@ -1,5 +1,7 @@
 from direct.showbase.DirectObject import DirectObject
 
+from PyQt5 import QtWidgets
+
 class ToolManager(DirectObject):
 
     def __init__(self):
@@ -10,6 +12,8 @@ class ToolManager(DirectObject):
         self.selectTool = None
         self.accept('draw2D', self.__draw2D)
         self.accept('draw3D', self.__draw3D)
+
+        self.toolGroup = None
 
     def __draw2D(self, vp):
         if self.currentTool:
@@ -26,15 +30,30 @@ class ToolManager(DirectObject):
 
     def addTools(self):
         from src.leveleditor.tools.SelectTool import SelectTool
+        from src.leveleditor.tools.MoveTool import MoveTool
+        from src.leveleditor.tools.RotateTool import RotateTool
+        from src.leveleditor.tools.ScaleTool import ScaleTool
         from src.leveleditor.tools.EntityTool import EntityTool
-        from src.leveleditor.tools.BoxTool import BoxTool
+
         self.selectTool = SelectTool()
         self.addTool(self.selectTool)
-        self.addTool(EntityTool())
-        self.addTool(BoxTool())
-        self.selectTool.toggle()
+        self.addTool(MoveTool())
+        self.addTool(RotateTool())
+        self.addTool(ScaleTool())
 
-        base.qtApp.window.toolBar.addActions(base.qtApp.window.toolGroup.actions())
+        base.toolBar.addSeparator()
+
+        self.addTool(EntityTool())
+
+        # Now group all of our tools so we can only have one tool
+        # selected at a time.
+        self.toolGroup = QtWidgets.QActionGroup(base.toolBar)
+        for tool in self.tools:
+            if tool.button:
+                self.toolGroup.addAction(tool.button)
+
+        # Selection tool by default
+        self.selectTool.toggle()
 
     def getNumTools(self):
         return len(self.tools)

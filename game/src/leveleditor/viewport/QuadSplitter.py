@@ -254,6 +254,8 @@ class QuadSplitter(QtWidgets.QFrame):
                 self.realSpacing() + columnHeight + self.splittersSpacing, self.realWidth() - columnWidth,
                 self.realHeight() - columnHeight)
 
+        messenger.send('quadSplitterResized')
+
     def splitterMoveStart(self, splitter, center):
         self.splittersMovingPos = QtCore.QPoint(self.horizontalSplitter.x(), self.verticalSplitter.y())
 

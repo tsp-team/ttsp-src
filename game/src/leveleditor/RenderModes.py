@@ -2,13 +2,21 @@ from panda3d.core import RenderState, DepthTestAttrib, DepthWriteAttrib, ShaderA
 from panda3d.core import LVector2i, Vec4, CullBinAttrib
 from panda3d.bsp import BSPMaterial, BSPMaterialAttrib
 
+StippleShader = None
+def getStippleShader():
+    global StippleShader
+    if not StippleShader:
+        shattr = ShaderAttrib.make(Shader.load(Shader.SLGLSL, "resources/shaders/editor/lineStipple.vert.glsl",
+            "resources/shaders/editor/lineStipple.frag.glsl"))
+        shattr = shattr.setShaderInput("stippleParams", LVector2i(0xAAAA, 10))
+        StippleShader = shattr
+    return StippleShader
+
 _DashedLineNoZ = None
 def DashedLineNoZ():
     global _DashedLineNoZ
     if not _DashedLineNoZ:
-        shattr = ShaderAttrib.make(Shader.load(Shader.SLGLSL, "resources/shaders/editor/lineStipple.vert.glsl",
-            "resources/shaders/editor/lineStipple.frag.glsl"))
-        shattr = shattr.setShaderInput("stippleParams", LVector2i(0xAAAA, 10))
+        shattr = getStippleShader()
         _DashedLineNoZ = RenderState.make(
             shattr,
             DepthTestAttrib.make(DepthTestAttrib.MOff),

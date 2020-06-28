@@ -9,6 +9,7 @@ from src.leveleditor.viewport.Viewport3D import Viewport3D
 from src.leveleditor.viewport.ViewportType import *
 from src.leveleditor.viewport.ViewportManager import ViewportManager
 from src.leveleditor.tools.ToolManager import ToolManager
+from src.leveleditor.SelectionManager import SelectionManager
 from src.leveleditor import LEUtils
 from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.Document import Document
@@ -67,12 +68,21 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.ui = Ui_LevelEditor()
         self.ui.setupUi(self)
 
+        base.leftBar = self.ui.leftBar
+        self.rightWidget = QtWidgets.QFrame(self.ui.rightWidget)
+        layout = QtWidgets.QFormLayout(self.rightWidget)
+        self.rightWidget.setLayout(layout)
+        base.rightWidget = self.rightWidget
+        self.ui.rightWidget.setWidget(self.rightWidget)
+        base.rightDock = self.ui.rightWidget
+        base.topBar = self.ui.topBar
+
         self.toolBar = self.ui.leftBar
         self.toolBar.setIconSize(QtCore.QSize(48, 48))
-        self.toolGroup = QtWidgets.QActionGroup(self.ui.leftBar)
-        self.toolGroup.setExclusive(True)
+        base.toolBar = self.toolBar
 
         self.gameViewWind = LevelEditorSubWind(self.ui.gameViewArea)
+        base.gameViewWind = self.gameViewWind
 
         self.ui.actionAbout.triggered.connect(self.__showAbout)
         self.ui.actionSave.triggered.connect(self.__save)
@@ -204,9 +214,11 @@ class LevelEditor(BSPBase):
         self.viewportTitle = ""
         self.mapNameTitle = ""
 
+        self.clickTrav = CollisionTraverser()
+
         BSPBase.__init__(self)
 
-        #self.setFrameRateMeter(True)
+        self.setFrameRateMeter(True)
 
         #toon.setY(10)
 
@@ -242,6 +254,13 @@ class LevelEditor(BSPBase):
 
         base.setBackgroundColor(0, 0, 0)
 
+    def clickTraverse(self, np, handler, travRoot = None):
+        self.clickTrav.addCollider(np, handler)
+        if not travRoot:
+            travRoot = self.render
+        self.clickTrav.traverse(travRoot)
+        self.clickTrav.removeCollider(np)
+
     def setEditorWindowTitle(self, viewportTitle = None):
         if viewportTitle is None:
             viewportTitle = self.viewportTitle
@@ -269,6 +288,7 @@ class LevelEditor(BSPBase):
         self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
         self.viewportMgr = ViewportManager()
         self.toolMgr = ToolManager()
+        self.selectionMgr = SelectionManager()
         self.qtApp = LevelEditorApp()
         self.qtApp.window.gameViewWind.addViewports()
         self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)

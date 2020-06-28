@@ -9,5 +9,11 @@ class MapHelper(DirectObject):
     def generate(self):
         pass
 
+    def select(self):
+        pass
+
+    def deselect(self):
+        pass
+
     def cleanup(self):
         self.mapObject = None

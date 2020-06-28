@@ -1,8 +1,20 @@
 from panda3d.core import NodePath, CollisionBox, CollisionNode, Vec4, ModelNode, BoundingBox, Vec3
-from panda3d.core import Point3, CKeyValues
+from panda3d.core import Point3, CKeyValues, BitMask32, RenderState, ColorAttrib
 
 from .MapWritable import MapWritable
 from src.leveleditor import LEGlobals
+
+from src.leveleditor.geometry.Box import Box
+from src.leveleditor.geometry.GeomView import GeomView
+from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
+
+BoundsBox3DState = RenderState.make(
+    ColorAttrib.makeFlat(Vec4(1, 1, 0, 1))
+)
+
+BoundsBox2DState = RenderState.make(
+    ColorAttrib.makeFlat(Vec4(1, 0, 0, 1))
+)
 
 # Base class for any object in the map (brush, entity, etc)
 class MapObject(MapWritable):
@@ -18,21 +30,104 @@ class MapObject(MapWritable):
         self.children = []
         self.np = None
         self.boundingBox = BoundingBox(Vec3(-0.5, -0.5, -0.5), Vec3(0.5, 0.5, 0.5))
+        self.boundsBox = Box()
+        self.boundsBox.addView(GeomView.Lines, VIEWPORT_3D_MASK, state = BoundsBox3DState)
+        self.boundsBox.addView(GeomView.Lines, VIEWPORT_2D_MASK, state = BoundsBox2DState)
+        self.boundsBox.generateGeometry()
+        self.collNp = None
+
+    def showBoundingBox(self):
+        self.boundsBox.np.reparentTo(self.np)
+
+    def hideBoundingBox(self):
+        self.boundsBox.np.reparentTo(NodePath())
+
+    def select(self):
+        self.selected = True
+        self.showBoundingBox()
+        #self.np.setColorScale(1, 0, 0, 1)
+
+    def deselect(self):
+        self.selected = False
+        self.hideBoundingBox()
+        #self.np.setColorScale(1, 1, 1, 1)
 
     def setClassname(self, classname):
         self.classname = classname
+
+    def fixBounds(self, mins, maxs):
+        # Ensures that the bounds are not flat on any axis
+        sameX = mins.x == maxs.x
+        sameY = mins.y == maxs.y
+        sameZ = mins.z == maxs.z
+
+        invalid = False
+
+        if sameX:
+            # Flat horizontal
+            if sameY and sameZ:
+                invalid = True
+            elif not sameY:
+                mins.x = mins.y
+                maxs.x = maxs.y
+            elif not sameZ:
+                mins.x = mins.z
+                maxs.x = maxs.z
+
+        if sameY:
+            # Flat forward/back
+            if sameX and sameZ:
+                invalid = True
+            elif not sameX:
+                mins.y = mins.x
+                maxs.y = maxs.x
+            elif not sameZ:
+                mins.y = mins.z
+                maxs.y = maxs.z
+
+        if sameZ:
+            if sameX and sameY:
+                invalid = True
+            elif not sameX:
+                mins.z = mins.x
+                maxs.z = maxs.x
+            elif not sameY:
+                mins.z = mins.y
+                maxs.z = maxs.y
+
+        return [invalid, mins, maxs]
 
     def recalcBoundingBox(self):
         mins = Point3()
         maxs = Point3()
         self.np.calcTightBounds(mins, maxs)
+
+        invalid, mins, maxs = self.fixBounds(mins, maxs)
+        if invalid:
+            mins = Point3(-8)
+            maxs = Point3(8)
+
         self.boundingBox = BoundingBox(mins, maxs)
+        self.boundsBox.setMinMax(mins, maxs)
+
+        if self.collNp:
+            self.collNp.node().clearSolids()
+            self.collNp.node().addSolid(CollisionBox(mins, maxs))
+
+    def removePickBox(self):
+        if self.collNp:
+            self.collNp.removeNode()
+            self.collNp = None
 
     # Called when the object first comes into existence, before the
     # keyvalues are read
     def generate(self):
         self.np = NodePath(ModelNode("mapobject_unknown"))
         self.np.setPythonTag("mapobject", self)
+        self.collNp = self.np.attachNewNode(CollisionNode("pickBox"))
+        self.collNp.node().setIntoCollideMask(LEGlobals.EntityMask)
+        self.collNp.node().setFromCollideMask(BitMask32.allOff())
+        #self.collNp.show()
 
     # Called after the keyvalues have been read for this object
     def announceGenerate(self):
@@ -43,6 +138,12 @@ class MapObject(MapWritable):
         for child in self.children:
             base.document.deleteObject(child)
         self.children = None
+
+        if self.boundsBox:
+            self.boundsBox.cleanup()
+            self.boundsBox = None
+
+        self.removePickBox()
 
         self.reparentTo(None)
         self.np.removeNode()

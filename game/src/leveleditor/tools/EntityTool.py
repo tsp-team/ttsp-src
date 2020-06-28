@@ -1,6 +1,8 @@
 from panda3d.core import Point3, NodePath, BitMask32, RenderState, ColorAttrib, Vec4, LightAttrib, FogAttrib, LineSegs
 from panda3d.core import Vec3
 
+from PyQt5 import QtWidgets
+
 from .BaseTool import BaseTool
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
@@ -13,18 +15,61 @@ VisState = RenderState.make(
     FogAttrib.makeOff()
 )
 
+class EntityToolOptions(QtWidgets.QGroupBox):
+
+    def __init__(self, tool):
+        self.tool = tool
+        QtWidgets.QGroupBox.__init__(self)
+        self.setTitle("Entity Tool")
+        base.rightWidget.layout().addWidget(self)
+        layout = QtWidgets.QFormLayout(self)
+
+        lbl = QtWidgets.QLabel("Entity class")
+        layout.addWidget(lbl)
+        combo = QtWidgets.QComboBox()
+        layout.addWidget(combo)
+        self.combo = combo
+
+        self.combo.currentTextChanged.connect(self.__handleClassChanged)
+
+        self.setLayout(layout)
+        self.hide()
+
+    def __handleClassChanged(self, classname):
+        self.tool.classname = classname
+
+    def updateEntityClasses(self):
+        classname = str(self.tool.classname)
+
+        self.combo.clear()
+
+        names = []
+
+        for ent in base.fgd.entities:
+            if ent.class_type == 'PointClass':
+                names.append(ent.name)
+
+        names.sort()
+
+        for name in names:
+            self.combo.addItem(name)
+
+        self.combo.setCurrentText(classname)
+
 # Tool used to place an entity in the level.
 class EntityTool(BaseTool):
 
     Name = "Entity"
-    ToolTip = "Entity Tool [SHIFT+E]"
-    Shortcut = "shift+e"
+    ToolTip = "Entity Tool [SHIFT+A]"
+    Shortcut = "shift+a"
     Icon = "resources/icons/editor-entity.png"
 
     def __init__(self):
         BaseTool.__init__(self)
         self.classname = "prop_static"
         self.pos = Point3(0, 0, 0)
+
+        self.options = EntityToolOptions(self)
 
         self.mouseIsDown = False
         self.hasPlaced = False
@@ -72,10 +117,13 @@ class EntityTool(BaseTool):
         self.accept('arrow_left', self.moveLeft)
         self.accept('arrow_right', self.moveRight)
         self.reset()
+        self.options.updateEntityClasses()
+        self.options.show()
 
     def disable(self):
         BaseTool.disable(self)
         self.reset()
+        self.options.hide()
 
     def reset(self):
         self.hideVis()

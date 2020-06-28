@@ -36,7 +36,7 @@ class BaseTool(DirectObject):
 
     def createButton(self):
         if self.WantButton:
-            self.button = QtWidgets.QAction(base.qtApp.window.toolGroup)
+            self.button = QtWidgets.QAction(base.toolBar)
             self.button.setText(self.Name)
             self.button.setToolTip(self.ToolTip)
             self.button.setCheckable(True)
@@ -45,6 +45,7 @@ class BaseTool(DirectObject):
             if self.Icon:
                 self.button.setIcon(QtGui.QIcon(self.Icon))
             self.button.toggled.connect(self.__handleToggle)
+            base.toolBar.addAction(self.button)
 
     def __handleToggle(self, toggled):
         if toggled:

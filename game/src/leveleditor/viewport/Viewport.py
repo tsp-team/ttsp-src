@@ -3,7 +3,7 @@
 
 from panda3d.core import Camera, BitMask32, WindowProperties, GraphicsPipe, FrameBufferProperties
 from panda3d.core import MouseAndKeyboard, ButtonThrower, MouseWatcher, KeyboardButton, NodePath
-from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser, Mat4
+from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, Mat4
 from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2, ModelNode, LVector2i, LPoint2i
 from panda3d.core import OmniBoundingVolume, OrthographicLens
 
@@ -44,7 +44,6 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.clickNode = None
         self.clickNp = None
         self.clickQueue = None
-        self.clickTrav = None
         self.tickTask = None
         self.zoom = 1.0
         self.gizmo = None
@@ -79,9 +78,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.gridRoot.setLightOff(1)
         self.gridRoot.setBSPMaterial("resources/phase_14/materials/unlit.mat")
         self.gridRoot.setBin("background", 0)
-        self.gridRoot.setDepthWrite(False, 1)
-        self.gridRoot.hide(BitMask32.allOn())
-        self.gridRoot.showThrough(self.getViewportMask())
+        self.gridRoot.hide(~self.getViewportMask())
 
         self.grid = None
 
@@ -174,8 +171,6 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.clickNode.addSolid(self.clickRay)
         self.clickNp = NodePath(self.clickNode)
         self.clickQueue = CollisionHandlerQueue()
-        self.clickTrav = CollisionTraverser("viewportClickTraverser")
-        self.clickTrav.addCollider(self.clickNp, self.clickQueue)
 
         self.setupRender2d()
         self.setupCamera2d()
@@ -373,19 +368,30 @@ class Viewport(DirectObject, QtWidgets.QWidget):
     def zeroUnusedCoordinate(self, vec):
         pass
 
-    def click(self, mask):
+    def click(self, mask, queue = None, traverser = None, root = None):
         if not self.mouseWatcher.hasMouse():
             return None
 
+        if not queue:
+            queue = self.clickQueue
+
         self.clickRay.setFromLens(self.camNode, self.mouseWatcher.getMouse())
         self.clickNode.setFromCollideMask(mask)
+        self.clickNode.setIntoCollideMask(BitMask32.allOff())
         self.clickNp.reparentTo(self.cam)
-        self.clickQueue.clearEntries()
-        self.clickTrav.traverse(base.render)
-        self.clickQueue.sortEntries()
+        queue.clearEntries()
+        if not traverser:
+            base.clickTraverse(self.clickNp, queue)
+        else:
+            if not root:
+                root = base.render
+            traverser.addCollider(self.clickNp, queue)
+            traverser.traverse(root)
+            traverser.removeCollider(self.clickNp)
+        queue.sortEntries()
         self.clickNp.reparentTo(NodePath())
 
-        return self.clickQueue.getEntries()
+        return queue.getEntries()
 
     def fixRatio(self, size = None):
         if not self.lens:

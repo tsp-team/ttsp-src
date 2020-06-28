@@ -27,6 +27,16 @@ class Entity(MapObject):
         self.entityData = {}
         self.helpers = []
 
+    def select(self):
+        MapObject.select(self)
+        for helper in self.helpers:
+            helper.select()
+
+    def deselect(self):
+        MapObject.deselect(self)
+        for helper in self.helpers:
+            helper.deselect()
+
     def removeHelpers(self):
         for helper in self.helpers:
             helper.cleanup()

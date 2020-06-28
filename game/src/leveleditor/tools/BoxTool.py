@@ -164,6 +164,7 @@ class BoxTool(BaseTool):
     Name = "Box Tool"
     ToolTip = "Box Tool"
     Usage = ToolUsage.Both
+    Draw3DBox = True
 
     CursorHandles = {
         ResizeHandle.TopLeft: QtCore.Qt.SizeFDiagCursor,
@@ -247,8 +248,8 @@ class BoxTool(BaseTool):
         self.handleWidth = 0.9
         self.handleOffset = 1.6
         self.handleType = HandleType.Square
-        self.boxColor = Vec4(1, 1, 1, 1)
         self.state = BoxState()
+        self.suppressBox = False
 
         self.vps = []
         for vp in base.viewportMgr.viewports:
@@ -257,8 +258,9 @@ class BoxTool(BaseTool):
 
         # Representation of the box we are drawing
         self.box = Box()
-        # Render as solid lines in 3D viewport
-        self.box.addView(GeomView.Lines, VIEWPORT_3D_MASK)
+        if self.Draw3DBox:
+            # Render as solid lines in 3D viewport
+            self.box.addView(GeomView.Lines, VIEWPORT_3D_MASK)
         # Render as dashed lines in 2D viewports
         self.box.addView(GeomView.Lines, VIEWPORT_2D_MASK, state = RenderModes.DashedLineNoZ())
         self.box.generateGeometry()
@@ -307,6 +309,8 @@ class BoxTool(BaseTool):
         BaseTool.enable(self)
         self.accept('mouse1', self.mouseDown)
         self.accept('mouse1-up', self.mouseUp)
+        self.accept('control-mouse1', self.mouseDown)
+        self.accept('control-mouse1-up', self.mouseUp)
         self.accept('mouseMoved', self.mouseMove)
         self.accept('mouseEnter', self.mouseEnter)
         self.accept('mouseExit', self.mouseExit)
@@ -318,6 +322,9 @@ class BoxTool(BaseTool):
         self.maybeCancel()
 
     def mouseDown(self):
+        if self.suppressBox:
+            return
+
         vp = base.viewportMgr.activeViewport
         if vp.is3D():
             self.mouseDown3D()
@@ -519,7 +526,7 @@ class BoxTool(BaseTool):
 
         if proportional:
             nwidth = cend.x - cstart.x
-            nheight = cent.z - cstart.z
+            nheight = cend.z - cstart.z
             mult = max(nwidth / owidth, nheight / oheight)
             pwidth = owidth * mult
             pheight = oheight * mult
@@ -607,3 +614,38 @@ class BoxTool(BaseTool):
             if self.state.action in [BoxAction.ReadyToResize, BoxAction.Drawn]:
                 self.updateHandles(vp)
 
+    def getSelectionBox(self):
+        # Return a min/max point for a box that can be used
+        # for selection.
+        #
+        # If one of the dimensions has a depth value of 0, extend it out into
+        # infinite space.
+        # If two or more dimensions have depth 0, do nothing.
+
+        sameX = self.state.boxStart.x == self.state.boxEnd.x
+        sameY = self.state.boxStart.y == self.state.boxEnd.y
+        sameZ = self.state.boxStart.z == self.state.boxEnd.z
+        start = Vec3(self.state.boxStart)
+        end = Vec3(self.state.boxEnd)
+        invalid = False
+
+        inf = 99999999.0
+        negInf = -99999999.0
+
+        if sameX:
+            if sameY or sameZ:
+                invalid = True
+            start.x = negInf
+            end.x = inf
+
+        if sameY:
+            if sameZ:
+                invalid = True
+            start.y = negInf
+            end.y = inf
+
+        if sameZ:
+            start.z = negInf
+            end.z = inf
+
+        return [invalid, start, end]
