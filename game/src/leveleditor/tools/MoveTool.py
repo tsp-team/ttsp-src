@@ -229,7 +229,7 @@ class MoveTool(SelectTool):
                 # 2D world as the movement value
                 axis = self.widget.activeAxis.axisIdx
                 now = base.snapToGrid(vp.viewportToWorld(vp.getMouse(), flatten = False))
-                absolute = self.preTransformStart + now - base.snapToGrid(self.moveStart)
+                absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
                 self.applyPosition(axis, absolute)
             else:
                 # 3D is a little more complicated. We need to define a plane parallel to the selected
@@ -245,7 +245,7 @@ class MoveTool(SelectTool):
                     t = (pointOnPlane - camPos).dot(planeNormal) / denom
                     if t >= 0:
                         now = base.snapToGrid(pointOnPlane)
-                        absolute = self.preTransformStart + now - base.snapToGrid(self.moveStart)
+                        absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
                         self.applyPosition(axis, absolute)
         else:
             SelectTool.mouseMove(self, vp)
