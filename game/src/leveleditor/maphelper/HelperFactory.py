@@ -1,12 +1,14 @@
 from .ModelHelper import ModelHelper
 from .SpriteHelper import SpriteHelper
+from .LightHelper import LightHelper
 
 # Map helpers by entity class definitions in the fgd file.
 Helpers = {
     "studio": ModelHelper,
     "studioprop": ModelHelper,
     "lightprop": ModelHelper,
-    "iconsprite": SpriteHelper
+    "iconsprite": SpriteHelper,
+    "pointlight": LightHelper
 }
 
 def createHelper(helperInfo, mapObject):
