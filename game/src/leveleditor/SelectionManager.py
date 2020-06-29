@@ -43,11 +43,16 @@ class SelectionManager(DirectObject):
     def isSelected(self, obj):
         return obj in self.selectedObjects
 
-    def deselectAll(self):
+    def deselectAll(self, update = True):
         for obj in self.selectedObjects:
             obj.deselect()
         self.selectedObjects = []
-        self.updateSelectionBounds()
+        if update:
+            self.updateSelectionBounds()
+
+    def singleSelect(self, obj):
+        self.deselectAll(False)
+        self.select(obj)
 
     def deselect(self, obj):
         if obj in self.selectedObjects:
@@ -81,7 +86,7 @@ class SelectionManager(DirectObject):
                 obj = self.selectedObjects[0]
                 if isinstance(obj, Entity):
                     text = obj.classname
-                    if "targetname" in obj.entityData:
+                    if "targetname" in obj.entityData and obj.entityData["targetname"] is not None:
                         text += " - " + obj.entityData["targetname"]
                     base.qtWindow.selectedLabel.setText(text)
             else:

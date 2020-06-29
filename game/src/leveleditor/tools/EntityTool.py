@@ -189,6 +189,9 @@ class EntityTool(BaseTool):
 
         ent = base.document.createObject(Entity, classname = self.classname)
         ent.np.setPos(self.pos)
+        # Select the entity right away so we can conveniently move it around and
+        # whatever without having to manually select it.
+        base.selectionMgr.singleSelect(ent)
 
         self.reset()
 
