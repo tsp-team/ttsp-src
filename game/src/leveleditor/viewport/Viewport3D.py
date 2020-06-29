@@ -12,6 +12,9 @@ class Viewport3D(Viewport):
         Viewport.__init__(self, vpType, window)
         self.flyCam = None
 
+    def mouseMove(self):
+        base.qtWindow.coordsLabel.setText("")
+
     def tick(self):
         Viewport.tick(self)
         if self.gizmo:

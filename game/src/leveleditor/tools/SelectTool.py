@@ -30,6 +30,7 @@ class SelectTool(BoxTool):
         self.accept('shift', self.shiftDown)
         self.accept('shift-up', self.shiftUp)
         self.accept('escape', self.deselectAll)
+        self.accept('selectionsChanged', self.selectionChanged)
         self.lastEntries = None
         self.entryIdx = 0
 
@@ -52,8 +53,6 @@ class SelectTool(BoxTool):
                 base.selectionMgr.deselect(obj)
             else:
                 base.selectionMgr.select(obj)
-
-        self.selectionChanged()
 
     def selectionChanged(self):
         pass
@@ -130,7 +129,6 @@ class SelectTool(BoxTool):
                 obj = np.getPythonTag("mapobject")
                 base.selectionMgr.select(obj)
         boxNp.removeNode()
-        self.selectionChanged()
 
     def wheelUp(self):
         if not self.mouseIsDown:
@@ -144,7 +142,6 @@ class SelectTool(BoxTool):
         self.lastEntries = None
         self.entryIdx = 0
         base.selectionMgr.deselectAll()
-        self.selectionChanged()
 
     def disable(self):
         BoxTool.disable(self)

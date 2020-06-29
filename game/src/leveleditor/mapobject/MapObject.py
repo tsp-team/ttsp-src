@@ -139,6 +139,9 @@ class MapObject(MapWritable):
             base.document.deleteObject(child)
         self.children = None
 
+        # if we are selected, deselect
+        base.selectionMgr.deselect(self)
+
         if self.boundsBox:
             self.boundsBox.cleanup()
             self.boundsBox = None

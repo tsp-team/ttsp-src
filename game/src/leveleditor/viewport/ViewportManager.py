@@ -87,7 +87,6 @@ class ViewportManager(DirectObject):
 
         if active and active == self.activeViewport:
             mouse = active.mouseWatcher.getMouse()
-            #print(active.win.getProperties())
             if not self.lastMouse or self.lastMouse != mouse:
                 active.mouseMove()
                 messenger.send('mouseMoved', [active])

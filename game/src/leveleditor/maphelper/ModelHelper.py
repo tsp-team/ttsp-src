@@ -32,7 +32,7 @@ class ModelHelper(MapHelper):
                 vpRoot.setTransparency(1)
                 vpRoot.setColor(Vec4(1, 1, 1, 0.75), 1)
             else:
-                vpRoot.setColorScale(Vec4(1, 0.3, 0.3, 1))
+                vpRoot.setColorScale(Vec4(1, 1, 1, 1))
 
     def setUnselectedState(self):
         for vp, vpRoot in self.vpRoots:

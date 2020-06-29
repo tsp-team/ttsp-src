@@ -2,6 +2,7 @@ from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, NodePath
 
 from direct.showbase.DirectObject import DirectObject
 
+from src.leveleditor.mapobject.Entity import Entity
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
@@ -27,7 +28,8 @@ class SelectionManager(DirectObject):
         self.accept('delete', self.deleteSelectedObjects)
 
     def deleteSelectedObjects(self):
-        for obj in self.selectedObjects:
+        selected = list(self.selectedObjects)
+        for obj in selected:
             base.document.deleteObject(obj)
         self.selectedObjects = []
         self.updateSelectionBounds()
@@ -68,10 +70,22 @@ class SelectionManager(DirectObject):
         self.selectionBounds.np.reparentTo(base.render)
 
     def updateSelectionBounds(self):
+        messenger.send('selectionsChanged')
+
         if len(self.selectedObjects) == 0:
+            base.qtWindow.selectedLabel.setText("No selection.")
             self.hideSelectionBounds()
             return
         else:
+            if len(self.selectedObjects) == 1:
+                obj = self.selectedObjects[0]
+                if isinstance(obj, Entity):
+                    text = obj.classname
+                    if "targetname" in obj.entityData:
+                        text += " - " + obj.entityData["targetname"]
+                    base.qtWindow.selectedLabel.setText(text)
+            else:
+                base.qtWindow.selectedLabel.setText("Selected %i objects." % len(self.selectedObjects))
             self.showSelectionBounds()
 
         mins = Point3(9999999)

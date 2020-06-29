@@ -16,6 +16,7 @@ class BaseTool(DirectObject):
     Shortcut = None
     WantButton = True
     ToolTip = "Base tool"
+    StatusTip = None
     Icon = None
     Usage = ToolUsage.Both
 
@@ -39,6 +40,10 @@ class BaseTool(DirectObject):
             self.button = QtWidgets.QAction(base.toolBar)
             self.button.setText(self.Name)
             self.button.setToolTip(self.ToolTip)
+            if not self.StatusTip:
+                self.button.setStatusTip(self.ToolTip)
+            else:
+                self.button.setStatusTip(self.StatusTip)
             self.button.setCheckable(True)
             if self.Shortcut:
                 self.button.setShortcut(QtGui.QKeySequence.fromString(self.Shortcut))

@@ -91,7 +91,9 @@
    </attribute>
    <addaction name="actionSave"/>
    <addaction name="actionClose"/>
+   <addaction name="separator"/>
    <addaction name="actionToggleGrid"/>
+   <addaction name="actionGridSnap"/>
    <addaction name="actionIncreaseGridSize"/>
    <addaction name="actionDecreaseGridSize"/>
   </widget>
@@ -122,6 +124,9 @@
    <property name="toolTip">
     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Increase grid size ( ] )&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
+   <property name="statusTip">
+    <string>Increase grid size ( ] )</string>
+   </property>
    <property name="shortcut">
     <string>]</string>
    </property>
@@ -132,6 +137,9 @@
    </property>
    <property name="toolTip">
     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Decrease grid size ( [ )&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="statusTip">
+    <string>Decrease grid size ( [ )</string>
    </property>
    <property name="shortcut">
     <string>[</string>
@@ -144,6 +152,9 @@
    <property name="toolTip">
     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save the current map ( Ctrl + S )&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
+   <property name="statusTip">
+    <string>Save the current map ( Ctrl + S )</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
    </property>
@@ -153,10 +164,13 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Toggle grid</string>
+    <string>Show grid</string>
    </property>
    <property name="toolTip">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle the 3D grid&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the grid&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="statusTip">
+    <string>Show the grid</string>
    </property>
   </action>
   <action name="actionClose">
@@ -164,6 +178,9 @@
     <string>Close</string>
    </property>
    <property name="toolTip">
+    <string>Close the current map</string>
+   </property>
+   <property name="statusTip">
     <string>Close the current map</string>
    </property>
    <property name="shortcut">
@@ -174,25 +191,66 @@
    <property name="text">
     <string>New</string>
    </property>
+   <property name="toolTip">
+    <string>Create a new map</string>
+   </property>
+   <property name="statusTip">
+    <string>Create a new map</string>
+   </property>
   </action>
   <action name="actionSaveAs">
    <property name="text">
     <string>Save As...</string>
+   </property>
+   <property name="statusTip">
+    <string>Save As</string>
    </property>
   </action>
   <action name="actionOpen">
    <property name="text">
     <string>Open...</string>
    </property>
+   <property name="toolTip">
+    <string>Open an existing map</string>
+   </property>
+   <property name="statusTip">
+    <string>Open an existing map</string>
+   </property>
   </action>
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
    </property>
+   <property name="toolTip">
+    <string>Exit the FABULOUS TTSP Editor</string>
+   </property>
+   <property name="statusTip">
+    <string>Exit the FABULOUS TTSP Editor</string>
+   </property>
   </action>
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+   <property name="toolTip">
+    <string>Information about the FABULOUS TTSP Editor</string>
+   </property>
+   <property name="statusTip">
+    <string>Information about the FABULOUS TTSP Editor</string>
+   </property>
+  </action>
+  <action name="actionGridSnap">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Grid snap</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle grid snap</string>
+   </property>
+   <property name="statusTip">
+    <string>Toggle grid snap</string>
    </property>
   </action>
  </widget>

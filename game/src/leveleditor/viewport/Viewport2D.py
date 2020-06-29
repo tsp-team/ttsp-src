@@ -20,6 +20,16 @@ class Viewport2D(Viewport):
         self.dragCamStart = Point3()
         self.dragCamMouseStart = Point3()
 
+    def adjustZoomText(self):
+        base.qtWindow.zoomLabel.setText("Zoom: %.2f" % self.zoom)
+
+    def mouseEnter(self):
+        self.adjustZoomText()
+
+    def mouseExit(self):
+        base.qtWindow.zoomLabel.setText("")
+        base.qtWindow.coordsLabel.setText("")
+
     def initialize(self):
         Viewport.initialize(self)
         self.gizmo.np.setHpr(self.getViewHpr())
@@ -44,6 +54,8 @@ class Viewport2D(Viewport):
             after = self.viewportToWorld(md, False)
             self.camera.setPos(self.camera.getPos() - (after - before))
 
+        self.adjustZoomText()
+
     def wheelUp(self):
         self.adjustZoom(True, 1)
 
@@ -64,6 +76,9 @@ class Viewport2D(Viewport):
             worldPos = self.viewportToWorld(mouse, False, True)
             delta = worldPos - self.dragCamMouseStart
             self.camera.setPos(self.dragCamStart - delta)
+
+        world = self.viewportToWorld(self.getMouse(), flatten = False)
+        base.qtWindow.coordsLabel.setText("%i %i %i" % (world.x, world.y, world.z))
 
     def mouse2Up(self):
         base.qtApp.restoreOverrideCursor()

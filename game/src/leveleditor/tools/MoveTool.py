@@ -34,7 +34,7 @@ class MoveWidgetAxis(NodePath):
         self.axis = base.loader.loadModel("models/editor/arrow.bam")
         self.axis.reparentTo(self)
 
-        box = CollisionBox(Vec3(-0.025, 0.2, -0.025), Vec3(0.025, 1.0, 0.025))
+        box = CollisionBox(Vec3(-0.035, 0.2, -0.035), Vec3(0.035, 1.0, 0.035))
         cnode = CollisionNode("pickBox")
         cnode.addSolid(box)
         cnode.setIntoCollideMask(LEGlobals.ManipulatorMask)
@@ -119,9 +119,6 @@ class MoveWidget(NodePath):
         self.setDepthWrite(False, 1)
         self.setDepthTest(False, 1)
         self.setBin("unsorted", 60)
-        self.setPos(32, 64, 32)
-
-        #self.setScale(32)
 
         self.activeAxis = None
 
@@ -190,7 +187,7 @@ class MoveTool(SelectTool):
             if vp.is2D():
                 self.moveStart = vp.viewportToWorld(vp.getMouse(), flatten = False)
             else:
-                self.moveStart = self.getPointOnPlane()
+                self.moveStart = self.getPointOnPlane()[0]
             self.preTransformStart = self.widget.getPos()
 
     def mouseUp(self):
@@ -198,11 +195,13 @@ class MoveTool(SelectTool):
         if self.widget.activeAxis:
             self.widget.activeAxis.setState(Rollover)
 
-    def applyMovementDelta(self, axis, delta):
+    def applyPosition(self, axis, absolute):
         for obj in base.selectionMgr.selectedObjects:
-            currPos = obj.np.getPos(render)
-            currPos[axis] += delta
-            obj.np.setPos(render, currPos)
+            offset = obj.np.getPos(self.widget)
+            currPos = obj.np.getPos(self.widget.getParent())
+            currPos[axis] = absolute[axis] + offset[axis]
+            obj.np.setPos(self.widget.getParent(), currPos)
+
         self.calcWidgetPoint()
         base.selectionMgr.updateSelectionBounds()
 
@@ -212,15 +211,15 @@ class MoveTool(SelectTool):
             return
         axis = self.widget.activeAxis.axisIdx
         worldMouse = vp.viewportToWorld(vp.getMouse())
-        vec = Vec3(0)
-        vec[self.widget.activeAxis.axisIdx] = 1.0
-        vec = vec.cross(Vec3.up())
-        offset = self.widget.getPos()[idx]
-        movePlane = LPlane(vec[0], vec[1], vec[2], 0)
+        vecAxis = Vec3(0)
+        vecAxis[axis] = 1.0
+        planeTangent = vecAxis.cross(worldMouse - vp.cam.getPos(base.render)).normalized()
+        planeNormal = vecAxis.cross(planeTangent).normalized()
+        movePlane = LPlane(planeNormal, self.widget.getPos())
         pointOnPlane = Point3()
-        ret = movePlane.intersectsLine(pointOnPlane, vp.cam.getPos(render), worldMouse)
+        ret = movePlane.intersectsLine(pointOnPlane, vp.cam.getPos(base.render), worldMouse)
         assert ret, "Line did not intersect move plane"
-        return pointOnPlane
+        return [pointOnPlane, planeNormal]
 
     def mouseMove(self, vp):
         if vp and self.mouseIsDown and self.widget.activeAxis:
@@ -228,23 +227,26 @@ class MoveTool(SelectTool):
             if vp.is2D():
                 # 2D is easy, just use the mouse coordinates projected into the
                 # 2D world as the movement value
-                worldMouse = base.snapToGrid(vp.viewportToWorld(mouse, flatten = False))
                 axis = self.widget.activeAxis.axisIdx
-                currWidget = self.widget.getPos()[axis]
-                newPos = worldMouse[axis]
-                delta = newPos - currWidget
-                self.applyMovementDelta(axis, delta)
+                now = base.snapToGrid(vp.viewportToWorld(vp.getMouse(), flatten = False))
+                absolute = self.preTransformStart + now - base.snapToGrid(self.moveStart)
+                self.applyPosition(axis, absolute)
             else:
                 # 3D is a little more complicated. We need to define a plane parallel to the selected
                 # axis, intersect the line from our camera to the 3D mouse position against the plane,
                 # and use the intersection point as the movement value.
                 axis = self.widget.activeAxis.axisIdx
-                now = base.snapToGrid(self.getPointOnPlane())[axis]
-                axis = self.widget.activeAxis.axisIdx
-                currWidget = self.widget.getPos()[axis]
-                newPos = pointOnPlane[axis]
-                delta = newPos - currWidget
-                self.applyMovementDelta(axis, delta)
+                pointOnPlane, planeNormal = self.getPointOnPlane()
+                worldMouse = vp.viewportToWorld(mouse)
+                camPos = vp.cam.getPos(render)
+                toMouse = (pointOnPlane - camPos).normalized()
+                denom = toMouse.dot(planeNormal)
+                if denom != 0:
+                    t = (pointOnPlane - camPos).dot(planeNormal) / denom
+                    if t >= 0:
+                        now = base.snapToGrid(pointOnPlane)
+                        absolute = self.preTransformStart + now - base.snapToGrid(self.moveStart)
+                        self.applyPosition(axis, absolute)
         else:
             SelectTool.mouseMove(self, vp)
 

@@ -77,6 +77,13 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         base.rightDock = self.ui.rightWidget
         base.topBar = self.ui.topBar
 
+        base.statusBar = self.ui.statusbar
+
+        self.selectedLabel = self.addPaneLabel(300, "No selection.")
+        self.coordsLabel = self.addPaneLabel(100)
+        self.zoomLabel = self.addPaneLabel(90)
+        self.gridSnapLabel = self.addPaneLabel(135)
+
         self.toolBar = self.ui.leftBar
         self.toolBar.setIconSize(QtCore.QSize(48, 48))
         base.toolBar = self.toolBar
@@ -91,6 +98,17 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionOpen.triggered.connect(self.__open)
         self.ui.actionNew_Map.triggered.connect(self.__close)
+
+    def addPaneLabel(self, width = 100, text = ""):
+        lbl = QtWidgets.QLabel(text)
+        lbl.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        lbl.setFrameStyle(QtWidgets.QLabel.Panel)
+        lbl.setFrameShadow(QtWidgets.QLabel.Sunken)
+        lbl.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        lbl.setMaximumWidth(width)
+
+        self.ui.statusbar.addPermanentWidget(lbl)
+        return lbl
 
     def askSaveIfUnsaved(self):
         if base.document.unsaved:
@@ -293,24 +311,39 @@ class LevelEditor(BSPBase):
         self.qtApp.window.gameViewWind.addViewports()
         self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)
         self.qtApp.window.ui.actionToggleGrid.toggled.connect(self.__toggleGrid)
+        self.qtApp.window.ui.actionGridSnap.setChecked(GridSettings.GridSnap)
+        self.qtApp.window.ui.actionGridSnap.toggled.connect(self.__gridSnap)
         self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
         self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
+        self.adjustGridText()
+        self.qtWindow = self.qtApp.window
         BSPBase.initialize(self)
 
         # Open a blank document
         self.document = Document()
         self.document.open()
 
+    def __gridSnap(self):
+        GridSettings.GridSnap = not GridSettings.GridSnap
+        self.adjustGridText()
+
     def __toggleGrid(self):
         GridSettings.EnableGrid = not GridSettings.EnableGrid
+        self.adjustGridText()
 
     def __incGridSize(self):
         GridSettings.DefaultStep *= 2
         GridSettings.DefaultStep = min(256, GridSettings.DefaultStep)
+        self.adjustGridText()
 
     def __decGridSize(self):
         GridSettings.DefaultStep //= 2
         GridSettings.DefaultStep = max(1, GridSettings.DefaultStep)
+        self.adjustGridText()
+
+    def adjustGridText(self):
+        text = "Snap: %s Grid: %i" % ("On" if GridSettings.GridSnap else "Off", GridSettings.DefaultStep)
+        self.qtApp.window.gridSnapLabel.setText(text)
 
     def editEntity(self, ent):
         self.entityEdit = EntityEdit(ent)
