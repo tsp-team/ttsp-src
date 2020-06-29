@@ -7,12 +7,6 @@ except ImportError:
     sys.exit(1)
 
 try:
-    import fgdtools
-except ImportError:
-    print("ERROR: You need to pull in fgdtools via pip to use the level editor")
-    sys.exit(1)
-
-try:
     import py_linq
 except ImportError:
     print("ERROR: You need to pull in py_linq via pip to use the level editor")

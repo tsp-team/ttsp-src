@@ -18,7 +18,7 @@ from .EntityEdit import EntityEdit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtWidgets import QMessageBox
-from fgdtools import FgdParse
+from src.leveleditor.fgdtools import FgdParse, FgdWrite
 
 import builtins
 
@@ -236,7 +236,7 @@ class LevelEditor(BSPBase):
 
         BSPBase.__init__(self)
 
-        self.setFrameRateMeter(True)
+        #self.setFrameRateMeter(True)
 
         #toon.setY(10)
 
@@ -245,12 +245,12 @@ class LevelEditor(BSPBase):
         TextNode.setDefaultFont(loader.loadFont("resources/models/fonts/consolas.ttf"))
 
         from panda3d.core import DirectionalLight, AmbientLight
-        dlight = DirectionalLight('dlight')
-        dlight.setColor((2.5, 2.5, 2.5, 1))
-        dlnp = render.attachNewNode(dlight)
-        dlnp.setHpr(165 - 180, -60, 0)
-        render.setLight(dlnp)
-        self.dlnp = dlnp
+        #dlight = DirectionalLight('dlight')
+        #dlight.setColor((2.5, 2.5, 2.5, 1))
+        #dlnp = render.attachNewNode(dlight)
+        #dlnp.setHpr(165 - 180, -60, 0)
+        #render.setLight(dlnp)
+        #self.dlnp = dlnp
         alight = AmbientLight('alight')
         alight.setColor((0.4, 0.4, 0.4, 1))
         alnp = render.attachNewNode(alight)
