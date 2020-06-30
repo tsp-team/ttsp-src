@@ -54,19 +54,27 @@ class SelectionManager(DirectObject):
         self.deselectAll(False)
         self.select(obj)
 
-    def deselect(self, obj):
+    def multiSelect(self, listOfObjs):
+        self.deselectAll(False)
+        for obj in listOfObjs:
+            self.select(obj, False)
+        self.updateSelectionBounds()
+
+    def deselect(self, obj, updateBounds = True):
         if obj in self.selectedObjects:
             self.selectedObjects.remove(obj)
             obj.deselect()
 
-            self.updateSelectionBounds()
+            if updateBounds:
+                self.updateSelectionBounds()
 
-    def select(self, obj):
+    def select(self, obj, updateBounds = True):
         if not obj in self.selectedObjects:
             self.selectedObjects.append(obj)
             obj.select()
 
-            self.updateSelectionBounds()
+            if updateBounds:
+                self.updateSelectionBounds()
 
     def hideSelectionBounds(self):
         self.selectionBounds.np.reparentTo(NodePath())

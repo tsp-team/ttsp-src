@@ -111,6 +111,8 @@ class SelectTool(BoxTool):
 
         self.deselectAll()
 
+        selection = []
+
         # Create a one-off collision box, traverser, and queue to test against all MapObjects
         box = CollisionBox(mins, maxs)
         node = CollisionNode("selectToolCollBox")
@@ -127,8 +129,10 @@ class SelectTool(BoxTool):
             np = entry.getIntoNodePath().getParent()
             if np.hasPythonTag("mapobject"):
                 obj = np.getPythonTag("mapobject")
-                base.selectionMgr.select(obj)
+                selection.append(obj)
         boxNp.removeNode()
+
+        base.selectionMgr.multiSelect(selection)
 
     def wheelUp(self):
         if not self.mouseIsDown:
