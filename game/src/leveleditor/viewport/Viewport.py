@@ -14,7 +14,7 @@ from .ViewportGizmo import ViewportGizmo
 
 from direct.showbase.DirectObject import DirectObject
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 
 # Base viewport class
 class Viewport(DirectObject, QtWidgets.QWidget):
@@ -119,7 +119,6 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         winprops = WindowProperties.getDefault()
         winprops.setOrigin(0, 0)
-        winprops.setParentWindow(int(self.winId()))
         winprops.setOpen(True)
         winprops.setForeground(False)
         winprops.setUndecorated(True)
@@ -134,7 +133,8 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         assert output is not None, "Unable to create viewport output!"
 
         self.qtWindow = QtGui.QWindow.fromWinId(output.getWindowHandle().getIntHandle())
-        print(self.qtWindow)
+        self.windowContainer = QtWidgets.QWidget.createWindowContainer(self.qtWindow, self)
+        self.windowContainer.show()
 
         output.setClearColorActive(False)
         output.setClearDepthActive(False)
@@ -446,13 +446,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             return
 
         newsize = LVector2i(event.size().width(), event.size().height())
-
-        props = WindowProperties()
-        props.setSize(newsize)
-        props.setOrigin(0, 0)
-
-        self.win.requestProperties(props)
-
+        self.windowContainer.resize(newsize[0], newsize[1])
         self.fixRatio(newsize)
 
     def draw(self):
