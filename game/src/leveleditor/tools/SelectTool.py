@@ -109,8 +109,6 @@ class SelectTool(BoxTool):
         if invalid:
             return
 
-        self.deselectAll()
-
         selection = []
 
         # Create a one-off collision box, traverser, and queue to test against all MapObjects
