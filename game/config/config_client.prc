@@ -194,7 +194,7 @@ text-dynamic-merge 1
 
 interpolate-frames 1
 
-#threading-model Cull/Draw # experimental
+threading-model Cull/Draw # experimental
 assert-abort 1
 
 textures-power-2 none
