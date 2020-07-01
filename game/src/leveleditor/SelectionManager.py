@@ -1,5 +1,7 @@
 from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, NodePath
 
+from PyQt5 import QtWidgets, QtCore
+
 from direct.showbase.DirectObject import DirectObject
 
 from src.leveleditor.mapobject.Entity import Entity
@@ -7,6 +9,7 @@ from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
 from src.leveleditor import RenderModes
+from src.leveleditor.ui.ObjectProperties import Ui_ObjectProperties
 
 Bounds3DState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(1, 1, 0, 1))
@@ -14,6 +17,48 @@ Bounds3DState = RenderState.make(
 
 Bounds2DState = RenderModes.DashedLineNoZ()
 Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
+
+class ObjectPropertiesWindow(QtWidgets.QDockWidget):
+
+    def __init__(self, mgr):
+        QtWidgets.QDockWidget.__init__(self)
+        self.mgr = mgr
+        self.setWindowTitle("Object Properties")
+        w = QtWidgets.QWidget(self)
+        self.ui = Ui_ObjectProperties()
+        self.ui.setupUi(w)
+        self.ui.comboClass.setEditable(True)
+        self.setWidget(w)
+
+        self.updateAvailableClasses()
+
+        base.qtWindow.addDockWindow(self)
+        self.hide()
+
+    def updateForSelection(self):
+        numSelections = self.mgr.getNumSelectedObjects()
+
+        if numSelections == 0:
+            self.hide()
+        else:
+            self.show()
+
+        if numSelections == 1:
+            selection = base.selectionMgr.selectedObjects[0]
+            self.ui.comboClass.setCurrentText(selection.classname)
+
+    def updateAvailableClasses(self):
+        self.ui.comboClass.clear()
+        names = []
+        for ent in base.fgd.entities:
+            if ent.class_type in ['PointClass', 'SolidClass']:
+                names.append(ent.name)
+        names.sort()
+        completer = QtWidgets.QCompleter(names)
+        completer.setCompletionMode(QtWidgets.QCompleter.InlineCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.ui.comboClass.setCompleter(completer)
+        self.ui.comboClass.addItems(names)
 
 class SelectionManager(DirectObject):
 
@@ -26,6 +71,7 @@ class SelectionManager(DirectObject):
         self.selectionBounds.addView(GeomView.Lines, VIEWPORT_2D_MASK, state = Bounds2DState)
         self.selectionBounds.generateGeometry()
         self.accept('delete', self.deleteSelectedObjects)
+        self.objectProperties = ObjectPropertiesWindow(self)
 
     def deleteSelectedObjects(self):
         selected = list(self.selectedObjects)
@@ -37,7 +83,7 @@ class SelectionManager(DirectObject):
     def hasSelectedObjects(self):
         return len(self.selectedObjects) > 0
 
-    def getNumSelectedObject(self):
+    def getNumSelectedObjects(self):
         return len(self.selectedObjects)
 
     def isSelected(self, obj):
@@ -84,6 +130,8 @@ class SelectionManager(DirectObject):
 
     def updateSelectionBounds(self):
         messenger.send('selectionsChanged')
+
+        self.objectProperties.updateForSelection()
 
         if len(self.selectedObjects) == 0:
             base.qtWindow.selectedLabel.setText("No selection.")

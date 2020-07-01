@@ -64,19 +64,19 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
 
+        self.dockLocations = {
+            "right": QtCore.Qt.RightDockWidgetArea,
+            "left": QtCore.Qt.LeftDockWidgetArea,
+            "top": QtCore.Qt.TopDockWidgetArea,
+            "bottom": QtCore.Qt.BottomDockWidgetArea
+        }
+
         from src.leveleditor.ui.mainwindow import Ui_LevelEditor
         self.ui = Ui_LevelEditor()
         self.ui.setupUi(self)
 
-        base.leftBar = self.ui.leftBar
-        self.rightWidget = QtWidgets.QFrame(self.ui.rightWidget)
-        layout = QtWidgets.QFormLayout(self.rightWidget)
-        self.rightWidget.setLayout(layout)
-        base.rightWidget = self.rightWidget
-        self.ui.rightWidget.setWidget(self.rightWidget)
-        base.rightDock = self.ui.rightWidget
         base.topBar = self.ui.topBar
-
+        base.leftBar = self.ui.leftBar
         base.statusBar = self.ui.statusbar
 
         self.selectedLabel = self.addPaneLabel(300, "No selection.")
@@ -98,6 +98,12 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionOpen.triggered.connect(self.__open)
         self.ui.actionNew_Map.triggered.connect(self.__close)
+
+    def addDockWindow(self, dockWidget, location = "right"):
+        location = self.dockLocations[location]
+        dockWidget.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
+        self.addDockWidget(location, dockWidget, QtCore.Qt.Vertical)
+        return dockWidget
 
     def addPaneLabel(self, width = 100, text = ""):
         lbl = QtWidgets.QLabel(text)
@@ -306,7 +312,6 @@ class LevelEditor(BSPBase):
         self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
         self.viewportMgr = ViewportManager()
         self.toolMgr = ToolManager()
-        self.selectionMgr = SelectionManager()
         self.qtApp = LevelEditorApp()
         self.qtApp.window.gameViewWind.addViewports()
         self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)
@@ -317,6 +322,7 @@ class LevelEditor(BSPBase):
         self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
         self.adjustGridText()
         self.qtWindow = self.qtApp.window
+        self.selectionMgr = SelectionManager()
         BSPBase.initialize(self)
 
         # Open a blank document

@@ -1,7 +1,7 @@
 from panda3d.core import Point3, NodePath, BitMask32, RenderState, ColorAttrib, Vec4, LightAttrib, FogAttrib, LineSegs
 from panda3d.core import Vec3
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 from .BaseTool import BaseTool
 from src.leveleditor.geometry.Box import Box
@@ -15,25 +15,27 @@ VisState = RenderState.make(
     FogAttrib.makeOff()
 )
 
-class EntityToolOptions(QtWidgets.QGroupBox):
+class EntityToolOptions(QtWidgets.QDockWidget):
 
     def __init__(self, tool):
+        QtWidgets.QDockWidget.__init__(self)
         self.tool = tool
-        QtWidgets.QGroupBox.__init__(self)
-        self.setTitle("Entity Tool")
-        base.rightWidget.layout().addWidget(self)
-        layout = QtWidgets.QFormLayout(self)
+        self.setWindowTitle("Entity Tool")
 
+        frame = QtWidgets.QFrame(self)
+        frame.setLayout(QtWidgets.QFormLayout())
         lbl = QtWidgets.QLabel("Entity class")
-        layout.addWidget(lbl)
+        frame.layout().addWidget(lbl)
         combo = QtWidgets.QComboBox()
-        layout.addWidget(combo)
+        frame.layout().addWidget(combo)
         self.combo = combo
-
         self.combo.currentTextChanged.connect(self.__handleClassChanged)
+        self.combo.setEditable(True)
 
-        self.setLayout(layout)
+        self.setWidget(frame)
         self.hide()
+
+        base.qtWindow.addDockWindow(self)
 
     def __handleClassChanged(self, classname):
         self.tool.classname = classname
@@ -50,6 +52,11 @@ class EntityToolOptions(QtWidgets.QGroupBox):
                 names.append(ent.name)
 
         names.sort()
+
+        completer = QtWidgets.QCompleter(names)
+        completer.setCompletionMode(QtWidgets.QCompleter.InlineCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.combo.setCompleter(completer)
 
         for name in names:
             self.combo.addItem(name)

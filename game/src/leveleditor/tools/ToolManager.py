@@ -34,6 +34,7 @@ class ToolManager(DirectObject):
         from src.leveleditor.tools.RotateTool import RotateTool
         from src.leveleditor.tools.ScaleTool import ScaleTool
         from src.leveleditor.tools.EntityTool import EntityTool
+        from src.leveleditor.tools.BlockTool import BlockTool
 
         self.selectTool = SelectTool()
         self.addTool(self.selectTool)
@@ -44,6 +45,7 @@ class ToolManager(DirectObject):
         base.toolBar.addSeparator()
 
         self.addTool(EntityTool())
+        self.addTool(BlockTool())
 
         # Now group all of our tools so we can only have one tool
         # selected at a time.
