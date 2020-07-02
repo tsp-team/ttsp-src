@@ -98,6 +98,15 @@ class MapObject(MapWritable):
         return [invalid, mins, maxs]
 
     def recalcBoundingBox(self):
+        if not self.np:
+            return
+
+        # Don't have the picker box or selection visualization contribute to the
+        # calculation of the bounding box.
+        if self.collNp:
+            self.collNp.stash()
+        self.hideBoundingBox()
+
         mins = Point3()
         maxs = Point3()
         self.np.calcTightBounds(mins, maxs)
@@ -109,8 +118,11 @@ class MapObject(MapWritable):
 
         self.boundingBox = BoundingBox(mins, maxs)
         self.boundsBox.setMinMax(mins, maxs)
+        if self.selected:
+            self.showBoundingBox()
 
         if self.collNp:
+            self.collNp.unstash()
             self.collNp.node().clearSolids()
             self.collNp.node().addSolid(CollisionBox(mins, maxs))
 
