@@ -1,6 +1,6 @@
 from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, NodePath
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 from direct.showbase.DirectObject import DirectObject
 
@@ -18,6 +18,33 @@ Bounds3DState = RenderState.make(
 Bounds2DState = RenderModes.DashedLineNoZ()
 Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
 
+class ObjectPropertiesItem(QtGui.QStandardItem):
+
+    def __init__(self, win):
+        QtGui.QStandardItem.__init__(self)
+        #self.valueItem = valueItem
+        #self.entity = entity
+
+    def data(self, role):
+        if role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignLeft
+        #elif role == QtCore.Qt.DisplayRole:
+            #return
+        return QtGui.QStandardItem.data(self, role)
+
+class ObjectPropertiesValue(QtGui.QStandardItem):
+
+    def __init__(self, win):
+        QtGui.QStandardItem.__init__(self, win)
+
+class ObjectPropertiesModel(QtGui.QStandardItemModel):
+
+    def __init__(self, win):
+        QtGui.QStandardItemModel.__init__(self, 0, 2, win.ui.propertiesView)
+        self.setColumnCount(2)
+        self.setHeaderData(0, QtCore.Qt.Horizontal, "Property")
+        self.setHeaderData(1, QtCore.Qt.Horizontal, "Value")
+
 class ObjectPropertiesWindow(QtWidgets.QDockWidget):
 
     def __init__(self, mgr):
@@ -29,6 +56,10 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         self.ui.setupUi(w)
         self.ui.comboClass.setEditable(True)
         self.setWidget(w)
+
+        self.propertiesModel = ObjectPropertiesModel(self)
+        self.ui.propertiesView.setModel(self.propertiesModel)
+        self.ui.propertiesView.header().setDefaultAlignment(QtCore.Qt.AlignCenter)
 
         self.updateAvailableClasses()
 
@@ -46,6 +77,16 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         if numSelections == 1:
             selection = base.selectionMgr.selectedObjects[0]
             self.ui.comboClass.setCurrentText(selection.classname)
+            self.propertiesModel.removeRows(0, self.propertiesModel.rowCount())
+            rowIdx = 0
+            for prop, value in selection.entityData.items():
+                propItem = ObjectPropertiesItem(self)
+                propItem.setText(prop)
+                valueItem = ObjectPropertiesItem(self)
+                valueItem.setText(str(value))
+                self.propertiesModel.setItem(rowIdx, 0, propItem)
+                self.propertiesModel.setItem(rowIdx, 1, valueItem)
+                rowIdx += 1
 
     def updateAvailableClasses(self):
         self.ui.comboClass.clear()
