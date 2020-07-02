@@ -28,11 +28,8 @@ class SpriteHelper(MapHelper):
         np.reparentTo(self.mapObject.np)
         self.sprite = np
 
-        self.mapObject.recalcBoundingBox()
-
     def cleanup(self):
         if self.sprite:
             self.sprite.removeNode()
             self.sprite = None
-        self.mapObject.recalcBoundingBox()
         MapHelper.cleanup(self)

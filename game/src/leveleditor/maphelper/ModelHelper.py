@@ -84,12 +84,9 @@ class ModelHelper(MapHelper):
         else:
             self.setUnselectedState()
 
-        self.mapObject.recalcBoundingBox()
-
     def cleanup(self):
         self.vpRoots = []
         if self.modelRoot:
             self.modelRoot.removeNode()
             self.modelRoot = None
-        self.mapObject.recalcBoundingBox()
         MapHelper.cleanup(self)

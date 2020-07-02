@@ -2,6 +2,7 @@ from panda3d.core import CKeyValues, Vec3
 
 from .MapObject import MapObject
 from src.leveleditor.maphelper import HelperFactory
+from src.leveleditor.fgdtools import PropertyNotFound
 
 class Entity(MapObject):
 
@@ -18,7 +19,15 @@ class Entity(MapObject):
         'integer': int,
         'choices': int,
         'spawnflags': int,
-        'studio': str
+        'studio': str,
+        'target_source': str,
+        'target_destination': str,
+        'target_destinations': str
+    }
+
+    DefaultValues = {
+        str: "",
+        int: 0
     }
 
     def __init__(self):
@@ -49,12 +58,22 @@ class Entity(MapObject):
     def updateHelpers(self):
         self.removeHelpers()
         self.addHelpersForClass()
+        self.recalcBoundingBox()
 
     def addHelpersForClass(self):
         for helperInfo in self.metaData.definitions:
             helper = HelperFactory.createHelper(helperInfo, self)
             if helper:
                 self.helpers.append(helper)
+
+    def getPropDefaultValue(self, prop):
+        if isinstance(prop, str):
+            prop = self.metaData.property_by_name(prop)
+
+        default = prop.default_value
+        if default is None:
+            default = self.DefaultValues[self.getPropDataType(prop.name)]
+        return default
 
     def propertyChanged(self, key, oldValue, newValue):
         if oldValue != newValue:
@@ -110,10 +129,19 @@ class Entity(MapObject):
     def setupEntityData(self):
         if not self.metaData:
             return
+
+        # Prune out properties that are not part of this meta data
+        currData = dict(self.entityData)
+        for key in currData.keys():
+            try:
+                self.metaData.property_by_name(key)
+            except PropertyNotFound:
+                del self.entityData[key]
+
         for prop in self.metaData.properties:
             if prop.name in self.MetaDataExclusions or prop.name in self.entityData:
                 continue
-            self.updateProperties({prop.name: prop.default_value})
+            self.updateProperties({prop.name: self.getPropDefaultValue(prop)})
 
     def writeKeyValues(self, kv):
         MapObject.writeKeyValues(self, kv)
@@ -124,9 +152,6 @@ class Entity(MapObject):
             kv.setKeyValue("origin", CKeyValues.toString(self.np.getPos()))
             kv.setKeyValue("angles", CKeyValues.toString(self.np.getHpr()))
         for key, value in self.entityData.items():
-            if value is None:
-                # str(None) would become "None", which we don't want
-                value = ""
             kv.setKeyValue(key, str(value))
 
     def readKeyValues(self, kv):
@@ -140,8 +165,4 @@ class Entity(MapObject):
             if key in self.MetaDataExclusions:
                 continue
             dt = self.getPropDataType(key)
-            if len(value) == 0:
-                if dt == int:
-                    # Empty strings can't be cast to int
-                    value = "0"
             self.updateProperties({key: dt(value)})
