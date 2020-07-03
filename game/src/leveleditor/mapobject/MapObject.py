@@ -107,9 +107,10 @@ class MapObject(MapWritable):
             self.collNp.stash()
         self.hideBoundingBox()
 
+        # Calculate a bounding box relative to ourself
         mins = Point3()
         maxs = Point3()
-        self.np.calcTightBounds(mins, maxs)
+        self.np.calcTightBounds(mins, maxs, self.np)
 
         invalid, mins, maxs = self.fixBounds(mins, maxs)
         if invalid:
