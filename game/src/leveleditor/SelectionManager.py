@@ -10,6 +10,7 @@ from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
 from src.leveleditor import RenderModes
 from src.leveleditor.ui.ObjectProperties import Ui_ObjectProperties
+from src.leveleditor import LEUtils
 
 Bounds3DState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(1, 1, 0, 1))
@@ -21,6 +22,41 @@ Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
 MultipleValues = "<multiple values>"
 MultipleEntities = "<multiple entities>"
 
+class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
+
+    def __init__(self, window):
+        QtWidgets.QStyledItemDelegate.__init__(self)
+        self.window = window
+
+    def getItem(self, idx):
+        return self.window.propertiesModel.itemFromIndex(idx)
+
+    def setEditorData(self, editor, index):
+        item = self.window.propertiesModel.itemFromIndex(index)
+        data = item.data(QtCore.Qt.EditRole)
+        if item.propType == "color255":
+            editor.setCurrentColor(LEUtils.strToQColor(data))
+        else:
+            QtWidgets.QStyledItemDelegate.setEditorData(self, editor, index)
+
+    def setModelData(self, editor, model, index):
+        item = self.getItem(index)
+        if item.propType == "color255":
+            model.setData(index, LEUtils.qColorToStr(editor.currentColor()), QtCore.Qt.EditRole)
+        else:
+            QtWidgets.QStyledItemDelegate.setModelData(self, editor, model, index)
+
+    def createEditor(self, parent, option, index):
+        item = self.window.propertiesModel.itemFromIndex(index)
+        if item.propType == "color255":
+            colorDlg = QtWidgets.QColorDialog(QtCore.Qt.white, parent)
+            colorDlg.setModal(True)
+            # NOTE: alpha channel used for the intensity scalar
+            colorDlg.setOptions(QtWidgets.QColorDialog.DontUseNativeDialog |
+                                QtWidgets.QColorDialog.ShowAlphaChannel)
+            return colorDlg
+        return QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
+
 class ObjectPropertiesItem(QtGui.QStandardItem):
 
     def __init__(self, win, entities, propName, isKey):
@@ -30,6 +66,7 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
         self.pairing = None
         self.propName = propName
         self.prop = entities[0].metaData.property_by_name(propName)
+        self.propType = self.prop.value_type
         self.isKey = isKey
 
         if self.isKey:
@@ -87,9 +124,11 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         self.ui.comboClass.setEditable(True)
         self.setWidget(w)
 
+        self.propertiesDelegate = ObjectPropertiesDelegate(self)
         self.propertiesModel = ObjectPropertiesModel(self)
         self.ui.propertiesView.setMouseTracking(True)
         self.ui.propertiesView.setModel(self.propertiesModel)
+        self.ui.propertiesView.setItemDelegate(self.propertiesDelegate)
         self.ui.propertiesView.header().setDefaultAlignment(QtCore.Qt.AlignCenter)
         self.ui.propertiesView.clicked.connect(self.__propertyClicked)
         self.ui.lePropertyFilter.textChanged.connect(self.__filterProperties)

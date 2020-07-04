@@ -1,4 +1,15 @@
-from panda3d.core import Point3, Vec3, Quat, LineSegs
+from panda3d.core import Point3, Vec3, Quat, LineSegs, CKeyValues
+
+from src.coginvasion.globals import CIGlobals
+
+from PyQt5 import QtGui
+
+def strToQColor(colorStr):
+    pcolor = CKeyValues.to4f(colorStr)
+    return QtGui.QColor(int(pcolor.x), int(pcolor.y), int(pcolor.z), int(pcolor.w))
+
+def qColorToStr(qcolor):
+    return "%i %i %i %i" % (qcolor.red(), qcolor.green(), qcolor.blue(), qcolor.alpha())
 
 def snapToGrid(gridSize, point):
     result = Point3(point)
