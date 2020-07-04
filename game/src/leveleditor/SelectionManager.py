@@ -42,6 +42,14 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
             self.setEditable(True)
             self.computeValueText()
 
+    def setData(self, data, role):
+        if not self.isKey and role == QtCore.Qt.EditRole:
+            # Property value was changed... apply it to all the applicable entities
+            for ent in self.entities:
+                ent.updateProperties({self.propName: data})
+
+        QtGui.QStandardItem.setData(self, data, role)
+
     def computeValueText(self):
         value = None
         for ent in self.entities:
