@@ -1,5 +1,5 @@
 from panda3d.core import Point3, NodePath, BitMask32, RenderState, ColorAttrib, Vec4, LightAttrib, FogAttrib, LineSegs
-from panda3d.core import Vec3
+from panda3d.core import Vec3, LPlane
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -171,6 +171,23 @@ class EntityTool(BaseTool):
                 self.hasPlaced = True
                 # Create it!
                 self.confirm()
+            else:
+                # Didn't click on an object, intersect our mouse ray with the grid plane.
+                plane = LPlane(0, 0, 1, 0)
+                worldMouse = vp.viewportToWorld(vp.getMouse())
+                theCamera = vp.cam.getPos(render)
+                # Ensure that the camera and mouse positions are on opposite
+                # sides of the plane, or else the entity would place behind us.
+                dist1 = -1 if plane.distToPlane(worldMouse) < 0 else 1
+                dist2 = -1 if plane.distToPlane(theCamera) < 0 else 1
+                if dist1 != dist2:
+                    pointOnPlane = Point3()
+                    ret = plane.intersectsLine(pointOnPlane, theCamera, worldMouse)
+                    if ret:
+                        # Our mouse intersected the grid plane. Place an entity at the plane intersection point.
+                        self.pos = pointOnPlane
+                        self.hasPlaced = True
+                        self.confirm()
             return
 
         # The user clicked in the 2D viewport, draw the visualization where they clicked.
