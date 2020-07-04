@@ -11,7 +11,7 @@ class LightHelper(MapHelper):
         self.light = None
 
     def generate(self, helperInfo):
-        color = "255 255 255 500"#self.mapObject.entityData.get("_light", "255 255 255 200")
+        color = self.mapObject.entityData.get("_light", "255 255 255 200")
         color = CKeyValues.to4f(color)
         color = CIGlobals.colorFromRGBScalar255(color)
         color = CIGlobals.vec3GammaToLinear(color)

@@ -78,7 +78,7 @@ class Entity(MapObject):
     def propertyChanged(self, key, oldValue, newValue):
         if oldValue != newValue:
 
-            if key == "model" or key == "scale":
+            if key == "model" or key == "scale" or key == "_light":
                 # Refresh our helpers if the model changed.
                 self.updateHelpers()
 
@@ -95,6 +95,16 @@ class Entity(MapObject):
             oldValue = self.entityData.get(key, None)
             self.entityData[key] = value
             self.propertyChanged(key, oldValue, value)
+
+    # Returns list of property names with the specified value types.
+    def getPropsWithDataType(self, types):
+        if isinstance(types, str):
+            types = [types]
+        props = []
+        for schema in self.metaData.properties_schema:
+            if schema['type'] in [types]:
+                props.append(schema['name'])
+        return props
 
     def getPropDataType(self, key):
         try:
