@@ -2,6 +2,14 @@ from direct.showbase.DirectObject import DirectObject
 
 class MapHelper(DirectObject):
 
+    # Update this helper if any of the specified properties
+    # change.
+    ChangeWith = []
+
+    # Update this helper if any properties with the specified
+    # type change.
+    ChangeWithType = []
+
     def __init__(self, mapObject):
         DirectObject.__init__(self)
         self.mapObject = mapObject

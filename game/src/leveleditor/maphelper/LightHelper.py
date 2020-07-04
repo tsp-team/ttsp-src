@@ -6,6 +6,13 @@ from src.coginvasion.globals import CIGlobals
 
 class LightHelper(MapHelper):
 
+    ChangeWith = [
+        "_light",
+        "_constant_attn",
+        "_linear_attn",
+        "_quadratic_attn"
+    ]
+
     def __init__(self, mapObject):
         MapHelper.__init__(self, mapObject)
         self.light = None

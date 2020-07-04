@@ -5,6 +5,11 @@ from .MapHelper import MapHelper
 
 class ModelHelper(MapHelper):
 
+    ChangeWith = [
+        "model",
+        "scale"
+    ]
+
     def __init__(self, mapObject):
         MapHelper.__init__(self, mapObject)
         self.modelRoot = NodePath(ModelNode("modelHelper"))

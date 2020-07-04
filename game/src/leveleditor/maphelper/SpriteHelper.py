@@ -8,6 +8,11 @@ from .MapHelper import MapHelper
 
 class SpriteHelper(MapHelper):
 
+    ChangeWithType = [
+        "color255",
+        "color1"
+    ]
+
     def __init__(self, mapObject):
         MapHelper.__init__(self, mapObject)
         self.sprite = None

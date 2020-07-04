@@ -78,17 +78,30 @@ class Entity(MapObject):
     def propertyChanged(self, key, oldValue, newValue):
         if oldValue != newValue:
 
-            if key == "model" or key == "scale" or key == "_light":
-                # Refresh our helpers if the model changed.
-                self.updateHelpers()
-
-            elif key == "origin":
+            if key == "origin":
                 origin = CKeyValues.to3f(newValue)
                 self.np.setPos(origin)
 
             elif key == "angles":
                 angles = CKeyValues.to3f(newValue)
                 self.np.setHpr(angles)
+
+            else:
+                # Check for any helpers that respond to a change
+                # in this property.
+
+                for helper in self.helpers:
+                    # Does this helper respond to a change in this property by name?
+                    if key in helper.ChangeWith:
+                        self.updateHelpers()
+                        break
+
+                    # How about if it responds to a change in any property
+                    # with this type?
+                    dt = self.getPropType(key)
+                    if dt in helper.ChangeWithType:
+                        self.updateHelpers()
+                        break
 
     def updateProperties(self, data):
         for key, value in data.items():
@@ -102,17 +115,23 @@ class Entity(MapObject):
             types = [types]
         props = []
         for schema in self.metaData.properties_schema:
-            if schema['type'] in [types]:
+            if schema['type'] in types:
                 props.append(schema['name'])
         return props
 
     def getPropDataType(self, key):
         try:
             return self.MetaDataType.get(
-                self.metaData.property_by_name(key).value_type,
+                self.getPropType(key),
                 str)
         except:
             return str
+
+    def getPropType(self, key):
+        try:
+            return self.metaData.property_by_name(key).value_type
+        except:
+            return "string"
 
     def getClassType(self):
         return self.metaData.class_type
