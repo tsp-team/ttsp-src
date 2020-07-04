@@ -163,6 +163,9 @@ class EntityTool(BaseTool):
             return
 
         if vp.is3D():
+            # If we clicked in the 3D viewport, try to intersect with an existing MapObject
+            # and immediately place the entity at the intersection point. If we didn't click on any
+            # MapObject, place the entity on the grid where we clicked.
             entries = vp.click(BitMask32.allOn())
             if entries and len(entries) > 0:
                 # We clicked on an object, use the contact point as the
@@ -178,9 +181,9 @@ class EntityTool(BaseTool):
                 theCamera = vp.cam.getPos(render)
                 # Ensure that the camera and mouse positions are on opposite
                 # sides of the plane, or else the entity would place behind us.
-                dist1 = -1 if plane.distToPlane(worldMouse) < 0 else 1
-                dist2 = -1 if plane.distToPlane(theCamera) < 0 else 1
-                if dist1 != dist2:
+                sign1 = plane.distToPlane(worldMouse) >= 0
+                sign2 = plane.distToPlane(theCamera) >= 0
+                if sign1 != sign2:
                     pointOnPlane = Point3()
                     ret = plane.intersectsLine(pointOnPlane, theCamera, worldMouse)
                     if ret:
