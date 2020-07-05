@@ -22,7 +22,53 @@ Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
 MultipleValues = "<multiple values>"
 MultipleEntities = "<multiple entities>"
 
+class ColorEditor(QtWidgets.QWidget):
+
+    def __init__(self, parent, item):
+        QtWidgets.QFrame.__init__(self, parent)
+        self.item = item
+        self.setLayout(QtWidgets.QHBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.setAutoFillBackground(True)
+        self.lineEdit = QtWidgets.QLineEdit("", self)
+        self.lineEdit.returnPressed.connect(self.__confirmColorText)
+        self.layout().addWidget(self.lineEdit)
+        self.colorLbl = QtWidgets.QLabel("", self)
+        self.colorLbl.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        self.layout().addWidget(self.colorLbl)
+        self.editButton = QtWidgets.QPushButton("Pick Color", self)
+        self.editButton.clicked.connect(self.__pickColor)
+        self.layout().addWidget(self.editButton)
+
+        self.adjustToColor(LEUtils.strToQColor(self.getItemData()))
+
+    def __confirmColorText(self, txt):
+        self.adjustToColor(LEUtils.strToQColor(txt))
+
+    def __pickColor(self):
+        color = QtWidgets.QColorDialog.getColor(LEUtils.strToQColor(self.getItemData()), self,
+            "Select Color", QtWidgets.QColorDialog.DontUseNativeDialog)
+        if color.isValid():
+            # New color was selected!
+            self.adjustToColor(color)
+
+    def adjustToColor(self, color):
+        self.colorLbl.setStyleSheet("border: 1px solid black; background-color: rgb(%i, %i, %i);" % (color.red(), color.green(), color.blue()))
+        vals = self.getItemData().split(' ')
+        alpha = vals[3]
+        self.lineEdit.setText("%i %i %i %s" % (color.red(), color.green(), color.blue(), alpha))
+
+    def getItemData(self):
+        return self.item.data(QtCore.Qt.EditRole)
+
+    def setEditorData(self):
+        self.lineEdit.setText(self.getItemData())
+
 class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
+
+    PropTypeEditors = {
+        "color255": ColorEditor
+    }
 
     def __init__(self, window):
         QtWidgets.QStyledItemDelegate.__init__(self)
@@ -32,30 +78,31 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
         return self.window.propertiesModel.itemFromIndex(idx)
 
     def setEditorData(self, editor, index):
-        item = self.window.propertiesModel.itemFromIndex(index)
-        data = item.data(QtCore.Qt.EditRole)
-        if item.propType == "color255":
-            editor.setCurrentColor(LEUtils.strToQColor(data))
-        else:
-            QtWidgets.QStyledItemDelegate.setEditorData(self, editor, index)
+        item = self.getItem(index)
+        editorCls = self.PropTypeEditors.get(item.propType, None)
+        if editorCls:
+            editor.setEditorData()
+            return
+        QtWidgets.QStyledItemDelegate.setEditorData(self, editor, index)
 
     def setModelData(self, editor, model, index):
         item = self.getItem(index)
-        if item.propType == "color255":
-            model.setData(index, LEUtils.qColorToStr(editor.currentColor()), QtCore.Qt.EditRole)
-        else:
-            QtWidgets.QStyledItemDelegate.setModelData(self, editor, model, index)
+        editorCls = self.PropTypeEditors.get(item.propType, None)
+        if editorCls:
+            editor.setModelData(model)
+            return
+        QtWidgets.QStyledItemDelegate.setModelData(self, editor, model, index)
 
     def createEditor(self, parent, option, index):
-        item = self.window.propertiesModel.itemFromIndex(index)
-        if item.propType == "color255":
-            colorDlg = QtWidgets.QColorDialog(QtCore.Qt.white, parent)
-            colorDlg.setModal(True)
-            # NOTE: alpha channel used for the intensity scalar
-            colorDlg.setOptions(QtWidgets.QColorDialog.DontUseNativeDialog |
-                                QtWidgets.QColorDialog.ShowAlphaChannel)
-            return colorDlg
-        return QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
+        item = self.getItem(index)
+        editor = self.PropTypeEditors.get(item.propType, None)
+        if editor:
+            return editor(parent, item)
+        else:
+            return QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
+
+    def updateEditorGeometry(self, editor, option, index):
+        editor.setGeometry(option.rect)
 
 class ObjectPropertiesItem(QtGui.QStandardItem):
 
