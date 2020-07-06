@@ -123,6 +123,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         winprops.setOpen(True)
         winprops.setForeground(False)
         winprops.setUndecorated(True)
+        winprops.setParentWindow(int(self.winId()))
 
         output = base.graphicsEngine.makeOutput(
             base.pipe, "viewportOutput", 0,
@@ -134,8 +135,6 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         assert output is not None, "Unable to create viewport output!"
 
         self.qtWindow = QtGui.QWindow.fromWinId(output.getWindowHandle().getIntHandle())
-        self.windowContainer = QtWidgets.QWidget.createWindowContainer(self.qtWindow, self)
-        self.windowContainer.show()
 
         output.setClearColorActive(False)
         output.setClearDepthActive(False)
@@ -449,7 +448,10 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             return
 
         newsize = LVector2i(event.size().width(), event.size().height())
-        self.windowContainer.resize(newsize[0], newsize[1])
+        props = WindowProperties()
+        props.setSize(newsize)
+        props.setOrigin(0, 0)
+        self.win.requestProperties(props)
         self.fixRatio(newsize)
 
     def draw(self):
