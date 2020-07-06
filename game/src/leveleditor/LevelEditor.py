@@ -1,6 +1,8 @@
 from panda3d.core import WindowProperties, NativeWindowHandle, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
-from panda3d.core import TextNode, Filename
+from panda3d.core import TextNode, Filename, KeyboardButton, ButtonRegistry
+
+from direct.showbase.DirectObject import DirectObject
 
 from src.coginvasion.base.BSPBase import BSPBase
 from src.leveleditor.viewport.QuadSplitter import QuadSplitter
@@ -59,10 +61,11 @@ class LevelEditorSubWind(QtWidgets.QWidget):
         self.splitter.addWidget(vp2ds, 1, 1)
         self.splitter.addWidget(vp2dt, 0, 1)
 
-class LevelEditorWindow(QtWidgets.QMainWindow):
+class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
 
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
+        DirectObject.__init__(self)
 
         self.dockLocations = {
             "right": QtCore.Qt.RightDockWidgetArea,
@@ -98,6 +101,50 @@ class LevelEditorWindow(QtWidgets.QMainWindow):
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionOpen.triggered.connect(self.__open)
         self.ui.actionNew_Map.triggered.connect(self.__close)
+
+        # Since the viewports are separate windows from the Qt application,
+        # they consume the keyboard events. This is bad when we want to save (ctrl-s) while
+        # the mouse is inside a viewport. Or press enter to place an entity when the mouse is outside
+        # of a viewport. The extrmely ugly solution is to relay all keyboard events from Qt to Panda,
+        # and all keyboard events from Panda to Qt.
+
+        # Listen for all possible keyboard events from Panda
+
+        # Start with ascii
+        #for i in range(256):
+        #    button =
+        #    self.accept()
+
+    def buildKeyEvent(self, event):
+        eventStr = ""
+
+        button = LEUtils.keyboardButtonFromQtKey(event.key())
+        modifiers = event.modifiers()
+
+        if modifiers & QtCore.Qt.ControlModifier:
+            eventStr += "control-"
+        if modifiers & QtCore.Qt.ShiftModifier:
+            eventStr += "shift-"
+        if modifiers & QtCore.Qt.AltModifier:
+            eventStr += "alt-"
+
+        eventStr += button.getName()
+
+        return eventStr.lower()
+
+    def keyPressEvent(self, event):
+        # Pass this up to the viewports
+
+        eventStr = self.buildKeyEvent(event)
+
+        messenger.send(eventStr)
+
+        QtWidgets.QMainWindow.keyPressEvent(self, event)
+
+    def keyReleaseEvent(self, event):
+        eventStr = self.buildKeyEvent(event) + "-up"
+        messenger.send(eventStr)
+        QtWidgets.QMainWindow.keyReleaseEvent(self, event)
 
     def addDockWindow(self, dockWidget, location = "right"):
         location = self.dockLocations[location]
