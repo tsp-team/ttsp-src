@@ -109,11 +109,52 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         # and all keyboard events from Panda to Qt.
 
         # Listen for all possible keyboard events from Panda
+        # We add these generic events onto the viewports for when any key is pressed.
+        self.accept('btndown', self.__pandaButtonDown)
+        self.accept('btnup', self.__pandaButtonUp)
 
-        # Start with ascii
-        #for i in range(256):
-        #    button =
-        #    self.accept()
+    def getQtModifier(self, name):
+        if name == "control":
+            return QtCore.Qt.ControlModifier
+        elif name == "shift":
+            return QtCore.Qt.ShiftModifier
+        elif name == "alt":
+            return QtCore.Qt.AltModifier
+        return QtCore.Qt.NoModifier
+
+    def __pandaButtonDown(self, name):
+        keys = name.split('-')
+
+        mainkey = keys[len(keys) - 1]
+        btn = LEUtils.qtKeyFromKeyboardButton(mainkey)
+        if not btn:
+            return
+
+        mod = 0
+        for i in range(len(keys) - 1):
+            mod |= self.getQtModifier(keys[i])
+
+        event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
+            btn, QtCore.Qt.KeyboardModifiers(mod))
+
+        QtWidgets.QApplication.postEvent(base.qtWindow, event)
+
+    def __pandaButtonUp(self, name):
+        keys = name.split('-')
+
+        mainkey = keys[len(keys) - 1]
+        btn = LEUtils.qtKeyFromKeyboardButton(mainkey)
+        if not btn:
+            return
+
+        mod = 0
+        for i in range(len(keys) - 1):
+            mod |= self.getQtModifier(keys[i])
+
+        event = QtGui.QKeyEvent(QtCore.QEvent.KeyRelease,
+            btn, QtCore.Qt.KeyboardModifiers(mod))
+
+        QtWidgets.QApplication.postEvent(base.qtWindow, event)
 
     def buildKeyEvent(self, event):
         eventStr = ""
