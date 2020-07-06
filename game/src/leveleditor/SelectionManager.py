@@ -24,9 +24,10 @@ MultipleEntities = "<multiple entities>"
 
 class ColorEditor(QtWidgets.QWidget):
 
-    def __init__(self, parent, item):
+    def __init__(self, parent, item, model):
         QtWidgets.QFrame.__init__(self, parent)
         self.item = item
+        self.model = model
         self.setLayout(QtWidgets.QHBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.setAutoFillBackground(True)
@@ -39,6 +40,7 @@ class ColorEditor(QtWidgets.QWidget):
         self.editButton = QtWidgets.QPushButton("Pick Color", self)
         self.editButton.clicked.connect(self.__pickColor)
         self.layout().addWidget(self.editButton)
+        self.colorDlg = None
 
         self.adjustToColor(LEUtils.strToQColor(self.getItemData()))
 
@@ -46,11 +48,31 @@ class ColorEditor(QtWidgets.QWidget):
         self.adjustToColor(LEUtils.strToQColor(txt))
 
     def __pickColor(self):
-        color = QtWidgets.QColorDialog.getColor(LEUtils.strToQColor(self.getItemData()), self,
-            "Select Color", QtWidgets.QColorDialog.DontUseNativeDialog)
-        if color.isValid():
-            # New color was selected!
-            self.adjustToColor(color)
+        self.origColor = LEUtils.strToQColor(self.getItemData())
+
+        color = LEUtils.strToQColor(self.getItemData())
+        colorDlg = QtWidgets.QColorDialog(color, self)
+        colorDlg.setOptions(QtWidgets.QColorDialog.DontUseNativeDialog)
+        colorDlg.setModal(True)
+        colorDlg.currentColorChanged.connect(self.adjustToColorAndSetData)
+        colorDlg.finished.connect(self.__colorDlgFinished)
+        colorDlg.open()
+        colorDlg.setCurrentColor(color)
+        self.colorDlg = colorDlg
+
+    def __colorDlgFinished(self, ret):
+        if ret:
+            color = self.colorDlg.currentColor()
+            self.adjustToColorAndSetData(color)
+        else:
+            self.adjustToColorAndSetData(self.origColor)
+        self.colorDlg = None
+
+    def adjustToColorAndSetData(self, color):
+        if not color.isValid():
+            return
+        self.adjustToColor(color)
+        self.setModelData(self.model, self.item.index())
 
     def adjustToColor(self, color):
         self.colorLbl.setStyleSheet("border: 1px solid black; background-color: rgb(%i, %i, %i);" % (color.red(), color.green(), color.blue()))
@@ -61,8 +83,11 @@ class ColorEditor(QtWidgets.QWidget):
     def getItemData(self):
         return self.item.data(QtCore.Qt.EditRole)
 
-    def setEditorData(self):
+    def setEditorData(self, index):
         self.lineEdit.setText(self.getItemData())
+
+    def setModelData(self, model, index):
+        model.setData(index, self.lineEdit.text(), QtCore.Qt.EditRole)
 
 class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
 
@@ -81,7 +106,7 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
         item = self.getItem(index)
         editorCls = self.PropTypeEditors.get(item.propType, None)
         if editorCls:
-            editor.setEditorData()
+            editor.setEditorData(index)
             return
         QtWidgets.QStyledItemDelegate.setEditorData(self, editor, index)
 
@@ -89,7 +114,7 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
         item = self.getItem(index)
         editorCls = self.PropTypeEditors.get(item.propType, None)
         if editorCls:
-            editor.setModelData(model)
+            editor.setModelData(model, index)
             return
         QtWidgets.QStyledItemDelegate.setModelData(self, editor, model, index)
 
@@ -97,7 +122,7 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
         item = self.getItem(index)
         editor = self.PropTypeEditors.get(item.propType, None)
         if editor:
-            return editor(parent, item)
+            return editor(parent, item, self.window.propertiesModel)
         else:
             return QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
 
@@ -174,7 +199,6 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         self.propertiesDelegate = ObjectPropertiesDelegate(self)
         self.propertiesModel = ObjectPropertiesModel(self)
         self.ui.propertiesView.setMouseTracking(True)
-        self.ui.propertiesView.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
         self.ui.propertiesView.setModel(self.propertiesModel)
         self.ui.propertiesView.setItemDelegate(self.propertiesDelegate)
         self.ui.propertiesView.header().setDefaultAlignment(QtCore.Qt.AlignCenter)

@@ -77,9 +77,9 @@ def qtKeyFromKeyboardButton(name):
     else:
         return KeyboardButtonToQtKey.get(name)
 
-def strToQColor(colorStr):
+def strToQColor(colorStr, alpha = False):
     pcolor = CKeyValues.to4f(colorStr)
-    return QtGui.QColor(int(pcolor.x), int(pcolor.y), int(pcolor.z), int(pcolor.w))
+    return QtGui.QColor(int(pcolor.x), int(pcolor.y), int(pcolor.z), 255 if not alpha else int(pcolor.w))
 
 def qColorToStr(qcolor):
     return "%i %i %i %i" % (qcolor.red(), qcolor.green(), qcolor.blue(), qcolor.alpha())

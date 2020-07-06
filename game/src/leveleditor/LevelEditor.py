@@ -137,7 +137,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
             btn, QtCore.Qt.KeyboardModifiers(mod))
 
-        QtWidgets.QApplication.postEvent(base.qtWindow, event)
+        QtWidgets.QApplication.sendEvent(QtWidgets.QWidget(), event)
 
     def __pandaButtonUp(self, name):
         keys = name.split('-')
@@ -154,7 +154,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         event = QtGui.QKeyEvent(QtCore.QEvent.KeyRelease,
             btn, QtCore.Qt.KeyboardModifiers(mod))
 
-        QtWidgets.QApplication.postEvent(base.qtWindow, event)
+        QtWidgets.QApplication.sendEvent(QtWidgets.QWidget(), event)
 
     def buildKeyEvent(self, event):
         eventStr = ""
