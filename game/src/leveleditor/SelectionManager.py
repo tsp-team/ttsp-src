@@ -174,6 +174,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         self.propertiesDelegate = ObjectPropertiesDelegate(self)
         self.propertiesModel = ObjectPropertiesModel(self)
         self.ui.propertiesView.setMouseTracking(True)
+        self.ui.propertiesView.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
         self.ui.propertiesView.setModel(self.propertiesModel)
         self.ui.propertiesView.setItemDelegate(self.propertiesDelegate)
         self.ui.propertiesView.header().setDefaultAlignment(QtCore.Qt.AlignCenter)
