@@ -105,9 +105,11 @@ class Entity(MapObject):
 
     def updateProperties(self, data):
         for key, value in data.items():
+            # Make sure the value is the correct type
+            val = self.getPropDataType(key)(value)
             oldValue = self.entityData.get(key, None)
-            self.entityData[key] = value
-            self.propertyChanged(key, oldValue, value)
+            self.entityData[key] = val
+            self.propertyChanged(key, oldValue, val)
 
     # Returns list of property names with the specified value types.
     def getPropsWithDataType(self, types):

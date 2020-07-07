@@ -22,15 +22,29 @@ Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
 MultipleValues = "<multiple values>"
 MultipleEntities = "<multiple entities>"
 
-class ColorEditor(QtWidgets.QWidget):
+class BaseEditor(QtWidgets.QWidget):
 
     def __init__(self, parent, item, model):
         QtWidgets.QFrame.__init__(self, parent)
-        self.item = item
-        self.model = model
         self.setLayout(QtWidgets.QHBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.setAutoFillBackground(True)
+        self.item = item
+        self.model = model
+
+    def getItemData(self):
+        return self.item.data(QtCore.Qt.EditRole)
+
+    def setEditorData(self, index):
+        pass
+
+    def setModelData(self, model, index):
+        pass
+
+class ColorEditor(BaseEditor):
+
+    def __init__(self, parent, item, model):
+        BaseEditor.__init__(self, parent, item, model)
         self.lineEdit = QtWidgets.QLineEdit("", self)
         self.lineEdit.returnPressed.connect(self.__confirmColorText)
         self.layout().addWidget(self.lineEdit)
@@ -57,7 +71,9 @@ class ColorEditor(QtWidgets.QWidget):
         colorDlg.currentColorChanged.connect(self.adjustToColorAndSetData)
         colorDlg.finished.connect(self.__colorDlgFinished)
         colorDlg.open()
+        colorDlg.blockSignals(True)
         colorDlg.setCurrentColor(color)
+        colorDlg.blockSignals(False)
         self.colorDlg = colorDlg
 
     def __colorDlgFinished(self, ret):
@@ -80,19 +96,67 @@ class ColorEditor(QtWidgets.QWidget):
         alpha = vals[3]
         self.lineEdit.setText("%i %i %i %s" % (color.red(), color.green(), color.blue(), alpha))
 
-    def getItemData(self):
-        return self.item.data(QtCore.Qt.EditRole)
-
     def setEditorData(self, index):
         self.lineEdit.setText(self.getItemData())
 
     def setModelData(self, model, index):
         model.setData(index, self.lineEdit.text(), QtCore.Qt.EditRole)
 
+class IntegerEditor(BaseEditor):
+
+    def __init__(self, parent, item, model):
+        BaseEditor.__init__(self, parent, item, model)
+
+        self.spinBox = QtWidgets.QSpinBox(self)
+        self.spinBox.setRange(-9999, 9999)
+        self.spinBox.valueChanged.connect(self.__valueChanged)
+        self.layout().addWidget(self.spinBox)
+
+    def __valueChanged(self, val):
+        self.setModelData(self.model, self.item.index())
+
+    def setEditorData(self, index):
+        self.spinBox.blockSignals(True)
+        self.spinBox.setValue(int(self.getItemData()))
+        self.spinBox.blockSignals(False)
+
+    def setModelData(self, model, index):
+        model.setData(index, str(self.spinBox.value()), QtCore.Qt.EditRole)
+
+class ChoicesEditor(BaseEditor):
+
+    def __init__(self, parent, item, model):
+        BaseEditor.__init__(self, parent, item, model)
+
+        self.combo = QtWidgets.QComboBox(self)
+        #self.combo.currentIndexChanged.connect(self.__selectedItem)
+        self.layout().addWidget(self.combo)
+
+    def __selectedItem(self, index):
+        self.setModelData(self.model, self.item.index())
+
+    def setEditorData(self, index):
+        self.combo.blockSignals(True)
+
+        self.combo.clear()
+        data = self.getItemData()
+        ent = self.item.entities[0]
+        prop = self.item.prop
+        for choice in prop.choices:
+            self.combo.addItem(choice.display_name)
+        self.combo.setCurrentText(data)
+
+        self.combo.blockSignals(False)
+
+    def setModelData(self, model, index):
+        model.setData(index, self.combo.currentText(), QtCore.Qt.EditRole)
+
 class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
 
     PropTypeEditors = {
-        "color255": ColorEditor
+        "color255": ColorEditor,
+        "integer": IntegerEditor,
+        "choices": ChoicesEditor
     }
 
     def __init__(self, window):
@@ -151,18 +215,34 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
             self.setEditable(True)
             self.computeValueText()
 
-    def setData(self, data, role):
+    def setData(self, strData, role):
         if not self.isKey and role == QtCore.Qt.EditRole:
             # Property value was changed... apply it to all the applicable entities
+
+            if self.prop.value_type == "choices":
+                # Find the numerical value for the selected choice name
+                data = None
+                for choice in self.prop.choices:
+                    if choice.display_name == strData:
+                        data = choice.value
+                        break
+                assert data is not None, "Could not match %s to a choice value" % strData
+            else:
+                data = strData
+
             for ent in self.entities:
                 ent.updateProperties({self.propName: data})
 
-        QtGui.QStandardItem.setData(self, data, role)
+        QtGui.QStandardItem.setData(self, strData, role)
 
     def computeValueText(self):
         value = None
         for ent in self.entities:
-            entVal = str(ent.entityData[self.propName])
+            entVal = ent.entityData[self.propName]
+            if self.prop.value_type == "choices":
+                entVal = self.prop.choice_by_value(entVal).display_name
+            else:
+                entVal = str(entVal)
             if value is not None and entVal != value:
                 # There are different values across entities for this property.
                 value = MultipleValues
@@ -319,6 +399,9 @@ class SelectionManager(DirectObject):
     def __init__(self):
         DirectObject.__init__(self)
         self.selectedObjects = []
+        self.selectionMins = Point3()
+        self.selectionMaxs = Point3()
+        self.selectionCenter = Point3()
         # The box that encompasses all of the selected objects
         self.selectionBounds = Box()
         self.selectionBounds.addView(GeomView.Lines, VIEWPORT_3D_MASK, state = Bounds3DState)
@@ -389,6 +472,9 @@ class SelectionManager(DirectObject):
 
         if len(self.selectedObjects) == 0:
             base.qtWindow.selectedLabel.setText("No selection.")
+            self.selectionMins = Point3()
+            self.selectionMaxs = Point3()
+            self.selectionCenter = Point3()
             self.hideSelectionBounds()
             return
         else:
@@ -422,5 +508,9 @@ class SelectionManager(DirectObject):
                 maxs.y = objMaxs.y
             if objMaxs.z > maxs.z:
                 maxs.z = objMaxs.z
+
+        self.selectionMins = mins
+        self.selectionMaxs = maxs
+        self.selectionCenter = (mins + maxs) / 2.0
 
         self.selectionBounds.setMinMax(mins, maxs)
