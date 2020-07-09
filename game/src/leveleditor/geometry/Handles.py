@@ -53,6 +53,11 @@ class Handles(Geometry):
             return
         self.zoom = zoom
         self.handleOrigins = list(handles)
+        if len(self.handleOrigins) == 0:
+            self.np.hide()
+            return
+        else:
+            self.np.show()
         self.generateVertices()
 
     def generateVertices(self):

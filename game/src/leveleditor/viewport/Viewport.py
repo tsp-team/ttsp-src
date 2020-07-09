@@ -120,10 +120,10 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
         winprops = WindowProperties.getDefault()
         winprops.setOrigin(0, 0)
+        winprops.setParentWindow(int(self.winId()))
         winprops.setOpen(True)
         winprops.setForeground(False)
         winprops.setUndecorated(True)
-        winprops.setParentWindow(int(self.winId()))
 
         output = base.graphicsEngine.makeOutput(
             base.pipe, "viewportOutput", 0,
@@ -403,8 +403,10 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             aspectRatio = self.win.getXSize() / self.win.getYSize()
         else:
             aspectRatio = size.x / size.y
-        zoomFactor = (1.0 / self.zoom) * 100.0
-        self.lens.setFilmSize(zoomFactor * aspectRatio, zoomFactor)
+
+        if self.is2D():
+            zoomFactor = (1.0 / self.zoom) * 100.0
+            self.lens.setFilmSize(zoomFactor * aspectRatio, zoomFactor)
 
         if aspectRatio != self.__oldAspectRatio:
             self.__oldAspectRatio = aspectRatio
@@ -448,10 +450,13 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             return
 
         newsize = LVector2i(event.size().width(), event.size().height())
+
         props = WindowProperties()
         props.setSize(newsize)
         props.setOrigin(0, 0)
+
         self.win.requestProperties(props)
+
         self.fixRatio(newsize)
 
     def draw(self):

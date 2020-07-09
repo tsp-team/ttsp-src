@@ -3,8 +3,10 @@ from panda3d.core import CollisionBox, CollisionNode, CollisionTraverser, Collis
 from panda3d.core import LPlane
 
 from src.leveleditor import LEGlobals
+from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
 
 from .SelectTool import SelectTool
+from .BoxTool import BoxAction, ResizeHandle
 
 import math
 
@@ -21,6 +23,7 @@ class MoveWidgetAxis(NodePath):
 
     def __init__(self, widget, axis):
         NodePath.__init__(self, "moveWidgetAxis")
+        self.reparentTo(widget)
         self.widget = widget
         vec = Vec3(0)
         vec[axis] = 1.0
@@ -53,60 +56,6 @@ class MoveWidgetAxis(NodePath):
         elif state == Down:
             self.setColorScale(self.downColor)
 
-class MoveWidgetInstance(NodePath):
-
-    def __init__(self, widget, vp):
-        NodePath.__init__(self, "vpInstance")
-        self.widget = widget
-        self.vp = vp
-        self.reparentTo(self.widget)
-        self.hide(~vp.getViewportMask())
-
-        self.axisInstances = {}
-        for axis in vp.getGizmoAxes():
-            inst = self.widget.axes[axis].instanceTo(self)
-            self.axisInstances[axis] = inst
-
-    def testAgainstRect(self, point, mins, maxs):
-        return point.x >= mins.x and point.x <= maxs.x \
-            and point.z >= mins.z and point.z <= maxs.z
-
-    def update(self):
-        activeVp = base.viewportMgr.activeViewport
-
-        if self.vp.is3D():
-            distance = self.getPos(self.vp.cam).length()
-            self.setScale(distance / 4)
-        else:
-            self.setScale(20 / self.vp.zoom)
-
-        if self.widget.tool.mouseIsDown:
-            return
-
-        if activeVp == self.vp:
-            self.widget.setActiveAxis(None)
-
-            if self.vp.is2D():
-                mouse = self.vp.getMouse()
-                worldMouse = self.vp.viewportToWorld(mouse, flatten = True)
-                for axis, inst in self.axisInstances.items():
-                    mins = Point3()
-                    maxs = Point3()
-                    inst.calcTightBounds(mins, maxs, base.render)
-                    mins = self.vp.flatten(mins)
-                    maxs = self.vp.flatten(maxs)
-                    if self.testAgainstRect(worldMouse, mins, maxs):
-                        self.widget.setActiveAxis(axis)
-                        break
-            else:
-                entries = self.vp.click(LEGlobals.ManipulatorMask, self.widget.widgetQueue,
-                                        self.widget.widgetTrav, self)
-                if entries and len(entries) > 0:
-                    entry = entries[0]
-                    axisObj = entry.getIntoNodePath().getPythonTag("widgetAxis")
-                    self.widget.setActiveAxis(axisObj.axisIdx)
-
-
 class MoveWidget(NodePath):
 
     def __init__(self, tool):
@@ -119,16 +68,19 @@ class MoveWidget(NodePath):
         self.setDepthWrite(False, 1)
         self.setDepthTest(False, 1)
         self.setBin("unsorted", 60)
+        self.hide(~VIEWPORT_3D_MASK)
+
+        self.vp = None
+        for vp in base.viewportMgr.viewports:
+            if vp.is3D():
+                self.vp = vp
+                break
 
         self.activeAxis = None
 
         self.axes = {}
         for axis in (0, 1, 2):
             self.axes[axis] = MoveWidgetAxis(self, axis)
-
-        self.vpWidgets = []
-        for vp in base.viewportMgr.viewports:
-            self.vpWidgets.append(MoveWidgetInstance(self, vp))
 
     def setActiveAxis(self, axis):
         if self.activeAxis:
@@ -140,8 +92,19 @@ class MoveWidget(NodePath):
             self.activeAxis.setState(Rollover)
 
     def update(self):
-        for vp in self.vpWidgets:
-            vp.update()
+        distance = self.getPos(self.vp.cam).length()
+        self.setScale(distance / 4)
+
+        if self.tool.mouseIsDown or base.viewportMgr.activeViewport != self.vp:
+            return
+
+        self.setActiveAxis(None)
+        entries = self.vp.click(LEGlobals.ManipulatorMask, self.widgetQueue,
+                                self.widgetTrav, self)
+        if entries and len(entries) > 0:
+            entry = entries[0]
+            axisObj = entry.getIntoNodePath().getPythonTag("widgetAxis")
+            self.setActiveAxis(axisObj.axisIdx)
 
     def enable(self):
         self.reparentTo(base.render)
@@ -163,6 +126,19 @@ class MoveTool(SelectTool):
         self.moveStart = Point3(0)
         self.preTransformStart = Point3(0)
 
+    def filterHandle(self, handle):
+        if base.selectionMgr.hasSelectedObjects():
+            return False
+        return True
+
+    def setBoxToSelection(self):
+        self.state.boxStart = base.selectionMgr.selectionMins
+        self.state.boxEnd = base.selectionMgr.selectionMaxs
+        self.state.action = BoxAction.Drawn
+        self.resizeBoxDone()
+        self.hideBox()
+        self.showText()
+
     def selectionChanged(self):
         if base.selectionMgr.hasSelectedObjects():
             if not self.hasWidgets:
@@ -171,13 +147,16 @@ class MoveTool(SelectTool):
                 self.calcWidgetPoint()
         elif self.hasWidgets:
             self.disableWidget()
+            self.maybeCancel()
 
-    def calcWidgetPoint(self):
+    def calcWidgetPoint(self, updateBox = True):
         avg = Point3(0)
         for obj in base.selectionMgr.selectedObjects:
             avg += obj.np.getPos(base.render)
         avg /= len(base.selectionMgr.selectedObjects)
         self.widget.setPos(avg)
+        if updateBox:
+            self.setBoxToSelection()
 
     def mouseDown(self):
         SelectTool.mouseDown(self)
@@ -195,14 +174,14 @@ class MoveTool(SelectTool):
         if self.widget.activeAxis:
             self.widget.activeAxis.setState(Rollover)
 
-    def applyPosition(self, axis, absolute):
+    def applyPosition(self, axis, absolute, updateBox = False):
         for obj in base.selectionMgr.selectedObjects:
             offset = obj.np.getPos(self.widget)
             currPos = obj.np.getPos(self.widget.getParent())
             currPos[axis] = absolute[axis] + offset[axis]
             obj.np.setPos(self.widget.getParent(), currPos)
 
-        self.calcWidgetPoint()
+        self.calcWidgetPoint(updateBox)
         base.selectionMgr.updateSelectionBounds()
 
     def getPointOnPlane(self):
@@ -221,32 +200,33 @@ class MoveTool(SelectTool):
         assert ret, "Line did not intersect move plane"
         return [pointOnPlane, planeNormal]
 
-    def mouseMove(self, vp):
-        if vp and self.mouseIsDown and self.widget.activeAxis:
-            mouse = vp.getMouse()
-            if vp.is2D():
-                # 2D is easy, just use the mouse coordinates projected into the
-                # 2D world as the movement value
-                axis = self.widget.activeAxis.axisIdx
-                now = base.snapToGrid(vp.viewportToWorld(vp.getMouse(), flatten = False))
-                absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
+    def resizeBoxDrag(self):
+        SelectTool.resizeBoxDrag(self)
+
+        if self.state.action == BoxAction.Resizing and base.selectionMgr.hasSelectedObjects():
+            vp = base.viewportMgr.activeViewport
+            absolute = (self.state.boxStart + self.state.boxEnd) / 2.0
+            for axis in vp.spec.flattenIndices:
                 self.applyPosition(axis, absolute)
-            else:
-                # 3D is a little more complicated. We need to define a plane parallel to the selected
-                # axis, intersect the line from our camera to the 3D mouse position against the plane,
-                # and use the intersection point as the movement value.
-                axis = self.widget.activeAxis.axisIdx
-                pointOnPlane, planeNormal = self.getPointOnPlane()
-                worldMouse = vp.viewportToWorld(mouse)
-                camPos = vp.cam.getPos(render)
-                toMouse = (pointOnPlane - camPos).normalized()
-                denom = toMouse.dot(planeNormal)
-                if denom != 0:
-                    t = (pointOnPlane - camPos).dot(planeNormal) / denom
-                    if t >= 0:
-                        now = base.snapToGrid(pointOnPlane)
-                        absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
-                        self.applyPosition(axis, absolute)
+
+    def mouseMove(self, vp):
+        if vp and vp.is3D() and self.mouseIsDown and self.widget.activeAxis:
+            mouse = vp.getMouse()
+            # 3D is a little more complicated. We need to define a plane parallel to the selected
+            # axis, intersect the line from our camera to the 3D mouse position against the plane,
+            # and use the intersection point as the movement value.
+            axis = self.widget.activeAxis.axisIdx
+            pointOnPlane, planeNormal = self.getPointOnPlane()
+            worldMouse = vp.viewportToWorld(mouse)
+            camPos = vp.cam.getPos(render)
+            toMouse = (pointOnPlane - camPos).normalized()
+            denom = toMouse.dot(planeNormal)
+            if denom != 0:
+                t = (pointOnPlane - camPos).dot(planeNormal) / denom
+                if t >= 0:
+                    now = base.snapToGrid(pointOnPlane)
+                    absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
+                    self.applyPosition(axis, absolute, True)
         else:
             SelectTool.mouseMove(self, vp)
 
@@ -258,6 +238,8 @@ class MoveTool(SelectTool):
                 self.suppressSelect = True
             else:
                 self.suppressSelect = False
+        else:
+            self.suppressSelect = False
 
     def enableWidget(self):
         self.calcWidgetPoint()

@@ -14,6 +14,12 @@ class MapHelper(DirectObject):
         DirectObject.__init__(self)
         self.mapObject = mapObject
 
+    def propertyChanged(self, key, newValue):
+        pass
+
+    def propertyWithTypeChanged(self, dt, newValue):
+        pass
+
     def generate(self):
         pass
 

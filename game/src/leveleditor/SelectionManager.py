@@ -416,6 +416,7 @@ class SelectionManager(DirectObject):
             base.document.deleteObject(obj)
         self.selectedObjects = []
         self.updateSelectionBounds()
+        messenger.send('selectionsChanged')
 
     def hasSelectedObjects(self):
         return len(self.selectedObjects) > 0
@@ -432,6 +433,7 @@ class SelectionManager(DirectObject):
         self.selectedObjects = []
         if update:
             self.updateSelectionBounds()
+            messenger.send('selectionsChanged')
 
     def singleSelect(self, obj):
         self.deselectAll(False)
@@ -442,6 +444,7 @@ class SelectionManager(DirectObject):
         for obj in listOfObjs:
             self.select(obj, False)
         self.updateSelectionBounds()
+        messenger.send('selectionsChanged')
 
     def deselect(self, obj, updateBounds = True):
         if obj in self.selectedObjects:
@@ -450,6 +453,7 @@ class SelectionManager(DirectObject):
 
             if updateBounds:
                 self.updateSelectionBounds()
+                messenger.send('selectionsChanged')
 
     def select(self, obj, updateBounds = True):
         if not obj in self.selectedObjects:
@@ -458,6 +462,7 @@ class SelectionManager(DirectObject):
 
             if updateBounds:
                 self.updateSelectionBounds()
+                messenger.send('selectionsChanged')
 
     def hideSelectionBounds(self):
         self.selectionBounds.np.reparentTo(NodePath())
@@ -466,8 +471,6 @@ class SelectionManager(DirectObject):
         self.selectionBounds.np.reparentTo(base.render)
 
     def updateSelectionBounds(self):
-        messenger.send('selectionsChanged')
-
         self.objectProperties.updateForSelection()
 
         if len(self.selectedObjects) == 0:

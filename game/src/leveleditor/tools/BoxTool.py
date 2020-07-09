@@ -296,7 +296,7 @@ class BoxTool(BaseTool):
     def onBoxChanged(self):
         self.state.fixBoxBounds()
 
-        if self.state.action in [BoxAction.Drawing, BoxAction.Resizing]:
+        if self.state.action in [BoxAction.Drawing, BoxAction.Resizing, BoxAction.Drawn]:
             # Fix up the text
             for vp in self.vps:
                 vp.updateText()
@@ -452,7 +452,7 @@ class BoxTool(BaseTool):
         start = vp.flatten(self.state.boxStart)
         end = vp.flatten(self.state.boxEnd)
         handle = BoxTool.getHandle(now, start, end, self.handleWidth, self.handleOffset, vp.zoom)
-        if handle is not None:
+        if handle is not None and (handle == ResizeHandle.Center or self.filterHandle(handle)):
             vp.setCursor(self.cursorForHandle(handle))
             self.state.handle = handle
             self.state.action = BoxAction.ReadyToResize

@@ -1,7 +1,7 @@
 from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, NodePath, CollisionBox, CollisionNode, CollisionTraverser, BitMask32
 from panda3d.core import CollisionHandlerQueue
 
-from .BoxTool import BoxTool
+from .BoxTool import BoxTool, ResizeHandle, BoxAction
 from src.leveleditor import LEGlobals
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 
@@ -86,9 +86,10 @@ class SelectTool(BoxTool):
         if self.suppressSelect:
             return
 
-        if not self.multiSelect:
-            # We're doing single-selection. Deselect our current selections.
-            self.deselectAll()
+        if self.state.action != BoxAction.ReadyToResize:
+            if not self.multiSelect:
+                # We're doing single-selection. Deselect our current selections.
+                self.deselectAll()
 
         if vp.is3D():
             self.select3D(vp)
