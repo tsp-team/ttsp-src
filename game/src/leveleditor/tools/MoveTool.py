@@ -107,7 +107,7 @@ class MoveWidget(NodePath):
             self.setActiveAxis(axisObj.axisIdx)
 
     def enable(self):
-        self.reparentTo(base.render)
+        self.reparentTo(self.tool.moveToolRoot)
 
     def disable(self):
         self.reparentTo(NodePath())
@@ -125,6 +125,12 @@ class MoveTool(SelectTool):
         self.widget = MoveWidget(self)
         self.moveStart = Point3(0)
         self.preTransformStart = Point3(0)
+        self.moveToolRoot = base.render.attachNewNode("moveToolRoot")
+        self.moveVisRoot = self.moveToolRoot.attachNewNode("moveVisRoot")
+        self.moveVisRoot.setTransparency(True, 1)
+        self.moveVisRoot.setColorScale(1, 1, 1, 0.5, 1)
+        self.isMoving = False
+        self.movingObjects = []
 
     def filterHandle(self, handle):
         if base.selectionMgr.hasSelectedObjects():
@@ -154,7 +160,7 @@ class MoveTool(SelectTool):
         for obj in base.selectionMgr.selectedObjects:
             avg += obj.np.getPos(base.render)
         avg /= len(base.selectionMgr.selectedObjects)
-        self.widget.setPos(avg)
+        self.moveToolRoot.setPos(avg)
         if updateBox:
             self.setBoxToSelection()
 
@@ -167,24 +173,35 @@ class MoveTool(SelectTool):
                 self.moveStart = vp.viewportToWorld(vp.getMouse(), flatten = False)
             else:
                 self.moveStart = self.getPointOnPlane()[0]
-            self.preTransformStart = self.widget.getPos()
+            self.preTransformStart = self.moveToolRoot.getPos()
 
     def mouseUp(self):
         SelectTool.mouseUp(self)
         if self.widget.activeAxis:
             self.widget.activeAxis.setState(Rollover)
 
-    def applyPosition(self, axis, absolute, updateBox = False):
-        for obj in base.selectionMgr.selectedObjects:
-            offset = obj.np.getPos(self.widget)
-            currPos = obj.np.getPos(self.widget.getParent())
-            currPos[axis] = absolute[axis] + offset[axis]
-            obj.np.setPos(self.widget.getParent(), currPos)
+        if self.isMoving:
+            # We finished moving some objects, apply the ghost position
+            # to the actual position
+            for obj, inst in self.movingObjects:
+                obj.np.setPos(render, inst.getPos(render))
+            self.destroyMoveVis()
+            base.selectionMgr.updateSelectionBounds()
+        self.isMoving = False
 
-        self.calcWidgetPoint(False)
-        base.selectionMgr.updateSelectionBounds()
-        if updateBox:
-            self.setBoxToSelection()
+    def applyPosition(self, axis, absolute, updateBox = False):
+        #for obj in base.selectionMgr.selectedObjects:
+        #    offset = obj.np.getPos(self.widget)
+        #    currPos = obj.np.getPos(self.widget.getParent())
+        #    currPos[axis] = absolute[axis] + offset[axis]
+        #    obj.np.setPos(self.widget.getParent(), currPos)
+
+        currPos = self.moveToolRoot.getPos()
+        currPos[axis] = absolute[axis]
+        self.moveToolRoot.setPos(currPos)
+        #base.selectionMgr.updateSelectionBounds()
+        #666666666                                                                                                                                                                                                                                                                                                                                                                                               if updateBox:
+        #    self.setBoxToSelection()
 
     def getPointOnPlane(self):
         vp = base.viewportMgr.activeViewport
@@ -211,7 +228,25 @@ class MoveTool(SelectTool):
             for axis in vp.spec.flattenIndices:
                 self.applyPosition(axis, absolute)
 
+    def createMoveVis(self):
+        # Instance each selected map object to the vis root
+        for obj in base.selectionMgr.selectedObjects:
+            instRoot = NodePath("instRoot")
+            inst = obj.np.instanceTo(instRoot)
+            instRoot.wrtReparentTo(self.moveVisRoot)
+            self.movingObjects.append((obj, inst))
+        self.moveToolRoot.ls()
+
+    def destroyMoveVis(self):
+        for obj, inst in self.movingObjects:
+            inst.removeNode()
+        self.movingObjects = []
+
     def mouseMove(self, vp):
+        if (self.mouseIsDown or self.state.action in [BoxAction.DownToResize, BoxAction.Resizing]) and (not self.isMoving):
+            self.createMoveVis()
+            self.isMoving = True
+
         if vp and vp.is3D() and self.mouseIsDown and self.widget.activeAxis:
             mouse = vp.getMouse()
             # 3D is a little more complicated. We need to define a plane parallel to the selected
@@ -229,6 +264,9 @@ class MoveTool(SelectTool):
                     now = base.snapToGrid(pointOnPlane)
                     absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
                     self.applyPosition(axis, absolute, True)
+                    self.moveBox(absolute)
+                    self.hideBox()
+                    self.showText()
         else:
             SelectTool.mouseMove(self, vp)
 
@@ -260,3 +298,6 @@ class MoveTool(SelectTool):
     def disable(self):
         SelectTool.disable(self)
         self.disableWidget()
+        if self.isMoving:
+            self.destroyMoveVis()
+        self.isMoving = False

@@ -446,6 +446,9 @@ class BoxTool(BaseTool):
     def cursorForHandle(self, handle):
         return self.CursorHandles.get(handle, QtCore.Qt.ArrowCursor)
 
+    def resetCursor(self):
+        vp = base.viewportMgr.activeViewport
+
     def mouseHoverWhenDrawn(self):
         vp = base.viewportMgr.activeViewport
         now = vp.viewportToWorld(vp.getMouse())
@@ -606,6 +609,14 @@ class BoxTool(BaseTool):
 
     def filterHandle(self, handle):
         return True
+
+    def moveBox(self, pos):
+        currPos = (self.state.boxStart + self.state.boxEnd) / 2.0
+        delta = pos - currPos
+        self.state.boxStart += delta
+        self.state.boxEnd += delta
+        self.state.action = BoxAction.Drawn
+        self.resizeBoxDone()
 
     def update(self):
         for vp in self.vps:
