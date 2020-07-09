@@ -290,7 +290,15 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         self.updateAvailableClasses()
 
         base.qtWindow.addDockWindow(self)
-        self.hide()
+        self.clearAll()
+        self.setEnabled(False)
+
+    def clearAll(self):
+        self.ui.lePropertyFilter.clear()
+        self.propertiesModel.removeRows(0, self.propertiesModel.rowCount())
+        self.ui.lblPropertyDesc.setText("")
+        self.ui.lblPropertyName.setText("")
+        self.ui.comboClass.setCurrentText("")
 
     def __changeEntityClass(self, idx):
         classname = self.ui.comboClass.currentText()
@@ -334,10 +342,11 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         numSelections = self.mgr.getNumSelectedObjects()
 
         if numSelections == 0:
-            self.hide()
+            self.clearAll()
+            self.setEnabled(False)
             return
         else:
-            self.show()
+            self.setEnabled(True)
 
         # Clear our filtering
         self.ui.lePropertyFilter.clear()
