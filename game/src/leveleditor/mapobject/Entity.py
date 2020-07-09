@@ -97,6 +97,7 @@ class Entity(MapObject):
 
             if key in self.transformProperties:
                 self.transformProperties[key][1](CKeyValues.to3f(newValue))
+                self.recalcBoundingBox()
             else:
                 # Check for any helpers that respond to a change
                 # in this property.

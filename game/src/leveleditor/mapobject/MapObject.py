@@ -121,6 +121,7 @@ class MapObject(MapWritable):
         self.boundsBox.setMinMax(mins, maxs)
         if self.selected:
             self.showBoundingBox()
+            base.selectionMgr.updateSelectionBounds()
 
         if self.collNp:
             self.collNp.unstash()

@@ -1,6 +1,6 @@
 from panda3d.core import NodePath, CardMaker, Vec4, Quat, Vec3, SamplerState, OmniBoundingVolume, BillboardEffect
 from panda3d.core import CollisionBox, CollisionNode, CollisionTraverser, CollisionHandlerQueue, BitMask32, Point3
-from panda3d.core import LPlane
+from panda3d.core import LPlane, LineSegs
 
 from src.leveleditor import LEGlobals
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
@@ -129,6 +129,7 @@ class MoveTool(SelectTool):
         self.moveVisRoot = self.moveToolRoot.attachNewNode("moveVisRoot")
         self.moveVisRoot.setTransparency(True, 1)
         self.moveVisRoot.setColorScale(1, 1, 1, 0.5, 1)
+        self.moveAxis3DLine = None
         self.isMoving = False
         self.movingObjects = []
 
@@ -183,25 +184,16 @@ class MoveTool(SelectTool):
         if self.isMoving:
             # We finished moving some objects, apply the ghost position
             # to the actual position
-            for obj, inst in self.movingObjects:
+            for obj, instRoot, inst in self.movingObjects:
                 obj.np.setPos(render, inst.getPos(render))
             self.destroyMoveVis()
             base.selectionMgr.updateSelectionBounds()
         self.isMoving = False
 
     def applyPosition(self, axis, absolute, updateBox = False):
-        #for obj in base.selectionMgr.selectedObjects:
-        #    offset = obj.np.getPos(self.widget)
-        #    currPos = obj.np.getPos(self.widget.getParent())
-        #    currPos[axis] = absolute[axis] + offset[axis]
-        #    obj.np.setPos(self.widget.getParent(), currPos)
-
         currPos = self.moveToolRoot.getPos()
         currPos[axis] = absolute[axis]
         self.moveToolRoot.setPos(currPos)
-        #base.selectionMgr.updateSelectionBounds()
-        #666666666                                                                                                                                                                                                                                                                                                                                                                                               if updateBox:
-        #    self.setBoxToSelection()
 
     def getPointOnPlane(self):
         vp = base.viewportMgr.activeViewport
@@ -234,20 +226,42 @@ class MoveTool(SelectTool):
             instRoot = NodePath("instRoot")
             inst = obj.np.instanceTo(instRoot)
             instRoot.wrtReparentTo(self.moveVisRoot)
-            self.movingObjects.append((obj, inst))
-        self.moveToolRoot.ls()
+            self.movingObjects.append((obj, instRoot, inst))
+
+        # Show an infinite line along the axis we are moving the object
+        # if we are using the 3D view
+        if self.widget.activeAxis:
+            axis = self.widget.activeAxis.axisIdx
+            segs = LineSegs()
+            col = Vec4(0, 0, 0, 1)
+            col[axis] = 1.0
+            segs.setColor(col)
+            p = Point3(0)
+            p[axis] = -1000000
+            segs.moveTo(p)
+            p[axis] = 1000000
+            segs.drawTo(p)
+            self.moveAxis3DLine = self.moveToolRoot.attachNewNode(segs.create())
+            self.moveAxis3DLine.setLightOff(1)
+            self.moveAxis3DLine.setFogOff(1)
+
+        self.widget.stash()
 
     def destroyMoveVis(self):
-        for obj, inst in self.movingObjects:
+        for obj, instRoot, inst in self.movingObjects:
             inst.removeNode()
         self.movingObjects = []
+        if self.moveAxis3DLine:
+            self.moveAxis3DLine.removeNode()
+            self.moveAxis3DLine = None
+        self.widget.unstash()
 
     def mouseMove(self, vp):
-        if (self.mouseIsDown or self.state.action in [BoxAction.DownToResize, BoxAction.Resizing]) and (not self.isMoving):
-            self.createMoveVis()
-            self.isMoving = True
 
         if vp and vp.is3D() and self.mouseIsDown and self.widget.activeAxis:
+            if not self.isMoving:
+                self.createMoveVis()
+                self.isMoving = True
             mouse = vp.getMouse()
             # 3D is a little more complicated. We need to define a plane parallel to the selected
             # axis, intersect the line from our camera to the 3D mouse position against the plane,
@@ -268,6 +282,9 @@ class MoveTool(SelectTool):
                     self.hideBox()
                     self.showText()
         else:
+            if not self.isMoving and self.state.action in [BoxAction.DownToResize, BoxAction.Resizing]:
+                self.createMoveVis()
+                self.isMoving = True
             SelectTool.mouseMove(self, vp)
 
     def update(self):
