@@ -2,11 +2,18 @@ from panda3d.core import CKeyValues, Vec3
 
 from .MapObject import MapObject
 from src.leveleditor.maphelper import HelperFactory
-from src.leveleditor.fgdtools import PropertyNotFound
+from src.leveleditor.fgdtools import PropertyNotFound, FgdEntityProperty
 
 class Entity(MapObject):
 
     ObjectName = "entity"
+
+    OriginMetaData = FgdEntityProperty("origin", "string", display_name="Origin",
+                                       default_value="0 0 0", description="Position of entity")
+    AnglesMetaData = FgdEntityProperty("angles", "string", display_name="Angles (Yaw Pitch Roll)",
+                                       default_value="0 0 0", description="Angular orientation of entity")
+    ScaleMetaData = FgdEntityProperty("scale", "string", display_name="Scale",
+                                      default_value="1 1 1", description="Scale of entity")
 
     MetaDataExclusions = [
         'id',
@@ -32,6 +39,11 @@ class Entity(MapObject):
 
     def __init__(self):
         MapObject.__init__(self)
+        self.transformProperties = {
+            'origin': [self.getOrigin, self.setOrigin, self.OriginMetaData],
+            'angles': [self.getAngles, self.setAngles, self.AnglesMetaData],
+            'scale': [self.getScale, self.setScale, self.ScaleMetaData]
+        }
         self.metaData = None
         self.entityData = {}
         self.helpers = []
@@ -66,9 +78,14 @@ class Entity(MapObject):
             if helper:
                 self.helpers.append(helper)
 
+    def getPropMetaData(self, prop):
+        if prop in self.transformProperties:
+            return self.transformProperties[prop][2]
+        return self.metaData.property_by_name(prop)
+
     def getPropDefaultValue(self, prop):
         if isinstance(prop, str):
-            prop = self.metaData.property_by_name(prop)
+            prop = self.getPropMetaData(prop)
 
         default = prop.default_value
         if default is None:
@@ -78,14 +95,8 @@ class Entity(MapObject):
     def propertyChanged(self, key, oldValue, newValue):
         if oldValue != newValue:
 
-            if key == "origin":
-                origin = CKeyValues.to3f(newValue)
-                self.np.setPos(origin)
-
-            elif key == "angles":
-                angles = CKeyValues.to3f(newValue)
-                self.np.setHpr(angles)
-
+            if key in self.transformProperties:
+                self.transformProperties[key][1](CKeyValues.to3f(newValue))
             else:
                 # Check for any helpers that respond to a change
                 # in this property.
@@ -105,10 +116,13 @@ class Entity(MapObject):
 
     def updateProperties(self, data):
         for key, value in data.items():
-            # Make sure the value is the correct type
-            val = self.getPropDataType(key)(value)
-            oldValue = self.entityData.get(key, None)
-            self.entityData[key] = val
+            oldValue = self.getEntityData(key)
+            if not key in self.transformProperties:
+                # Make sure the value is the correct type
+                val = self.getPropDataType(key)(value)
+                self.entityData[key] = val
+            else:
+                val = value
             self.propertyChanged(key, oldValue, val)
 
     # Returns list of property names with the specified value types.
@@ -131,7 +145,7 @@ class Entity(MapObject):
 
     def getPropType(self, key):
         try:
-            return self.metaData.property_by_name(key).value_type
+            return self.getPropMetaData(key).value_type
         except:
             return "string"
 
@@ -146,6 +160,42 @@ class Entity(MapObject):
 
     def getDescription(self):
         return self.metaData.description
+
+    def setOrigin(self, origin):
+        self.np.setPos(origin)
+
+    def getOrigin(self):
+        return self.np.getPos()
+
+    def setAngles(self, angles):
+        self.np.setHpr(angles)
+
+    def getAngles(self):
+        return self.np.getHpr()
+
+    def setScale(self, scale):
+        self.np.setScale(scale)
+
+    def getScale(self):
+        return self.np.getScale()
+
+    def isTransformProperty(self, key):
+        return key in self.transformProperties
+
+    def getEntityData(self, key, asString = False):
+        # Hard coded transform properties
+        if key in self.transformProperties:
+            prop = self.transformProperties[key][0]()
+            if asString:
+                return CKeyValues.toString(prop)
+            else:
+                return prop
+
+        prop = self.entityData.get(key, None)
+        if asString:
+            return str(prop)
+        else:
+            return prop
 
     def setClassname(self, classname):
         MapObject.setClassname(self, classname)
@@ -179,9 +229,8 @@ class Entity(MapObject):
 
         kv.setKeyValue("classname", self.classname)
         if self.isPointEntity():
-            # Point entites have origins and angles
-            kv.setKeyValue("origin", CKeyValues.toString(self.np.getPos()))
-            kv.setKeyValue("angles", CKeyValues.toString(self.np.getHpr()))
+            for key, getset in self.transformProperties.items():
+                kv.setKeyValue(key, CKeyValues.toString(getset[0]()))
         for key, value in self.entityData.items():
             kv.setKeyValue(key, str(value))
 

@@ -86,8 +86,13 @@ class Viewport(DirectObject, QtWidgets.QWidget):
     def getGizmoAxes(self):
         raise NotImplementedError
 
+    def hasMouse(self):
+        return self.mouseWatcher.hasMouse()
+
     def getMouse(self):
-        return self.mouseWatcher.getMouse()
+        if self.mouseWatcher.hasMouse():
+            return self.mouseWatcher.getMouse()
+        return Point2(0, 0)
 
     def is3D(self):
         return self.type == VIEWPORT_3D

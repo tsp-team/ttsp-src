@@ -201,7 +201,7 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
         self.entities = entities
         self.pairing = None
         self.propName = propName
-        self.prop = entities[0].metaData.property_by_name(propName)
+        self.prop = entities[0].getPropMetaData(propName)
         self.propType = self.prop.value_type
         self.isKey = isKey
 
@@ -238,8 +238,9 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
     def computeValueText(self):
         value = None
         for ent in self.entities:
-            entVal = ent.entityData[self.propName]
-            if self.prop.value_type == "choices":
+            isChoice = self.prop.value_type == "choices"
+            entVal = ent.getEntityData(self.propName, asString = not isChoice)
+            if isChoice:
                 entVal = self.prop.choice_by_value(entVal).display_name
             else:
                 entVal = str(entVal)
@@ -360,7 +361,13 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
                 if selection.metaData.description:
                     desc = selection.metaData.description
 
-            for prop in selection.entityData.keys():
+            if selection.isPointEntity():
+                propNames = list(selection.transformProperties.keys())
+            else:
+                propNames = []
+            propNames += list(selection.entityData.keys())
+
+            for prop in propNames:
                 if not prop in propName2entities:
                     propName2entities[prop] = [selection]
                 else:
@@ -407,8 +414,11 @@ class SelectionManager(DirectObject):
         self.selectionBounds.addView(GeomView.Lines, VIEWPORT_3D_MASK, state = Bounds3DState)
         self.selectionBounds.addView(GeomView.Lines, VIEWPORT_2D_MASK, state = Bounds2DState)
         self.selectionBounds.generateGeometry()
-        self.accept('delete', self.deleteSelectedObjects)
+
         self.objectProperties = ObjectPropertiesWindow(self)
+
+        self.accept('delete', self.deleteSelectedObjects)
+        self.accept('selectionsChanged', self.objectProperties.updateForSelection)
 
     def deleteSelectedObjects(self):
         selected = list(self.selectedObjects)
@@ -471,7 +481,6 @@ class SelectionManager(DirectObject):
         self.selectionBounds.np.reparentTo(base.render)
 
     def updateSelectionBounds(self):
-        self.objectProperties.updateForSelection()
 
         if len(self.selectedObjects) == 0:
             base.qtWindow.selectedLabel.setText("No selection.")

@@ -64,7 +64,6 @@ class Handles(Geometry):
 
         if self.handleType == HandleType.Square:
             self.vertexBuffer.setNumRows(len(self.handleOrigins) * 8)
-            print(self.vertexBuffer.getNumRows())
             vwriter = GeomVertexWriter(self.vertexBuffer, "vertex")
             cwriter = GeomVertexWriter(self.vertexBuffer, "color")
             radius = self.radius / self.zoom
