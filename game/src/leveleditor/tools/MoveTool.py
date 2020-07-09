@@ -181,8 +181,10 @@ class MoveTool(SelectTool):
             currPos[axis] = absolute[axis] + offset[axis]
             obj.np.setPos(self.widget.getParent(), currPos)
 
-        self.calcWidgetPoint(updateBox)
+        self.calcWidgetPoint(False)
         base.selectionMgr.updateSelectionBounds()
+        if updateBox:
+            self.setBoxToSelection()
 
     def getPointOnPlane(self):
         vp = base.viewportMgr.activeViewport
