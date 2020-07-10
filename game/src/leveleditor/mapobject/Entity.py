@@ -1,48 +1,20 @@
-from panda3d.core import CKeyValues, Vec3
+from panda3d.core import CKeyValues, Vec3, Vec4, Vec2
 
 from .MapObject import MapObject
 from src.leveleditor.maphelper import HelperFactory
 from src.leveleditor.fgdtools import PropertyNotFound, FgdEntityProperty
+from . import MetaData
 
 class Entity(MapObject):
 
     ObjectName = "entity"
 
-    OriginMetaData = FgdEntityProperty("origin", "string", display_name="Origin",
-                                       default_value="0 0 0", description="Position of entity")
-    AnglesMetaData = FgdEntityProperty("angles", "string", display_name="Angles (Yaw Pitch Roll)",
-                                       default_value="0 0 0", description="Angular orientation of entity")
-    ScaleMetaData = FgdEntityProperty("scale", "string", display_name="Scale",
-                                      default_value="1 1 1", description="Scale of entity")
-
-    MetaDataExclusions = [
-        'id',
-        'classname',
-        'visgroup'
-    ]
-
-    MetaDataType = {
-        'string': str,
-        'integer': int,
-        'choices': int,
-        'spawnflags': int,
-        'studio': str,
-        'target_source': str,
-        'target_destination': str,
-        'target_destinations': str
-    }
-
-    DefaultValues = {
-        str: "",
-        int: 0
-    }
-
     def __init__(self):
         MapObject.__init__(self)
         self.transformProperties = {
-            'origin': [self.getOrigin, self.setOrigin, self.OriginMetaData],
-            'angles': [self.getAngles, self.setAngles, self.AnglesMetaData],
-            'scale': [self.getScale, self.setScale, self.ScaleMetaData]
+            'origin': [self.getOrigin, self.setOrigin, MetaData.OriginMetaData],
+            'angles': [self.getAngles, self.setAngles, MetaData.AnglesMetaData],
+            'scale': [self.getScale, self.setScale, MetaData.ScaleMetaData]
         }
         self.metaData = None
         self.entityData = {}
@@ -89,14 +61,18 @@ class Entity(MapObject):
 
         default = prop.default_value
         if default is None:
-            default = self.DefaultValues[self.getPropDataType(prop.name)]
+            default = MetaData.getDefaultValue(prop.value_type)
+        else:
+            func = MetaData.getUnserializeFunc(prop.value_type)
+            default = func(default)
+
         return default
 
     def propertyChanged(self, key, oldValue, newValue):
         if oldValue != newValue:
 
             if key in self.transformProperties:
-                self.transformProperties[key][1](CKeyValues.to3f(newValue))
+                self.transformProperties[key][1](newValue)
                 self.recalcBoundingBox()
             else:
                 # Check for any helpers that respond to a change
@@ -120,7 +96,12 @@ class Entity(MapObject):
             oldValue = self.getEntityData(key)
             if not key in self.transformProperties:
                 # Make sure the value is the correct type
-                val = self.getPropDataType(key)(value)
+                prop = self.getPropMetaData(key)
+                nativeType = MetaData.getNativeType(prop.value_type)
+                if not isinstance(value, nativeType):
+                    val = MetaData.getUnserializeFunc(prop.value_type)(value)
+                else:
+                    val = value
                 self.entityData[key] = val
             else:
                 val = value
@@ -138,9 +119,7 @@ class Entity(MapObject):
 
     def getPropDataType(self, key):
         try:
-            return self.MetaDataType.get(
-                self.getPropType(key),
-                str)
+            MetaData.getNativeType(self.getPropType(key))
         except:
             return str
 
@@ -186,17 +165,16 @@ class Entity(MapObject):
     def getEntityData(self, key, asString = False):
         # Hard coded transform properties
         if key in self.transformProperties:
-            prop = self.transformProperties[key][0]()
-            if asString:
-                return CKeyValues.toString(prop)
-            else:
-                return prop
-
-        prop = self.entityData.get(key, None)
-        if asString:
-            return str(prop)
+            prop = self.transformProperties[key][2]
+            value = self.transformProperties[key][0]()
         else:
-            return prop
+            prop = self.getPropMetaData(key)
+            value = self.entityData.get(key, "")
+
+        if asString:
+            return MetaData.getSerializeFunc(prop.value_type)(value)
+        else:
+            return value
 
     def setClassname(self, classname):
         MapObject.setClassname(self, classname)
@@ -221,7 +199,7 @@ class Entity(MapObject):
                 del self.entityData[key]
 
         for prop in self.metaData.properties:
-            if prop.name in self.MetaDataExclusions or prop.name in self.entityData:
+            if MetaData.isPropertyExcluded(prop.name) or prop.name in self.entityData:
                 continue
             self.updateProperties({prop.name: self.getPropDefaultValue(prop)})
 
@@ -233,7 +211,9 @@ class Entity(MapObject):
             for key, getset in self.transformProperties.items():
                 kv.setKeyValue(key, CKeyValues.toString(getset[0]()))
         for key, value in self.entityData.items():
-            kv.setKeyValue(key, str(value))
+            # Get the serialize function for this property type and serialize it!
+            func = MetaData.getSerializeFunc(self.getPropType(key))
+            kv.setKeyValue(key, func(value))
 
     def readKeyValues(self, kv):
         MapObject.readKeyValues(self, kv)
@@ -243,7 +223,7 @@ class Entity(MapObject):
         for i in range(kv.getNumKeys()):
             key = kv.getKey(i)
             value = kv.getValue(i)
-            if key in self.MetaDataExclusions:
+            if MetaData.isPropertyExcluded(key):
                 continue
-            dt = self.getPropDataType(key)
-            self.updateProperties({key: dt(value)})
+            func = MetaData.getUnserializeFunc(self.getPropType(key))
+            self.updateProperties({key: func(value)})

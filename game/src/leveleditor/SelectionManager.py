@@ -1,4 +1,4 @@
-from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, NodePath
+from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, NodePath, Filename
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -11,6 +11,7 @@ from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_
 from src.leveleditor import RenderModes
 from src.leveleditor.ui.ObjectProperties import Ui_ObjectProperties
 from src.leveleditor import LEUtils
+from src.leveleditor.mapobject import MetaData
 
 Bounds3DState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(1, 1, 0, 1))
@@ -58,8 +59,9 @@ class ColorEditor(BaseEditor):
 
         self.adjustToColor(LEUtils.strToQColor(self.getItemData()))
 
-    def __confirmColorText(self, txt):
-        self.adjustToColor(LEUtils.strToQColor(txt))
+    def __confirmColorText(self):
+        self.setModelData(self.model, self.item.index())
+        self.adjustToColor(LEUtils.strToQColor(self.lineEdit.text()))
 
     def __pickColor(self):
         self.origColor = LEUtils.strToQColor(self.getItemData())
@@ -102,13 +104,77 @@ class ColorEditor(BaseEditor):
     def setModelData(self, model, index):
         model.setData(index, self.lineEdit.text(), QtCore.Qt.EditRole)
 
+MaxVal = 2147483647
+MinVal = -2147483648
+
+# Bruh. Qt has separate classes for the int and double spin boxes.
+class BaseScrubSpinBox:
+
+    def __init__(self):
+        self.isMoving = False
+        self.mouseStartPosY = 0
+        self.startValue = 0
+
+    def mousePressEvent(self, e):
+        if e.button() == QtCore.Qt.MiddleButton:
+            self.mouseStartPosY = e.pos().y()
+            self.startValue = self.value()
+            self.isMoving = True
+            self.setCursor(QtCore.Qt.SizeVerCursor)
+
+    def mouseMoveEvent(self, e):
+        if self.isMoving:
+            mult = 0.5
+            valueOffset = int((self.mouseStartPosY - e.pos().y()) * mult)
+            self.setValue(self.startValue + valueOffset)
+
+    def mouseReleaseEvent(self, e):
+        self.isMoving = False
+        self.unsetCursor()
+
+class IntScrubSpinBox(QtWidgets.QSpinBox, BaseScrubSpinBox):
+
+    def __init__(self, parent):
+        QtWidgets.QSpinBox.__init__(self, parent)
+        BaseScrubSpinBox.__init__(self)
+
+    def mousePressEvent(self, e):
+        QtWidgets.QSpinBox.mousePressEvent(self, e)
+        BaseScrubSpinBox.mousePressEvent(self, e)
+
+    def mouseMoveEvent(self, e):
+        QtWidgets.QSpinBox.mouseMoveEvent(self, e)
+        BaseScrubSpinBox.mouseMoveEvent(self, e)
+
+    def mouseReleaseEvent(self, e):
+        QtWidgets.QSpinBox.mouseReleaseEvent(self, e)
+        BaseScrubSpinBox.mouseReleaseEvent(self, e)
+
+class DoubleScrubSpinBox(QtWidgets.QDoubleSpinBox, BaseScrubSpinBox):
+
+    def __init__(self, parent):
+        QtWidgets.QDoubleSpinBox.__init__(self, parent)
+        BaseScrubSpinBox.__init__(self)
+
+    def mousePressEvent(self, e):
+        QtWidgets.QDoubleSpinBox.mousePressEvent(self, e)
+        BaseScrubSpinBox.mousePressEvent(self, e)
+
+    def mouseMoveEvent(self, e):
+        QtWidgets.QDoubleSpinBox.mouseMoveEvent(self, e)
+        BaseScrubSpinBox.mouseMoveEvent(self, e)
+
+    def mouseReleaseEvent(self, e):
+        QtWidgets.QDoubleSpinBox.mouseReleaseEvent(self, e)
+        BaseScrubSpinBox.mouseReleaseEvent(self, e)
+
 class IntegerEditor(BaseEditor):
 
     def __init__(self, parent, item, model):
         BaseEditor.__init__(self, parent, item, model)
 
-        self.spinBox = QtWidgets.QSpinBox(self)
-        self.spinBox.setRange(-9999, 9999)
+        self.spinBox = IntScrubSpinBox(self)
+        self.spinBox.setRange(MinVal, MaxVal)
         self.spinBox.valueChanged.connect(self.__valueChanged)
         self.layout().addWidget(self.spinBox)
 
@@ -122,6 +188,101 @@ class IntegerEditor(BaseEditor):
 
     def setModelData(self, model, index):
         model.setData(index, str(self.spinBox.value()), QtCore.Qt.EditRole)
+
+class FloatEditor(BaseEditor):
+
+    def __init__(self, parent, item, model):
+        BaseEditor.__init__(self, parent, item, model)
+
+        self.spinBox = DoubleScrubSpinBox(self)
+        self.spinBox.setRange(MinVal, MaxVal)
+        self.spinBox.valueChanged.connect(self.__valueChanged)
+        self.layout().addWidget(self.spinBox)
+
+    def __valueChanged(self, val):
+        self.setModelData(self.model, self.item.index())
+
+    def setEditorData(self, index):
+        self.spinBox.blockSignals(True)
+        self.spinBox.setValue(int(self.getItemData()))
+        self.spinBox.blockSignals(False)
+
+    def setModelData(self, model, index):
+        model.setData(index, str(self.spinBox.value()), QtCore.Qt.EditRole)
+
+class StringEditor(BaseEditor):
+
+    def __init__(self, parent, item, model):
+        BaseEditor.__init__(self, parent, item, model)
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.layout().addWidget(self.lineEdit)
+
+    def setEditorData(self, index):
+        self.lineEdit.setText(self.getItemData())
+
+    def setModelData(self, model, index):
+        print(self.lineEdit.text())
+        model.setData(index, self.lineEdit.text(), QtCore.Qt.EditRole)
+
+class BaseVecEditor(BaseEditor):
+
+    class ComponentSpinBox(DoubleScrubSpinBox):
+
+        def __init__(self, editor, component):
+            DoubleScrubSpinBox.__init__(self, editor)
+            self.component = component
+            self.editor = editor
+            self.setRange(MinVal, MaxVal)
+            self.valueChanged.connect(self.__valueChanged)
+            self.setKeyboardTracking(False)
+            self.setAccelerated(True)
+            self.editor.layout().addWidget(self)
+
+        def __valueChanged(self, val):
+            self.editor.componentChanged()
+
+    def __init__(self, parent, item, model, numComponents):
+        BaseEditor.__init__(self, parent, item, model)
+        self.components = []
+        for i in range(numComponents):
+            spinBox = BaseVecEditor.ComponentSpinBox(self, i)
+            self.components.append(spinBox)
+
+    def componentChanged(self):
+        self.setModelData(self.model, self.item.index())
+
+    def setEditorData(self, index):
+        data = self.getItemData()
+        comps = data.split(' ')
+        for i in range(len(self.components)):
+            self.components[i].blockSignals(True)
+            self.components[i].setValue(float(comps[i]))
+            self.components[i].blockSignals(False)
+
+    def setModelData(self, model, index):
+        data = ""
+        for i in range(len(self.components)):
+            strVal = str(self.components[i].value())
+            if i < len(self.components) - 1:
+                data += "%s " % strVal
+            else:
+                data += strVal
+        model.setData(index, data, QtCore.Qt.EditRole)
+
+class Vec2Editor(BaseVecEditor):
+
+    def __init__(self, parent, item, model):
+        BaseVecEditor.__init__(self, parent, item, model, 2)
+
+class Vec3Editor(BaseVecEditor):
+
+    def __init__(self, parent, item, model):
+        BaseVecEditor.__init__(self, parent, item, model, 3)
+
+class Vec4Editor(BaseVecEditor):
+
+    def __init__(self, parent, item, model):
+        BaseVecEditor.__init__(self, parent, item, model, 4)
 
 class ChoicesEditor(BaseEditor):
 
@@ -151,12 +312,46 @@ class ChoicesEditor(BaseEditor):
     def setModelData(self, model, index):
         model.setData(index, self.combo.currentText(), QtCore.Qt.EditRole)
 
+class StudioEditor(BaseEditor):
+
+    def __init__(self, parent, item, model):
+        BaseEditor.__init__(self, parent, item, model)
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.layout().addWidget(self.lineEdit)
+        self.browseBtn = QtWidgets.QPushButton("Browse", self)
+        self.browseBtn.clicked.connect(self.__browseForModel)
+        self.layout().addWidget(self.browseBtn)
+
+    def __browseForModel(self):
+        selectedFilename = QtWidgets.QFileDialog.getOpenFileName(self, 'Choose Model',
+            filter = 'Panda3D models (*.bam *.egg *.egg.pz)')
+        if len(selectedFilename[0]) == 0:
+            # Cancelled
+            return
+        filename = Filename.fromOsSpecific(selectedFilename[0])
+        self.lineEdit.setText(filename.getFullpath())
+        self.setModelData(self.model, self.item.index())
+
+    def setEditorData(self, index):
+        self.lineEdit.setText(self.getItemData())
+
+    def setModelData(self, model, index):
+        model.setData(index, self.lineEdit.text(), QtCore.Qt.EditRole)
+
 class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
 
     PropTypeEditors = {
         "color255": ColorEditor,
         "integer": IntegerEditor,
-        "choices": ChoicesEditor
+        "choices": ChoicesEditor,
+        "string": StringEditor,
+        "studio": StudioEditor,
+        "target_source": StringEditor,
+        "target_destination": StringEditor,
+        "vec3": Vec3Editor,
+        "vec2": Vec2Editor,
+        "vec4": Vec4Editor,
+        "float": FloatEditor
     }
 
     def __init__(self, window):
@@ -254,7 +449,7 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
 
     def data(self, role):
         if role == QtCore.Qt.TextAlignmentRole:
-            return QtCore.Qt.AlignLeft
+            return QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
         return QtGui.QStandardItem.data(self, role)
 
 class ObjectPropertiesModel(QtGui.QStandardItemModel):
@@ -370,7 +565,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
                 if selection.metaData.description:
                     desc = selection.metaData.description
 
-            if selection.isPointEntity():
+            if selection.isPointEntity() and numSelections == 1:
                 propNames = list(selection.transformProperties.keys())
             else:
                 propNames = []
@@ -395,6 +590,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
             propItem.pairing = valueItem
             self.propertiesModel.setItem(rowIdx, 0, propItem)
             self.propertiesModel.setItem(rowIdx, 1, valueItem)
+            self.ui.propertiesView.openPersistentEditor(valueItem.index())
             rowIdx += 1
 
     def updateAvailableClasses(self):

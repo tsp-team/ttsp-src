@@ -25,8 +25,7 @@ class SpriteHelper(MapHelper):
         # If we have a color255 property, select the first one.
         color255Prop = color255Props[0] if len(color255Props) > 0 else None
         if color255Prop:
-            colorStr = self.mapObject.entityData[color255Prop]
-            color = CKeyValues.to4f(colorStr)
+            color = self.mapObject.entityData[color255Prop]
             color = CIGlobals.colorFromRGBScalar255(color)
         else:
             color = Vec4(1)
