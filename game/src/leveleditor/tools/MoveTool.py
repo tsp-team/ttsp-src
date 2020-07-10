@@ -278,7 +278,7 @@ class MoveTool(SelectTool):
                     now = base.snapToGrid(pointOnPlane)
                     absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
                     self.applyPosition(axis, absolute, True)
-                    self.moveBox(absolute)
+                    self.moveBox(absolute, axis = axis)
                     self.hideBox()
                     self.showText()
         else:
@@ -291,7 +291,7 @@ class MoveTool(SelectTool):
         SelectTool.update(self)
         if self.hasWidgets:
             self.widget.update()
-            if self.widget.activeAxis:
+            if self.widget.activeAxis or self.state.action in [BoxAction.ReadyToResize, BoxAction.DownToResize]:
                 self.suppressSelect = True
             else:
                 self.suppressSelect = False

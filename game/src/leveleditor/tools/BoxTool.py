@@ -610,9 +610,13 @@ class BoxTool(BaseTool):
     def filterHandle(self, handle):
         return True
 
-    def moveBox(self, pos):
+    def moveBox(self, pos, axis = None):
         currPos = (self.state.boxStart + self.state.boxEnd) / 2.0
         delta = pos - currPos
+        if axis is not None:
+            newDelta = Vec3(0)
+            newDelta[axis] = delta[axis]
+            delta = newDelta
         self.state.boxStart += delta
         self.state.boxEnd += delta
         self.state.action = BoxAction.Drawn
