@@ -128,3 +128,17 @@ def makeCubeOutline(mins, maxs, color, thickness = 1.0):
     lines.move_to( Point3( maxs.get_x(), maxs.get_y(), mins.get_z() ) )
     lines.draw_to( Point3( maxs.get_x(), mins.get_y(), mins.get_z() ) )
     return lines.create()
+
+def hasNetEffect(np, effect):
+    if np.hasEffect(effect):
+        return True
+
+    if np.hasParent():
+        return hasNetEffect(np.getParent(), effect)
+
+    return False
+
+def hasNetBillboard(np):
+    # Returns true if this node or any ancestor of this node contains a BillboardEffect.
+    from panda3d.core import BillboardEffect
+    return hasNetEffect(np, BillboardEffect.getClassType())

@@ -8,6 +8,7 @@ from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.mapobject.Entity import Entity
+from src.leveleditor import LEUtils
 
 VisState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(0, 1, 0, 1)),
@@ -170,11 +171,13 @@ class EntityTool(BaseTool):
             if entries and len(entries) > 0:
                 for i in range(len(entries)):
                     entry = entries[i]
-                    surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
-                    rayDir = entry.getFrom().getDirection().normalized()
-                    if surfNorm.dot(rayDir) >= 0:
-                        # Backface cull
-                        continue
+                    # Don't backface cull if there is a billboard effect on or above this node
+                    if not LEUtils.hasNetBillboard(entry.getIntoNodePath()):
+                        surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
+                        rayDir = entry.getFrom().getDirection().normalized()
+                        if surfNorm.dot(rayDir) >= 0:
+                            # Backface cull
+                            continue
                     # We clicked on an object, use the contact point as the
                     # location of our new entity.
                     self.pos = entry.getSurfacePoint(base.render)

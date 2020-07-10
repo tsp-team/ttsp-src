@@ -3,6 +3,7 @@ from panda3d.core import CollisionHandlerQueue, GeomNode
 
 from .BoxTool import BoxTool, ResizeHandle, BoxAction
 from src.leveleditor import LEGlobals
+from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 
 from src.leveleditor.geometry.Box import Box
@@ -83,11 +84,13 @@ class SelectTool(BoxTool):
             entry = entries[i]
             np = entry.getIntoNodePath().findNetPythonTag("mapobject")
             if not np.isEmpty():
-                surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
-                rayDir = entry.getFrom().getDirection().normalized()
-                if surfNorm.dot(rayDir) >= 0:
-                    # Backface cull
-                    continue
+                # Don't backface cull if there is a billboard effect on or above this node
+                if not LEUtils.hasNetBillboard(entry.getIntoNodePath()):
+                    surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
+                    rayDir = entry.getFrom().getDirection().normalized()
+                    if surfNorm.dot(rayDir) >= 0:
+                        # Backface cull
+                        continue
                 obj = np.getPythonTag("mapobject")
                 self.__toggleSelect(obj)
                 break
