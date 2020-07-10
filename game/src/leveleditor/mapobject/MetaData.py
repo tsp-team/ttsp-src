@@ -2,7 +2,7 @@
 # Author:  Brian Lach (July 10, 2020)
 # Purpose: Provides info about entity metadata types and how to serialize/unserialize them.
 
-from panda3d.core import Vec3, Vec4, Vec2, CKeyValues
+from panda3d.core import LVecBase3f, LVecBase2f, LVecBase4f, CKeyValues
 
 from src.leveleditor.fgdtools import FgdEntityProperty
 
@@ -24,10 +24,10 @@ MetaDataExclusions = [
 MetaDataType = {
     'string': (str, str, str, ""),
     'float': (float, float, str, 0.0),
-    'color255': (Vec4, CKeyValues.to4f, CKeyValues.toString, Vec4(255, 255, 255, 255)),
-    'vec3': (Vec3, CKeyValues.to3f, CKeyValues.toString, Vec3(0, 0, 0)),
-    'vec4': (Vec4, CKeyValues.to4f, CKeyValues.toString, Vec4(0, 0, 0, 0)),
-    'vec2': (Vec2, CKeyValues.to2f, CKeyValues.toString, Vec2(0, 0)),
+    'color255': (LVecBase4f, CKeyValues.to4f, CKeyValues.toString, LVecBase4f(255, 255, 255, 255)),
+    'vec3': (LVecBase3f, CKeyValues.to3f, CKeyValues.toString, LVecBase3f(0, 0, 0)),
+    'vec4': (LVecBase4f, CKeyValues.to4f, CKeyValues.toString, LVecBase4f(0, 0, 0, 0)),
+    'vec2': (LVecBase2f, CKeyValues.to2f, CKeyValues.toString, LVecBase2f(0, 0)),
     'integer': (int, int, str, 0),
     'choices': (int, int, str, 0),
     'spawnflags': (int, int, str, 0),

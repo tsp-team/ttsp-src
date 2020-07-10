@@ -1,5 +1,5 @@
 from panda3d.core import Point3, NodePath, BitMask32, RenderState, ColorAttrib, Vec4, LightAttrib, FogAttrib, LineSegs
-from panda3d.core import Vec3, LPlane
+from panda3d.core import Vec3, LPlane, GeomNode
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -166,7 +166,7 @@ class EntityTool(BaseTool):
             # If we clicked in the 3D viewport, try to intersect with an existing MapObject
             # and immediately place the entity at the intersection point. If we didn't click on any
             # MapObject, place the entity on the grid where we clicked.
-            entries = vp.click(BitMask32.allOn())
+            entries = vp.click(GeomNode.getDefaultCollideMask())
             if entries and len(entries) > 0:
                 # We clicked on an object, use the contact point as the
                 # location of our new entity.

@@ -72,6 +72,11 @@ class Entity(MapObject):
         if oldValue != newValue:
 
             if key in self.transformProperties:
+                metaData = self.transformProperties[key][2]
+                # Make sure the value is in the unserialized native type
+                if not isinstance(newValue, MetaData.getNativeType(metaData.value_type)):
+                    func = MetaData.getUnserializeFunc(metaData.value_type)
+                    newValue = func(newValue)
                 self.transformProperties[key][1](newValue)
                 self.recalcBoundingBox()
             else:

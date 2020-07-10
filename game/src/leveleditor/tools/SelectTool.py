@@ -1,5 +1,5 @@
 from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, NodePath, CollisionBox, CollisionNode, CollisionTraverser, BitMask32
-from panda3d.core import CollisionHandlerQueue
+from panda3d.core import CollisionHandlerQueue, GeomNode
 
 from .BoxTool import BoxTool, ResizeHandle, BoxAction
 from src.leveleditor import LEGlobals
@@ -57,25 +57,6 @@ class SelectTool(BoxTool):
     def selectionChanged(self):
         pass
 
-    def select3D(self, vp):
-        entries = vp.click(LEGlobals.EntityMask)
-        if not entries or len(entries) == 0:
-            # Didn't click anything
-            return
-
-        # Our entries have been sorted by distance, so use the first (closest) one.
-        entry = entries[0]
-        np = entry.getIntoNodePath().getParent()
-        if np.hasPythonTag("mapobject"):
-            obj = np.getPythonTag("mapobject")
-            self.__toggleSelect(obj)
-
-        self.entryIdx = 0
-        self.lastEntries = entries
-
-    def select2D(self, vp):
-        pass
-
     def mouseDown(self):
         vp = base.viewportMgr.activeViewport
         if not vp:
@@ -91,11 +72,19 @@ class SelectTool(BoxTool):
                 # We're doing single-selection. Deselect our current selections.
                 self.deselectAll()
 
-        if vp.is3D():
-            self.select3D(vp)
-            return
-
         BoxTool.mouseDown(self)
+
+        entries = vp.click(GeomNode.getDefaultCollideMask())
+        if entries and len(entries) > 0:
+            # Our entries have been sorted by distance, so use the first (closest) one.
+            entry = entries[0]
+            np = entry.getIntoNodePath().findNetPythonTag("mapobject")
+            if not np.isEmpty():
+                obj = np.getPythonTag("mapobject")
+                self.__toggleSelect(obj)
+
+            self.entryIdx = 0
+            self.lastEntries = entries
 
     def mouseUp(self):
         self.mouseIsDown = False
@@ -116,7 +105,7 @@ class SelectTool(BoxTool):
         box = CollisionBox(mins, maxs)
         node = CollisionNode("selectToolCollBox")
         node.addSolid(box)
-        node.setFromCollideMask(LEGlobals.EntityMask)
+        node.setFromCollideMask(GeomNode.getDefaultCollideMask())
         node.setIntoCollideMask(BitMask32.allOff())
         boxNp = base.render.attachNewNode(node)
         queue = CollisionHandlerQueue()
@@ -125,10 +114,11 @@ class SelectTool(BoxTool):
         entries = queue.getEntries()
         # Select every MapObject our box intersected with
         for entry in entries:
-            np = entry.getIntoNodePath().getParent()
-            if np.hasPythonTag("mapobject"):
+            np = entry.getIntoNodePath().findNetPythonTag("mapobject")
+            if not np.isEmpty():
                 obj = np.getPythonTag("mapobject")
-                selection.append(obj)
+                if not obj in selection:
+                    selection.append(obj)
         boxNp.removeNode()
 
         base.selectionMgr.multiSelect(selection)
