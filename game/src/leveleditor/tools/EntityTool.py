@@ -168,12 +168,20 @@ class EntityTool(BaseTool):
             # MapObject, place the entity on the grid where we clicked.
             entries = vp.click(GeomNode.getDefaultCollideMask())
             if entries and len(entries) > 0:
-                # We clicked on an object, use the contact point as the
-                # location of our new entity.
-                self.pos = entries[0].getSurfacePoint(base.render)
-                self.hasPlaced = True
-                # Create it!
-                self.confirm()
+                for i in range(len(entries)):
+                    entry = entries[i]
+                    surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
+                    rayDir = entry.getFrom().getDirection().normalized()
+                    if surfNorm.dot(rayDir) >= 0:
+                        # Backface cull
+                        continue
+                    # We clicked on an object, use the contact point as the
+                    # location of our new entity.
+                    self.pos = entry.getSurfacePoint(base.render)
+                    self.hasPlaced = True
+                    # Create it!
+                    self.confirm()
+                    break
             else:
                 # Didn't click on an object, intersect our mouse ray with the grid plane.
                 plane = LPlane(0, 0, 1, 0)

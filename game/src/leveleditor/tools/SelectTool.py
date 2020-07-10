@@ -64,6 +64,8 @@ class SelectTool(BoxTool):
 
         self.mouseIsDown = True
 
+        BoxTool.mouseDown(self)
+
         if self.suppressSelect:
             return
 
@@ -72,19 +74,26 @@ class SelectTool(BoxTool):
                 # We're doing single-selection. Deselect our current selections.
                 self.deselectAll()
 
-        BoxTool.mouseDown(self)
-
         entries = vp.click(GeomNode.getDefaultCollideMask())
-        if entries and len(entries) > 0:
+        if not entries:
+            return
+
+        for i in range(len(entries)):
             # Our entries have been sorted by distance, so use the first (closest) one.
-            entry = entries[0]
+            entry = entries[i]
             np = entry.getIntoNodePath().findNetPythonTag("mapobject")
             if not np.isEmpty():
+                surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
+                rayDir = entry.getFrom().getDirection().normalized()
+                if surfNorm.dot(rayDir) >= 0:
+                    # Backface cull
+                    continue
                 obj = np.getPythonTag("mapobject")
                 self.__toggleSelect(obj)
+                break
 
-            self.entryIdx = 0
-            self.lastEntries = entries
+        self.entryIdx = 0
+        self.lastEntries = entries
 
     def mouseUp(self):
         self.mouseIsDown = False
