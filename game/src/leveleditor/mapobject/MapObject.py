@@ -36,6 +36,9 @@ class MapObject(MapWritable):
         self.boundsBox.generateGeometry()
         self.collNp = None
 
+    def transformChanged(self):
+        self.recalcBoundingBox()
+
     def showBoundingBox(self):
         self.boundsBox.np.reparentTo(self.np)
 
@@ -121,7 +124,6 @@ class MapObject(MapWritable):
         self.boundsBox.setMinMax(mins, maxs)
         if self.selected:
             self.showBoundingBox()
-            base.selectionMgr.updateSelectionBounds()
 
         if self.collNp:
             self.collNp.unstash()

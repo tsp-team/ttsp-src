@@ -78,7 +78,6 @@ class Entity(MapObject):
                     func = MetaData.getUnserializeFunc(metaData.value_type)
                     newValue = func(newValue)
                 self.transformProperties[key][1](newValue)
-                self.recalcBoundingBox()
             else:
                 # Check for any helpers that respond to a change
                 # in this property.
@@ -95,6 +94,7 @@ class Entity(MapObject):
                     if dt in helper.ChangeWithType:
                         self.updateHelpers()
                         break
+            messenger.send('entityPropertyChanged', [self, key, newValue])
 
     def updateProperties(self, data):
         for key, value in data.items():
@@ -146,20 +146,48 @@ class Entity(MapObject):
     def getDescription(self):
         return self.metaData.description
 
+    def transformChanged(self):
+        MapObject.transformChanged(self)
+        messenger.send('entityTransformChanged', [self])
+
+    def setAbsOrigin(self, origin):
+        self.np.setPos(base.render, origin)
+        self.transformChanged()
+
     def setOrigin(self, origin):
         self.np.setPos(origin)
+        self.transformChanged()
+
+    def getAbsOrigin(self):
+        return self.np.getPos(base.render)
 
     def getOrigin(self):
         return self.np.getPos()
 
     def setAngles(self, angles):
         self.np.setHpr(angles)
+        self.transformChanged()
+
+    def setAbsAngles(self, angles):
+        self.np.setHpr(base.render, angles)
+        self.transformChanged()
+
+    def getAbsAngles(self):
+        return self.np.getHpr(base.render)
 
     def getAngles(self):
         return self.np.getHpr()
 
     def setScale(self, scale):
         self.np.setScale(scale)
+        self.transformChanged()
+
+    def setAbsScale(self, scale):
+        self.np.setScale(base.render, scale)
+        self.transformChanged()
+
+    def getAbsScale(self):
+        return self.np.getScale(base.render)
 
     def getScale(self):
         return self.np.getScale()

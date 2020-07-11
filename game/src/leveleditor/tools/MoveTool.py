@@ -201,7 +201,7 @@ class MoveTool(SelectTool):
             if base.selectionMgr.hasSelectedObjects():
                 numSelections = base.selectionMgr.getNumSelectedObjects()
                 selection = base.selectionMgr.selectedObjects[numSelections - 1]
-                self.setGizmoAngles(selection.np.getHpr(base.render))
+                self.setGizmoAngles(selection.getAbsAngles())
 
     def filterHandle(self, handle):
         if base.selectionMgr.hasSelectedObjects():
@@ -213,8 +213,15 @@ class MoveTool(SelectTool):
         self.state.boxEnd = base.selectionMgr.selectionMaxs
         self.state.action = BoxAction.Drawn
         self.resizeBoxDone()
-        self.hideBox()
-        self.showText()
+        self.showBox()
+
+    def handleSelectedEntityTransformChanged(self, entity):
+        # This method unfortunately gets called when we change the transform on
+        # the selected objects when finishing the move... changing
+        # the widget point while applying the final move position
+        # screws it up.
+        if not self.isMoving:
+            self.calcWidgetPoint()
 
     def selectionChanged(self):
         if base.selectionMgr.hasSelectedObjects():
@@ -222,7 +229,6 @@ class MoveTool(SelectTool):
                 self.enableWidget()
             else:
                 self.calcWidgetPoint()
-            self.adjustGizmoAngles()
         elif self.hasWidgets:
             self.disableWidget()
             self.maybeCancel()
@@ -231,9 +237,10 @@ class MoveTool(SelectTool):
         # Set the gizmo to the average origin of all the selected objects.
         avg = Point3(0)
         for obj in base.selectionMgr.selectedObjects:
-            avg += obj.np.getPos(base.render)
+            avg += obj.getAbsOrigin()
         avg /= len(base.selectionMgr.selectedObjects)
         self.setGizmoOrigin(avg)
+        self.adjustGizmoAngles()
         if updateBox:
             self.setBoxToSelection()
 
@@ -257,15 +264,12 @@ class MoveTool(SelectTool):
             # We finished moving some objects, apply the ghost position
             # to the actual position
             for obj, instRoot, inst in self.movingObjects:
-                obj.np.setPos(render, inst.getPos(render))
+                # Set it through the entity property so the change reflects in the
+                # object properties panel.
+                obj.updateProperties({"origin": inst.getPos(obj.np.getParent())})
             self.destroyMoveVis()
             base.selectionMgr.updateSelectionBounds()
         self.isMoving = False
-
-    #def applyPosition(self, axis, absolute, updateBox = False):
-    #    currPos = self.getGizmoOrigin()
-    #    currPos[axis] = absolute[axis]
-    #    self.setGizmoOrigin(currPos)
 
     def getGizmoDirection(self, axis):
         quat = self.moveToolRoot.getQuat(NodePath())
@@ -342,7 +346,7 @@ class MoveTool(SelectTool):
 
     def destroyMoveVis(self):
         for obj, instRoot, inst in self.movingObjects:
-            inst.removeNode()
+            instRoot.removeNode()
         self.movingObjects = []
         if self.moveAxis3DLine:
             self.moveAxis3DLine.removeNode()
@@ -364,8 +368,6 @@ class MoveTool(SelectTool):
             absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
             self.setGizmoOrigin(absolute)
             self.moveBox(absolute)
-            self.hideBox()
-            self.showText()
         else:
             if not self.isMoving and self.state.action in [BoxAction.DownToResize, BoxAction.Resizing]:
                 self.createMoveVis()
@@ -384,7 +386,6 @@ class MoveTool(SelectTool):
             self.suppressSelect = False
 
     def enableWidget(self):
-        self.adjustGizmoAngles()
         self.calcWidgetPoint()
         self.widget.enable()
         self.hasWidgets = True
@@ -395,6 +396,9 @@ class MoveTool(SelectTool):
 
     def enable(self):
         SelectTool.enable(self)
+        # The transform may have been changed using the object properties panel.
+        # Intercept this event to update our gizmo and stuff.
+        self.accept('selectedEntityTransformChanged', self.handleSelectedEntityTransformChanged)
         if base.selectionMgr.hasSelectedObjects():
             self.enableWidget()
         self.options.show()
