@@ -49,10 +49,10 @@ class Viewport3D(Viewport):
         # Use a fog effect to fade out the 3D grid with distance.
         # This hides the ugly banding and aliasing you see on the grid
         # from a distance, and looks quite nice.
-        gridFog = Fog('gridFog')
-        gridFog.setColor(self.ClearColor)
-        gridFog.setExpDensity(0.0015)
-        self.gridRoot.setFog(gridFog)
+        #gridFog = Fog('gridFog')
+        #gridFog.setColor(self.ClearColor)
+        #gridFog.setExpDensity(0.0015)
+        #self.gridRoot.setFog(gridFog)
 
     def getGridAxes(self):
         # Show X and Y on the grid

@@ -20,9 +20,6 @@ Bounds3DState = RenderState.make(
 Bounds2DState = RenderModes.DashedLineNoZ()
 Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
 
-MultipleValues = "<multiple values>"
-MultipleEntities = "<multiple entities>"
-
 class BaseEditor(QtWidgets.QWidget):
 
     def __init__(self, parent, item, model):
@@ -301,7 +298,6 @@ class ChoicesEditor(BaseEditor):
 
         self.combo.clear()
         data = self.getItemData()
-        ent = self.item.entities[0]
         prop = self.item.prop
         for choice in prop.choices:
             self.combo.addItem(choice.display_name)
@@ -390,13 +386,13 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
 
 class ObjectPropertiesItem(QtGui.QStandardItem):
 
-    def __init__(self, win, entities, propName, isKey):
+    def __init__(self, win, entity, propName, isKey):
         QtGui.QStandardItem.__init__(self)
         self.win = win
-        self.entities = entities
+        self.entity = entity
         self.pairing = None
         self.propName = propName
-        self.prop = entities[0].getPropMetaData(propName)
+        self.prop = entity.getPropMetaData(propName)
         self.propType = self.prop.value_type
         self.isKey = isKey
 
@@ -425,27 +421,18 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
             else:
                 data = strData
 
-            for ent in self.entities:
-                ent.updateProperties({self.propName: data})
+            self.entity.updateProperties({self.propName: data})
 
         QtGui.QStandardItem.setData(self, strData, role)
 
     def computeValueText(self):
-        value = None
-        for ent in self.entities:
-            isChoice = self.prop.value_type == "choices"
-            entVal = ent.getEntityData(self.propName, asString = not isChoice)
-            if isChoice:
-                entVal = self.prop.choice_by_value(entVal).display_name
-            else:
-                entVal = str(entVal)
-            if value is not None and entVal != value:
-                # There are different values across entities for this property.
-                value = MultipleValues
-                break
-            elif value is None:
-                value = entVal
-        self.setText(value)
+        isChoice = self.prop.value_type == "choices"
+        entVal = self.entity.getEntityData(self.propName, asString = not isChoice)
+        if isChoice:
+            entVal = self.prop.choice_by_value(entVal).display_name
+        else:
+            entVal = str(entVal)
+        self.setText(entVal)
 
     def data(self, role):
         if role == QtCore.Qt.TextAlignmentRole:
@@ -546,36 +533,21 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         # Clear our filtering
         self.ui.lePropertyFilter.clear()
 
-        hasMultipleClassnames = False
-        classname = None
-        desc = ""
-        propName2entities = {}
+        # Only show one entity in the object properties..
+        # and choose the most recently selected one if there are multiple selections
+        selection = self.mgr.selectedObjects[len(self.mgr.selectedObjects) - 1]
 
-        # Determine the classname to display based on our selections
-        for i in range(numSelections):
-            selection = self.mgr.selectedObjects[i]
-            entClassname = selection.metaData.name
-            if classname is not None and entClassname != classname and not hasMultipleClassnames:
-                # Multiple entity classnames
-                classname = MultipleEntities
-                desc = ""
-                hasMultipleClassnames = True
-            elif not hasMultipleClassnames:
-                classname = entClassname
-                if selection.metaData.description:
-                    desc = selection.metaData.description
+        classname = selection.metaData.name
+        if selection.metaData.description:
+            desc = selection.metaData.description
+        else:
+            desc = ""
 
-            if selection.isPointEntity() and numSelections == 1:
-                propNames = list(selection.transformProperties.keys())
-            else:
-                propNames = []
-            propNames += list(selection.entityData.keys())
-
-            for prop in propNames:
-                if not prop in propName2entities:
-                    propName2entities[prop] = [selection]
-                else:
-                    propName2entities[prop].append(selection)
+        if selection.isPointEntity():
+            propNames = list(selection.transformProperties.keys())
+        else:
+            propNames = []
+        propNames += list(selection.entityData.keys())
 
         self.ui.lblPropertyName.setText(classname)
         self.ui.lblPropertyDesc.setText(desc)
@@ -583,9 +555,9 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
 
         self.propertiesModel.removeRows(0, self.propertiesModel.rowCount())
         rowIdx = 0
-        for prop, entityList in propName2entities.items():
-            propItem = ObjectPropertiesItem(self, entityList, prop, True)
-            valueItem = ObjectPropertiesItem(self, entityList, prop, False)
+        for prop in propNames:
+            propItem = ObjectPropertiesItem(self, selection, prop, True)
+            valueItem = ObjectPropertiesItem(self, selection, prop, False)
             valueItem.pairing = propItem
             propItem.pairing = valueItem
             self.propertiesModel.setItem(rowIdx, 0, propItem)
