@@ -6,6 +6,8 @@ from src.coginvasion.globals import CIGlobals
 
 from PyQt5 import QtGui, QtCore
 
+import math
+
 # Qt key codes -> Panda KeyboardButton names.
 QtKeyToKeyboardButton = {
     QtCore.Qt.Key_Space: "space",
@@ -142,3 +144,30 @@ def hasNetBillboard(np):
     # Returns true if this node or any ancestor of this node contains a BillboardEffect.
     from panda3d.core import BillboardEffect
     return hasNetEffect(np, BillboardEffect.getClassType())
+
+def closestDistanceBetweenLines(l1, l2):
+    org1 = l1.getOrigin()
+    org2 = l2.getOrigin()
+    dir1 = l1.getDirection()
+    dir2 = l2.getDirection()
+
+    dp = org2 - org1
+    v12 = dir1.dot(dir1)
+    v22 = dir2.dot(dir2)
+    v1v2 = dir1.dot(dir2)
+
+    det = v1v2 * v1v2 - v12 * v22
+
+    if abs(det) > 0.0:
+        invDet = 1.0 / det
+        dpv1 = dp.dot(dir1)
+        dpv2 = dp.dot(dir2)
+
+        l1.t = invDet * (v22 * dpv1 - v1v2 * dpv2)
+        l2.t = invDet * (v1v2 * dpv1 - v12 * dpv2)
+
+        return (dp + dir2 * l2.t - dir1 * l1.t)
+
+    else:
+        a = dp.cross(dir1)
+        return math.sqrt(a.dot(a) / v12)

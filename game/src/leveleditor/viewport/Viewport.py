@@ -11,6 +11,7 @@ from src.coginvasion.globals import CIGlobals
 
 from .ViewportType import *
 from .ViewportGizmo import ViewportGizmo
+from src.leveleditor.Ray import Ray
 
 from direct.showbase.DirectObject import DirectObject
 
@@ -85,6 +86,14 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
     def getGizmoAxes(self):
         raise NotImplementedError
+
+    def getMouseRay(self, collRay = False):
+        ray = CollisionRay()
+        ray.setFromLens(self.camNode, self.getMouse())
+        if collRay:
+            return ray
+        else:
+            return Ray(ray.getOrigin(), ray.getDirection())
 
     def hasMouse(self):
         return self.mouseWatcher.hasMouse()

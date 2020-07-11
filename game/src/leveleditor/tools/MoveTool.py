@@ -3,12 +3,16 @@ from panda3d.core import CollisionBox, CollisionNode, CollisionTraverser, Collis
 from panda3d.core import LPlane, LineSegs
 
 from src.leveleditor import LEGlobals
+from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
+from src.leveleditor.Ray import Ray
 
 from .SelectTool import SelectTool
 from .BoxTool import BoxAction, ResizeHandle
 
 import math
+
+from PyQt5 import QtWidgets, QtCore
 
 # Implementation of move widget:
 # Single root move widget node
@@ -18,6 +22,40 @@ import math
 Ready = 0
 Rollover = 1
 Down = 2
+
+Global = 0
+Local = 1
+
+class MoveToolOptions(QtWidgets.QDockWidget):
+
+    def __init__(self, tool):
+        QtWidgets.QDockWidget.__init__(self)
+        self.tool = tool
+        self.setWindowTitle("Move Tool")
+
+        group = QtWidgets.QGroupBox("With Respect To", self)
+        group.setLayout(QtWidgets.QFormLayout())
+        globalBtn = QtWidgets.QRadioButton("Global", group)
+        globalBtn.toggled.connect(self.__toggleGlobal)
+        group.layout().addWidget(globalBtn)
+        localBtn = QtWidgets.QRadioButton("Local", group)
+        localBtn.toggled.connect(self.__toggleLocal)
+        group.layout().addWidget(localBtn)
+
+        if self.tool.wrtMode == Global:
+            globalBtn.setChecked(True)
+        elif self.tool.wrtMode == Local:
+            localBtn.setChecked(True)
+
+        self.setWidget(group)
+        self.hide()
+        base.qtWindow.addDockWindow(self)
+
+    def __toggleGlobal(self):
+        self.tool.setWrtMode(Global)
+
+    def __toggleLocal(self):
+        self.tool.setWrtMode(Local)
 
 class MoveWidgetAxis(NodePath):
 
@@ -34,10 +72,19 @@ class MoveWidgetAxis(NodePath):
 
         self.axisIdx = axis
 
-        self.axis = base.loader.loadModel("models/editor/arrow.bam")
-        self.axis.reparentTo(self)
+        self.head = base.loader.loadModel("models/editor/arrow_head.bam")
+        self.head.reparentTo(self)
+        self.head.setY(0.6)
+        self.head.setScale(0.7)
 
-        box = CollisionBox(Vec3(-0.035, 0.2, -0.035), Vec3(0.035, 1.0, 0.035))
+        baseSegs = LineSegs()
+        baseSegs.setColor(1, 1, 1, 1)
+        baseSegs.setThickness(3.0)
+        baseSegs.moveTo(0, 0, 0)
+        baseSegs.drawTo(0, 0.6, 0)
+        self.base = self.attachNewNode(baseSegs.create())
+
+        box = CollisionBox(Vec3(-0.06, 0.0, -0.06), Vec3(0.06, 0.8, 0.06))
         cnode = CollisionNode("pickBox")
         cnode.addSolid(box)
         cnode.setIntoCollideMask(LEGlobals.ManipulatorMask)
@@ -133,6 +180,29 @@ class MoveTool(SelectTool):
         self.isMoving = False
         self.movingObjects = []
 
+        # With respect to mode. Gizmo is rotated differently
+        # based on this mode.
+        self.wrtMode = Global
+
+        self.options = MoveToolOptions(self)
+
+    def setWrtMode(self, mode):
+        self.wrtMode = mode
+        self.adjustGizmoAngles()
+
+    def adjustGizmoAngles(self):
+        if self.wrtMode == Global:
+            # Look forward in world space
+            self.setGizmoAngles(Vec3(0, 0, 0))
+
+        elif self.wrtMode == Local:
+            # Set the gizmo angles to the angles of the most
+            # recently selected object.
+            if base.selectionMgr.hasSelectedObjects():
+                numSelections = base.selectionMgr.getNumSelectedObjects()
+                selection = base.selectionMgr.selectedObjects[numSelections - 1]
+                self.setGizmoAngles(selection.np.getHpr(base.render))
+
     def filterHandle(self, handle):
         if base.selectionMgr.hasSelectedObjects():
             return False
@@ -152,16 +222,18 @@ class MoveTool(SelectTool):
                 self.enableWidget()
             else:
                 self.calcWidgetPoint()
+            self.adjustGizmoAngles()
         elif self.hasWidgets:
             self.disableWidget()
             self.maybeCancel()
 
     def calcWidgetPoint(self, updateBox = True):
+        # Set the gizmo to the average origin of all the selected objects.
         avg = Point3(0)
         for obj in base.selectionMgr.selectedObjects:
             avg += obj.np.getPos(base.render)
         avg /= len(base.selectionMgr.selectedObjects)
-        self.moveToolRoot.setPos(avg)
+        self.setGizmoOrigin(avg)
         if updateBox:
             self.setBoxToSelection()
 
@@ -173,8 +245,8 @@ class MoveTool(SelectTool):
             if vp.is2D():
                 self.moveStart = vp.viewportToWorld(vp.getMouse(), flatten = False)
             else:
-                self.moveStart = self.getPointOnPlane()[0]
-            self.preTransformStart = self.moveToolRoot.getPos()
+                self.moveStart = self.getPointOnGizmo()
+            self.preTransformStart = self.getGizmoOrigin()
 
     def mouseUp(self):
         SelectTool.mouseUp(self)
@@ -190,26 +262,48 @@ class MoveTool(SelectTool):
             base.selectionMgr.updateSelectionBounds()
         self.isMoving = False
 
-    def applyPosition(self, axis, absolute, updateBox = False):
-        currPos = self.moveToolRoot.getPos()
-        currPos[axis] = absolute[axis]
-        self.moveToolRoot.setPos(currPos)
+    #def applyPosition(self, axis, absolute, updateBox = False):
+    #    currPos = self.getGizmoOrigin()
+    #    currPos[axis] = absolute[axis]
+    #    self.setGizmoOrigin(currPos)
 
-    def getPointOnPlane(self):
+    def getGizmoDirection(self, axis):
+        quat = self.moveToolRoot.getQuat(NodePath())
+        if axis == 0:
+            return quat.getRight()
+        elif axis == 1:
+            return quat.getForward()
+        else:
+            return quat.getUp()
+
+    def getGizmoOrigin(self):
+        return self.moveToolRoot.getPos(NodePath())
+
+    def setGizmoOrigin(self, origin):
+        self.moveToolRoot.setPos(NodePath(), origin)
+
+    def setGizmoAngles(self, angles):
+        self.moveToolRoot.setHpr(NodePath(), angles)
+
+    def getGizmoRay(self, axis):
+        direction = self.getGizmoDirection(axis)
+        origin = self.getGizmoOrigin()
+        return Ray(origin, direction)
+
+    def getPointOnGizmo(self):
         vp = base.viewportMgr.activeViewport
-        if not vp.is3D():
+        if not vp or not vp.is3D():
             return
+
         axis = self.widget.activeAxis.axisIdx
-        worldMouse = vp.viewportToWorld(vp.getMouse())
-        vecAxis = Vec3(0)
-        vecAxis[axis] = 1.0
-        planeTangent = vecAxis.cross(worldMouse - vp.cam.getPos(base.render)).normalized()
-        planeNormal = vecAxis.cross(planeTangent).normalized()
-        movePlane = LPlane(planeNormal, self.widget.getPos())
-        pointOnPlane = Point3()
-        ret = movePlane.intersectsLine(pointOnPlane, vp.cam.getPos(base.render), worldMouse)
-        assert ret, "Line did not intersect move plane"
-        return [pointOnPlane, planeNormal]
+        gray = self.getGizmoRay(axis)
+        mray = vp.getMouseRay()
+        # Move into world space
+        mray.xform(vp.cam.getMat(NodePath()))
+
+        distance = LEUtils.closestDistanceBetweenLines(gray, mray)
+
+        return gray.origin + (gray.direction * -gray.t)
 
     def resizeBoxDrag(self):
         SelectTool.resizeBoxDrag(self)
@@ -217,8 +311,7 @@ class MoveTool(SelectTool):
         if self.state.action == BoxAction.Resizing and base.selectionMgr.hasSelectedObjects():
             vp = base.viewportMgr.activeViewport
             absolute = (self.state.boxStart + self.state.boxEnd) / 2.0
-            for axis in vp.spec.flattenIndices:
-                self.applyPosition(axis, absolute)
+            self.setGizmoOrigin(absolute)
 
     def createMoveVis(self):
         # Instance each selected map object to the vis root
@@ -266,21 +359,13 @@ class MoveTool(SelectTool):
             # 3D is a little more complicated. We need to define a plane parallel to the selected
             # axis, intersect the line from our camera to the 3D mouse position against the plane,
             # and use the intersection point as the movement value.
+            now = self.getPointOnGizmo()
             axis = self.widget.activeAxis.axisIdx
-            pointOnPlane, planeNormal = self.getPointOnPlane()
-            worldMouse = vp.viewportToWorld(mouse)
-            camPos = vp.cam.getPos(render)
-            toMouse = (pointOnPlane - camPos).normalized()
-            denom = toMouse.dot(planeNormal)
-            if denom != 0:
-                t = (pointOnPlane - camPos).dot(planeNormal) / denom
-                if t >= 0:
-                    now = base.snapToGrid(pointOnPlane)
-                    absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
-                    self.applyPosition(axis, absolute, True)
-                    self.moveBox(absolute, axis = axis)
-                    self.hideBox()
-                    self.showText()
+            absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
+            self.setGizmoOrigin(absolute)
+            self.moveBox(absolute)
+            self.hideBox()
+            self.showText()
         else:
             if not self.isMoving and self.state.action in [BoxAction.DownToResize, BoxAction.Resizing]:
                 self.createMoveVis()
@@ -299,6 +384,7 @@ class MoveTool(SelectTool):
             self.suppressSelect = False
 
     def enableWidget(self):
+        self.adjustGizmoAngles()
         self.calcWidgetPoint()
         self.widget.enable()
         self.hasWidgets = True
@@ -311,6 +397,7 @@ class MoveTool(SelectTool):
         SelectTool.enable(self)
         if base.selectionMgr.hasSelectedObjects():
             self.enableWidget()
+        self.options.show()
 
     def disable(self):
         SelectTool.disable(self)
@@ -318,3 +405,4 @@ class MoveTool(SelectTool):
         if self.isMoving:
             self.destroyMoveVis()
         self.isMoving = False
+        self.options.hide()
