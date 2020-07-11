@@ -398,16 +398,13 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
 
         if self.isKey:
             self.setEditable(False)
-            if self.prop.display_name and len(self.prop.display_name) > 0:
-                self.setText(self.prop.display_name)
-            else:
-                self.setText(self.propName)
+            self.setText(self.getKeyText())
         else:
             self.setEditable(True)
-            self.computeValueText()
+            self.setText(self.computeValueText())
 
-    def setData(self, strData, role):
-        if not self.isKey and role == QtCore.Qt.EditRole:
+    def setData(self, strData, role, fromUserEdit = True):
+        if fromUserEdit and not self.isKey and role == QtCore.Qt.EditRole:
             # Property value was changed... apply it to all the applicable entities
 
             if self.prop.value_type == "choices":
@@ -425,6 +422,12 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
 
         QtGui.QStandardItem.setData(self, strData, role)
 
+    def getKeyText(self):
+        if self.prop.display_name and len(self.prop.display_name) > 0:
+            return self.prop.display_name
+        else:
+            return self.propName
+
     def computeValueText(self):
         isChoice = self.prop.value_type == "choices"
         entVal = self.entity.getEntityData(self.propName, asString = not isChoice)
@@ -432,7 +435,7 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
             entVal = self.prop.choice_by_value(entVal).display_name
         else:
             entVal = str(entVal)
-        self.setText(entVal)
+        return entVal
 
     def data(self, role):
         if role == QtCore.Qt.TextAlignmentRole:
@@ -447,10 +450,11 @@ class ObjectPropertiesModel(QtGui.QStandardItemModel):
         self.setHeaderData(0, QtCore.Qt.Horizontal, "Property")
         self.setHeaderData(1, QtCore.Qt.Horizontal, "Value")
 
-class ObjectPropertiesWindow(QtWidgets.QDockWidget):
+class ObjectPropertiesWindow(QtWidgets.QDockWidget, DirectObject):
 
     def __init__(self, mgr):
         QtWidgets.QDockWidget.__init__(self)
+        DirectObject.__init__(self)
         self.mgr = mgr
         self.setWindowTitle("Object Properties")
         w = QtWidgets.QWidget(self)
@@ -458,6 +462,10 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         self.ui.setupUi(w)
         self.ui.comboClass.setEditable(True)
         self.setWidget(w)
+
+        self.entity = None
+
+        self.valueItemByPropName = {}
 
         self.propertiesDelegate = ObjectPropertiesDelegate(self)
         self.propertiesModel = ObjectPropertiesModel(self)
@@ -474,6 +482,15 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         base.qtWindow.addDockWindow(self)
         self.clearAll()
         self.setEnabled(False)
+
+        self.accept('entityPropertyChanged', self.__handleEntityPropertyChanged)
+
+    def __handleEntityPropertyChanged(self, entity, key, value):
+        if entity == self.entity:
+            item = self.valueItemByPropName.get(key, None)
+            if not item:
+                return
+            item.setData(item.computeValueText(), QtCore.Qt.EditRole, False)
 
     def clearAll(self):
         self.ui.lePropertyFilter.clear()
@@ -523,7 +540,10 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
     def updateForSelection(self):
         numSelections = self.mgr.getNumSelectedObjects()
 
+        self.valueItemByPropName = {}
+
         if numSelections == 0:
+            self.entity = None
             self.clearAll()
             self.setEnabled(False)
             return
@@ -536,6 +556,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
         # Only show one entity in the object properties..
         # and choose the most recently selected one if there are multiple selections
         selection = self.mgr.selectedObjects[len(self.mgr.selectedObjects) - 1]
+        self.entity = selection
 
         classname = selection.metaData.name
         if selection.metaData.description:
@@ -563,6 +584,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget):
             self.propertiesModel.setItem(rowIdx, 0, propItem)
             self.propertiesModel.setItem(rowIdx, 1, valueItem)
             self.ui.propertiesView.openPersistentEditor(valueItem.index())
+            self.valueItemByPropName[prop] = valueItem
             rowIdx += 1
 
     def updateAvailableClasses(self):
@@ -586,16 +608,17 @@ class SelectionManager(DirectObject):
         self.selectionMins = Point3()
         self.selectionMaxs = Point3()
         self.selectionCenter = Point3()
-        # The box that encompasses all of the selected objects
-        self.selectionBounds = Box()
-        self.selectionBounds.addView(GeomView.Lines, VIEWPORT_3D_MASK, state = Bounds3DState)
-        self.selectionBounds.addView(GeomView.Lines, VIEWPORT_2D_MASK, state = Bounds2DState)
-        self.selectionBounds.generateGeometry()
 
         self.objectProperties = ObjectPropertiesWindow(self)
 
         self.accept('delete', self.deleteSelectedObjects)
         self.accept('selectionsChanged', self.objectProperties.updateForSelection)
+        self.accept('entityTransformChanged', self.handleEntityTransformChange)
+
+    def handleEntityTransformChange(self, entity):
+        if entity in self.selectedObjects:
+            self.updateSelectionBounds()
+            messenger.send('selectedEntityTransformChanged', [entity])
 
     def deleteSelectedObjects(self):
         selected = list(self.selectedObjects)
@@ -651,12 +674,6 @@ class SelectionManager(DirectObject):
                 self.updateSelectionBounds()
                 messenger.send('selectionsChanged')
 
-    def hideSelectionBounds(self):
-        self.selectionBounds.np.reparentTo(NodePath())
-
-    def showSelectionBounds(self):
-        self.selectionBounds.np.reparentTo(base.render)
-
     def updateSelectionBounds(self):
 
         if len(self.selectedObjects) == 0:
@@ -664,7 +681,6 @@ class SelectionManager(DirectObject):
             self.selectionMins = Point3()
             self.selectionMaxs = Point3()
             self.selectionCenter = Point3()
-            self.hideSelectionBounds()
             return
         else:
             if len(self.selectedObjects) == 1:
@@ -676,7 +692,6 @@ class SelectionManager(DirectObject):
                     base.qtWindow.selectedLabel.setText(text)
             else:
                 base.qtWindow.selectedLabel.setText("Selected %i objects." % len(self.selectedObjects))
-            self.showSelectionBounds()
 
         mins = Point3(9999999)
         maxs = Point3(-9999999)
@@ -701,5 +716,3 @@ class SelectionManager(DirectObject):
         self.selectionMins = mins
         self.selectionMaxs = maxs
         self.selectionCenter = (mins + maxs) / 2.0
-
-        self.selectionBounds.setMinMax(mins, maxs)
