@@ -179,6 +179,7 @@ class MoveTool(SelectTool):
         self.moveAxis3DLine = None
         self.isMoving = False
         self.movingObjects = []
+        self.boxOriginOffset = Vec3(0, 0, 0)
 
         # With respect to mode. Gizmo is rotated differently
         # based on this mode.
@@ -211,6 +212,9 @@ class MoveTool(SelectTool):
     def setBoxToSelection(self):
         self.state.boxStart = base.selectionMgr.selectionMins
         self.state.boxEnd = base.selectionMgr.selectionMaxs
+        # Calculate an offset from the center of the box to the gizmo origin
+        # so we can keep the box and gizmo in sync as they move.
+        self.boxOriginOffset = self.getGizmoOrigin() - base.selectionMgr.selectionCenter
         self.state.action = BoxAction.Drawn
         self.resizeBoxDone()
         self.showBox()
@@ -314,8 +318,8 @@ class MoveTool(SelectTool):
 
         if self.state.action == BoxAction.Resizing and base.selectionMgr.hasSelectedObjects():
             vp = base.viewportMgr.activeViewport
-            absolute = (self.state.boxStart + self.state.boxEnd) / 2.0
-            self.setGizmoOrigin(absolute)
+            boxCenter = (self.state.boxStart + self.state.boxEnd) / 2.0
+            self.setGizmoOrigin(boxCenter + self.boxOriginOffset)
 
     def createMoveVis(self):
         # Instance each selected map object to the vis root
@@ -367,7 +371,7 @@ class MoveTool(SelectTool):
             axis = self.widget.activeAxis.axisIdx
             absolute = base.snapToGrid(self.preTransformStart + now - self.moveStart)
             self.setGizmoOrigin(absolute)
-            self.moveBox(absolute)
+            self.moveBox(absolute - self.boxOriginOffset)
         else:
             if not self.isMoving and self.state.action in [BoxAction.DownToResize, BoxAction.Resizing]:
                 self.createMoveVis()
