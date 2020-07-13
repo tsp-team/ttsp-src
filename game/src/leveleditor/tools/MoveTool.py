@@ -403,6 +403,8 @@ class MoveTool(SelectTool):
         # The transform may have been changed using the object properties panel.
         # Intercept this event to update our gizmo and stuff.
         self.accept('selectedEntityTransformChanged', self.handleSelectedEntityTransformChanged)
+        # Same with bounds
+        self.accept('selectedObjectBoundsChanged', self.handleSelectedEntityTransformChanged)
         if base.selectionMgr.hasSelectedObjects():
             self.enableWidget()
         self.options.show()
