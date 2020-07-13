@@ -154,7 +154,7 @@ class CogInvasionLoader(Loader.Loader):
 
     def loadModel(self, *args, **kw):
         ret = Loader.Loader.loadModel(self, *args, **kw)
-        CIGlobals.fixGrayscaleTextures(ret)
+        #CIGlobals.fixGrayscaleTextures(ret)
 
         self.tick()
         return ret

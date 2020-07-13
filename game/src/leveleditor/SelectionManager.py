@@ -10,6 +10,7 @@ from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
 from src.leveleditor import RenderModes
 from src.leveleditor.ui.ObjectProperties import Ui_ObjectProperties
+from src.leveleditor.ui.ModelBrowser import ModelBrowser
 from src.leveleditor import LEUtils
 from src.leveleditor.mapobject import MetaData
 
@@ -319,14 +320,18 @@ class StudioEditor(BaseEditor):
         self.layout().addWidget(self.browseBtn)
 
     def __browseForModel(self):
-        selectedFilename = QtWidgets.QFileDialog.getOpenFileName(self, 'Choose Model',
-            filter = 'Panda3D models (*.bam *.egg *.egg.pz)')
-        if len(selectedFilename[0]) == 0:
-            # Cancelled
-            return
-        filename = Filename.fromOsSpecific(selectedFilename[0])
-        self.lineEdit.setText(filename.getFullpath())
-        self.setModelData(self.model, self.item.index())
+        #selectedFilename = QtWidgets.QFileDialog.getOpenFileName(self, 'Choose Model',
+        #    filter = 'Panda3D models (*.bam *.egg *.egg.pz)')
+        #if len(selectedFilename[0]) == 0:
+        #    # Cancelled
+        #    return
+        #filename = Filename.fromOsSpecific(selectedFilename[0])
+        #self.lineEdit.setText(filename.getFullpath())
+        #self.setModelData(self.model, self.item.index())
+
+        dlg = ModelBrowser(self)
+        dlg.show()
+        #dlg.generateModels()
 
     def setEditorData(self, index):
         self.lineEdit.setText(self.getItemData())
