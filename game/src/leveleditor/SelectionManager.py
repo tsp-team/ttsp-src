@@ -318,20 +318,19 @@ class StudioEditor(BaseEditor):
         self.browseBtn = QtWidgets.QPushButton("Browse", self)
         self.browseBtn.clicked.connect(self.__browseForModel)
         self.layout().addWidget(self.browseBtn)
+        self.modelBrowser = None
 
     def __browseForModel(self):
-        #selectedFilename = QtWidgets.QFileDialog.getOpenFileName(self, 'Choose Model',
-        #    filter = 'Panda3D models (*.bam *.egg *.egg.pz)')
-        #if len(selectedFilename[0]) == 0:
-        #    # Cancelled
-        #    return
-        #filename = Filename.fromOsSpecific(selectedFilename[0])
-        #self.lineEdit.setText(filename.getFullpath())
-        #self.setModelData(self.model, self.item.index())
+        self.modelBrowser = ModelBrowser(self)
+        self.modelBrowser.finished.connect(self.__modelBrowserDone)
+        self.modelBrowser.show()
 
-        dlg = ModelBrowser(self)
-        dlg.show()
-        #dlg.generateModels()
+    def __modelBrowserDone(self, ret):
+        if ret:
+            self.lineEdit.setText(self.modelBrowser.selectedModel.getFullpath())
+            self.setModelData(self.model, self.item.index())
+
+        self.modelBrowser = None
 
     def setEditorData(self, index):
         self.lineEdit.setText(self.getItemData())

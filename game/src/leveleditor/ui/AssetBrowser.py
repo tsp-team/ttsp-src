@@ -10,3 +10,7 @@ class AssetBrowser(QtWidgets.QDialog):
         QtWidgets.QDialog.__init__(self, parent)
         self.ui = Ui_AssetBrowser()
         self.ui.setupUi(self)
+
+    def done(self, ret):
+        self.ui = None
+        QtWidgets.QDialog.done(self, ret)

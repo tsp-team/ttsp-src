@@ -32,20 +32,21 @@ class ModelBrowser(AssetBrowser):
 
     FileExtensions = ["bam", "egg", "egg.pz"]
 
+    # Filename -> QIcon
+    modelThumbnails = {}
+
     def __init__(self, parent):
         AssetBrowser.__init__(self, parent)
 
-        self.ui.folderView.itemSelectionChanged.connect(self.__handleSelectionChanged)
+        self.ui.folderView.itemSelectionChanged.connect(self.__handleFolderSelectionChanged)
         self.ui.folderView.setHeaderLabel("Folder Tree")
+        self.ui.fileView.itemDoubleClicked.connect(self.__confirmModel)
+        self.ui.fileView.itemSelectionChanged.connect(self.__selectModel)
+        self.ui.leFileFilter.textChanged.connect(self.__filterList)
 
         self.currentFolder = None
         self.currentLoadContext = None
-
-        # Filename -> QIcon
-        self.modelThumbnails = {}
-
-        self.rootFolder = ModelFolder(core.Filename("resources"))
-        self.rootFolder.filename.makeAbsolute()
+        self.selectedModel = None
 
         self.queuedUpItems = []
         self.maxQueued = 10
@@ -53,11 +54,10 @@ class ModelBrowser(AssetBrowser):
         # Set up an offscreen buffer to render the thumbnails of our models.
 
         props = core.WindowProperties()
-        props.setSize(256, 256)
+        props.setSize(96, 96)
         fbprops = core.FrameBufferProperties()
         fbprops.setSrgbColor(True)
-        flags = (core.GraphicsPipe.BFRefuseWindow | core.GraphicsPipe.BFSizeSquare |
-            core.GraphicsPipe.BFSizePower2)
+        flags = (core.GraphicsPipe.BFRefuseWindow | core.GraphicsPipe.BFSizeSquare)
         self.buffer = base.graphicsEngine.makeOutput(base.pipe, "modelBrowserBuffer", 0,
             fbprops, props, flags, base.gsg, None)
         self.buffer.setClearColor(CIGlobals.vec3GammaToLinear(core.Vec4(0.5, 0.5, 0.5, 1.0)))
@@ -88,7 +88,52 @@ class ModelBrowser(AssetBrowser):
 
         self.ui.folderView.setCurrentItem(self.rootFolder.item)
 
-    def __handleSelectionChanged(self):
+    def done(self, ret):
+        if self.currentLoadContext:
+            self.currentLoadContext.cancel()
+            self.currentLoadContext = None
+        self.camera.removeNode()
+        self.camera = None
+        self.lens = None
+        self.displayRegion = None
+        self.render.removeNode()
+        self.render = None
+        base.graphicsEngine.removeWindow(self.buffer)
+        self.buffer = None
+        self.queuedUpItems = None
+        self.maxQueued = None
+        self.currentFolder = None
+        self.rootFolder = None
+        self.rootFilename = None
+        self.rootFilenameAbs = None
+        self.files = None
+        AssetBrowser.done(self, ret)
+
+    def __selectModel(self):
+        item = self.ui.fileView.selectedItems()[0]
+        self.selectedModel = item.filename
+
+    def __confirmModel(self, item):
+        # User double clicked a model, confirm selection and close dialog
+        self.selectedModel = item.filename
+        self.finished.emit(1)
+        self.close()
+
+    def __filterList(self, text):
+        for i in range(self.ui.fileView.count()):
+            self.ui.fileView.setRowHidden(i, False)
+
+        if len(text) == 0:
+            return
+
+        for i in range(self.ui.fileView.count()):
+            if text not in self.ui.fileView.item(i).text():
+                self.ui.fileView.setRowHidden(i, True)
+
+    def filterFileList(self):
+        self.__filterList(self.ui.leFileFilter.text())
+
+    def __handleFolderSelectionChanged(self):
         item = self.ui.folderView.selectedItems()[0]
         self.currentFolder = item.modelFolder
         self.generateModels()
@@ -126,7 +171,7 @@ class ModelBrowser(AssetBrowser):
             if virtualFile.isDirectory():
                 subfolders.append(filename)
             elif filename.getExtension() in self.FileExtensions:
-                filename.makeRelativeTo(self.rootFolder.filename)
+                filename.makeRelativeTo(self.rootFilenameAbs)
                 modelFiles.append(filename)
                 gotHit = True
 
@@ -148,6 +193,7 @@ class ModelBrowser(AssetBrowser):
         for item in self.queuedUpItems:
             self.ui.fileView.addItem(item)
         self.queuedUpItems = []
+        self.filterFileList()
 
     def createNextModel(self):
         if len(self.files) > 0:
@@ -171,7 +217,10 @@ class ModelBrowser(AssetBrowser):
         self.createNextModel()
 
     def generateModelTree(self):
-        self.rootFolder = self.r_generateModels(core.Filename("resources"), None)[0]
+        self.rootFilename = core.Filename("resources")
+        self.rootFilenameAbs = core.Filename(self.rootFilename)
+        self.rootFilenameAbs.makeAbsolute()
+        self.rootFolder = self.r_generateModels(self.rootFilename, None)[0]
 
     def createModelItem(self, filename):
         thumbnail = self.getThumbnail(filename)
@@ -183,6 +232,7 @@ class ModelBrowser(AssetBrowser):
         text = filename.getBasename()
         item = QtWidgets.QListWidgetItem(thumbnail, text)
         item.setToolTip(text)
+        item.filename = filename
 
         self.queuedUpItems.append(item)
         if len(self.queuedUpItems) >= self.maxQueued:
@@ -215,10 +265,10 @@ class ModelBrowser(AssetBrowser):
         size = maxs - mins
         center = (mins + maxs) / 2.0
         # Choose the longest axis as the radius
-        radius = max(size[0], max(size[1], size[2]))
+        radius = size.length() / 2
 
         fov = self.lens.getFov()
-        distance = radius / float(math.tan(core.deg2Rad(min(fov[0], fov[1]) / 2.0)))
+        distance = (radius / float(math.tan(core.deg2Rad(min(fov[0], fov[1]) / 2.0))))
 
         # Ensure the far plane is far enough back to see the entire object.
         idealFarPlane = distance + radius * 1.5
