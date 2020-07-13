@@ -131,6 +131,8 @@ class MapObject(MapWritable):
             self.collNp.node().addSolid(CollisionBox(mins, maxs))
             self.collNp.hide(~VIEWPORT_3D_MASK)
 
+        messenger.send('mapObjectBoundsChanged', [self])
+
     def removePickBox(self):
         if self.collNp:
             self.collNp.removeNode()

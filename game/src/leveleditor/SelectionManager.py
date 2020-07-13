@@ -618,6 +618,12 @@ class SelectionManager(DirectObject):
         self.accept('delete', self.deleteSelectedObjects)
         self.accept('selectionsChanged', self.objectProperties.updateForSelection)
         self.accept('entityTransformChanged', self.handleEntityTransformChange)
+        self.accept('mapObjectBoundsChanged', self.handleMapObjectBoundsChanged)
+
+    def handleMapObjectBoundsChanged(self, mapObject):
+        if mapObject in self.selectedObjects:
+            self.updateSelectionBounds()
+            messenger.send('selectedObjectBoundsChanged', [mapObject])
 
     def handleEntityTransformChange(self, entity):
         if entity in self.selectedObjects:
