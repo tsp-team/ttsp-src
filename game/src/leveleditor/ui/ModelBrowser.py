@@ -120,6 +120,8 @@ class ModelBrowser(AssetBrowser):
         self.close()
 
     def __filterList(self, text):
+        text = text.lower()
+
         for i in range(self.ui.fileView.count()):
             self.ui.fileView.setRowHidden(i, False)
 
@@ -127,7 +129,7 @@ class ModelBrowser(AssetBrowser):
             return
 
         for i in range(self.ui.fileView.count()):
-            if text not in self.ui.fileView.item(i).text():
+            if text not in self.ui.fileView.item(i).text().lower():
                 self.ui.fileView.setRowHidden(i, True)
 
     def filterFileList(self):
@@ -190,14 +192,17 @@ class ModelBrowser(AssetBrowser):
         return [thisFolder, gotHit or gotChildHits]
 
     def addQueuedItems(self):
+        text = self.ui.leFileFilter.text().lower()
+
         for item in self.queuedUpItems:
             self.ui.fileView.addItem(item)
+            if len(text) > 0 and text not in item.text().lower():
+                self.ui.fileView.setRowHidden(self.ui.fileView.row(item), True)
         self.queuedUpItems = []
-        self.filterFileList()
 
     def createNextModel(self):
         if len(self.files) > 0:
-            filename = self.files.popleft()
+            filename = self.files.pop(0)
             self.createModelItem(filename)
         else:
             self.addQueuedItems()
@@ -212,8 +217,9 @@ class ModelBrowser(AssetBrowser):
             self.currentLoadContext.cancel()
         self.ui.fileView.clear()
         self.queuedUpItems = []
-        self.files = deque()
+        self.files = []
         self.r_createFilesList(self.currentFolder)
+        self.files.sort()
         self.createNextModel()
 
     def generateModelTree(self):

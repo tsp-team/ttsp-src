@@ -49,7 +49,7 @@ class Ui_AssetBrowser(object):
         self.fileView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.fileView.setIconSize(QtCore.QSize(96, 96))
         self.fileView.setTextElideMode(QtCore.Qt.ElideLeft)
-        self.fileView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.fileView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerItem)
         self.fileView.setMovement(QtWidgets.QListView.Static)
         self.fileView.setFlow(QtWidgets.QListView.LeftToRight)
         self.fileView.setProperty("isWrapping", True)
@@ -76,5 +76,5 @@ class Ui_AssetBrowser(object):
     def retranslateUi(self, AssetBrowser):
         _translate = QtCore.QCoreApplication.translate
         AssetBrowser.setWindowTitle(_translate("AssetBrowser", "Asset Browser"))
-        self.fileView.setSortingEnabled(True)
+        self.fileView.setSortingEnabled(False)
         self.leFileFilter.setPlaceholderText(_translate("AssetBrowser", "(Asset File Filter)"))

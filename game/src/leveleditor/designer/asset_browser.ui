@@ -78,7 +78,7 @@
          <enum>Qt::ElideLeft</enum>
         </property>
         <property name="verticalScrollMode">
-         <enum>QAbstractItemView::ScrollPerPixel</enum>
+         <enum>QAbstractItemView::ScrollPerItem</enum>
         </property>
         <property name="movement">
          <enum>QListView::Static</enum>
@@ -120,7 +120,7 @@
          <set>Qt::AlignCenter</set>
         </property>
         <property name="sortingEnabled">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>
