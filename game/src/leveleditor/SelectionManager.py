@@ -13,6 +13,7 @@ from src.leveleditor.ui.ObjectProperties import Ui_ObjectProperties
 from src.leveleditor.ui.ModelBrowser import ModelBrowser
 from src.leveleditor import LEUtils
 from src.leveleditor.mapobject import MetaData
+from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 
 Bounds3DState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(1, 1, 0, 1))
@@ -422,7 +423,8 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
             else:
                 data = strData
 
-            self.entity.updateProperties({self.propName: data})
+            action = EditObjectProperties(self.entity, {self.propName: data})
+            base.actionMgr.performAction(action)
 
         QtGui.QStandardItem.setData(self, strData, role)
 

@@ -12,6 +12,7 @@ from src.leveleditor.viewport.ViewportType import *
 from src.leveleditor.viewport.ViewportManager import ViewportManager
 from src.leveleditor.tools.ToolManager import ToolManager
 from src.leveleditor.SelectionManager import SelectionManager
+from src.leveleditor.actions.ActionManager import ActionManager
 from src.leveleditor import LEUtils
 from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.Document import Document
@@ -101,6 +102,8 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionOpen.triggered.connect(self.__open)
         self.ui.actionNew_Map.triggered.connect(self.__close)
+        self.ui.actionUndo.triggered.connect(self.__undo)
+        self.ui.actionRedo.triggered.connect(self.__redo)
 
         # Since the viewports are separate windows from the Qt application,
         # they consume the keyboard events. This is bad when we want to save (ctrl-s) while
@@ -112,6 +115,12 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         # We add these generic events onto the viewports for when any key is pressed.
         self.accept('btndown', self.__pandaButtonDown)
         self.accept('btnup', self.__pandaButtonUp)
+
+    def __undo(self):
+        base.actionMgr.undo()
+
+    def __redo(self):
+        base.actionMgr.redo()
 
     def getQtModifier(self, name):
         if name == "control":
@@ -411,6 +420,7 @@ class LevelEditor(BSPBase):
         self.adjustGridText()
         self.qtWindow = self.qtApp.window
         self.selectionMgr = SelectionManager()
+        self.actionMgr = ActionManager()
         BSPBase.initialize(self)
 
         # Open a blank document

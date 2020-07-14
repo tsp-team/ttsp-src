@@ -6,6 +6,7 @@ from src.leveleditor import LEGlobals
 from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
 from src.leveleditor.Ray import Ray
+from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 
 from .SelectTool import SelectTool
 from .BoxTool import BoxAction, ResizeHandle
@@ -270,7 +271,8 @@ class MoveTool(SelectTool):
             for obj, instRoot, inst in self.movingObjects:
                 # Set it through the entity property so the change reflects in the
                 # object properties panel.
-                obj.updateProperties({"origin": inst.getPos(obj.np.getParent())})
+                action = EditObjectProperties(obj, {"origin": inst.getPos(obj.np.getParent())})
+                base.actionMgr.performAction(action)
             self.destroyMoveVis()
             base.selectionMgr.updateSelectionBounds()
         self.isMoving = False
