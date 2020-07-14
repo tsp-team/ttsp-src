@@ -43,8 +43,8 @@ class ActionManager(DirectObject):
             first = self.historyIndex + 1
             last = len(self.history) - 1
             for i in range(first, last):
-                action = self.history[i]
-                action.cleanup()
+                other = self.history[i]
+                other.cleanup()
             del self.history[first:]
 
         action.do()
