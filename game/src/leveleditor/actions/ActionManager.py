@@ -5,7 +5,17 @@ class ActionManager(DirectObject):
     def __init__(self):
         DirectObject.__init__(self)
         self.historyIndex = -1
+        self.savedIndex = -1
         self.history = []
+
+    def documentSaved(self):
+        self.savedIndex = self.historyIndex
+
+    def updateSaveStatus(self):
+        if self.historyIndex != self.savedIndex:
+            base.document.markUnsaved()
+        else:
+            base.document.markSaved()
 
     def undo(self):
         # Anything to undo?
@@ -19,6 +29,8 @@ class ActionManager(DirectObject):
         # Move the history index back
         self.historyIndex -= 1
 
+        self.updateSaveStatus()
+
         base.statusBar.showMessage("Undo %s" % action.Name)
 
     def redo(self):
@@ -31,6 +43,8 @@ class ActionManager(DirectObject):
         self.historyIndex += 1
         action = self.history[self.historyIndex]
         action.do()
+
+        self.updateSaveStatus()
 
         base.statusBar.showMessage("Redo %s" % action.Name)
 
@@ -50,5 +64,7 @@ class ActionManager(DirectObject):
         action.do()
         self.history.append(action)
         self.historyIndex += 1
+
+        self.updateSaveStatus()
 
         base.statusBar.showMessage(action.Name)

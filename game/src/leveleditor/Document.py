@@ -77,6 +77,7 @@ class Document(DirectObject):
 
         self.filename = filename
         self.unsaved = False
+        base.actionMgr.documentSaved()
         base.setEditorWindowTitle()
 
     def close(self):
@@ -135,6 +136,14 @@ class Document(DirectObject):
         self.isOpen = True
         # Open with the select tool by default
         base.toolMgr.selectTool.toggle()
+        base.setEditorWindowTitle()
+
+    def markSaved(self):
+        self.unsaved = False
+        base.setEditorWindowTitle()
+
+    def markUnsaved(self):
+        self.unsaved = True
         base.setEditorWindowTitle()
 
     def isUnsaved(self):
