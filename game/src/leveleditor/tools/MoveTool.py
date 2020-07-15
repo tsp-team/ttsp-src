@@ -5,7 +5,7 @@ from panda3d.core import LPlane, LineSegs
 from src.leveleditor import LEGlobals
 from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
-from src.leveleditor.Ray import Ray
+from src.leveleditor.math.Ray import Ray
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 
 from .SelectTool import SelectTool
@@ -220,7 +220,7 @@ class MoveTool(SelectTool):
         self.resizeBoxDone()
         self.showBox()
 
-    def handleSelectedEntityTransformChanged(self, entity):
+    def handleSelectedObjectTransformChanged(self, entity):
         # This method unfortunately gets called when we change the transform on
         # the selected objects when finishing the move... changing
         # the widget point while applying the final move position
@@ -404,9 +404,9 @@ class MoveTool(SelectTool):
         SelectTool.enable(self)
         # The transform may have been changed using the object properties panel.
         # Intercept this event to update our gizmo and stuff.
-        self.accept('selectedEntityTransformChanged', self.handleSelectedEntityTransformChanged)
+        self.accept('selectedObjectTransformChanged', self.handleSelectedObjectTransformChanged)
         # Same with bounds
-        self.accept('selectedObjectBoundsChanged', self.handleSelectedEntityTransformChanged)
+        self.accept('selectedObjectBoundsChanged', self.handleSelectedObjectTransformChanged)
         if base.selectionMgr.hasSelectedObjects():
             self.enableWidget()
         self.options.show()

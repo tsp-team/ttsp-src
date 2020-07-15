@@ -3,6 +3,9 @@ from panda3d.core import Point3, CKeyValues, BitMask32, RenderState, ColorAttrib
 
 from .MapWritable import MapWritable
 from src.leveleditor import LEGlobals
+from .TransformProperties import OriginProperty, AnglesProperty, ScaleProperty
+from . import MetaData
+from .ObjectProperty import ObjectProperty
 
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
@@ -36,8 +39,144 @@ class MapObject(MapWritable):
         self.boundsBox.generateGeometry()
         self.collNp = None
 
+        self.properties = {}
+
+        # All MapObjects have transform
+        self.addProperty(OriginProperty(self))
+        self.addProperty(AnglesProperty(self))
+        self.addProperty(ScaleProperty(self))
+
+    def getName(self):
+        return "Object"
+
+    def addProperty(self, prop):
+        self.properties[prop.name] = prop
+
+    # Returns list of property names with the specified value types.
+    def getPropsWithValueType(self, types):
+        if isinstance(types, str):
+            types = [types]
+        props = []
+        for propName, prop in self.properties.items():
+            if prop.valueType in types:
+                props.append(propName)
+        return props
+
+    def getPropNativeType(self, key):
+        prop = self.properties.get(key, None)
+        if not prop:
+            return str
+
+        return prop.getNativeType()
+
+    def getPropValueType(self, key):
+        prop = self.properties.get(key, None)
+        if not prop:
+            return "string"
+
+        return prop.valueType
+
+    def getPropDefaultValue(self, prop):
+        if isinstance(prop, str):
+            prop = self.properties.get(prop, None)
+
+        if not prop:
+            return ""
+
+        return prop.defaultValue
+
+    def getPropertyValue(self, key, asString = False, default = ""):
+        prop = self.properties.get(key, None)
+        if not prop:
+            return default
+
+        if asString:
+            return prop.getSerializedValue()
+        else:
+            return prop.getValue()
+
+    def getProperty(self, name):
+        return self.properties.get(name, None)
+
+    def updateProperties(self, data):
+        for key, value in data.items():
+            if not isinstance(value, ObjectProperty):
+                # If only a value was specified and not a property object itself,
+                # this is an update to an existing property.
+
+                prop = self.properties.get(key, None)
+                if not prop:
+                    continue
+
+                oldValue = prop.getValue()
+
+                val = prop.getUnserializedValue(value)
+
+                # If the property has a min/max range, ensure the value we want to
+                # set is within that range.
+                if (not prop.testMinValue(val)) or (not prop.testMaxValue(val)):
+                    # Not within range. Use the default value
+                    val = prop.defaultValue
+
+                prop.setValue(val)
+            else:
+                # A property object was given, simply add it to the dict of properties.
+                prop = value
+                oldValue = prop.getValue()
+                val = prop.getValue()
+                self.properties[prop.name] = prop
+
+            self.propertyChanged(prop, oldValue, val)
+
+    def propertyChanged(self, prop, oldValue, newValue):
+        if oldValue != newValue:
+            messenger.send('objectPropertyChanged', [self, prop, newValue])
+
+    def setAbsOrigin(self, origin):
+        self.np.setPos(base.render, origin)
+        self.transformChanged()
+
+    def setOrigin(self, origin):
+        self.np.setPos(origin)
+        self.transformChanged()
+
+    def getAbsOrigin(self):
+        return self.np.getPos(base.render)
+
+    def getOrigin(self):
+        return self.np.getPos()
+
+    def setAngles(self, angles):
+        self.np.setHpr(angles)
+        self.transformChanged()
+
+    def setAbsAngles(self, angles):
+        self.np.setHpr(base.render, angles)
+        self.transformChanged()
+
+    def getAbsAngles(self):
+        return self.np.getHpr(base.render)
+
+    def getAngles(self):
+        return self.np.getHpr()
+
+    def setScale(self, scale):
+        self.np.setScale(scale)
+        self.transformChanged()
+
+    def setAbsScale(self, scale):
+        self.np.setScale(base.render, scale)
+        self.transformChanged()
+
+    def getAbsScale(self):
+        return self.np.getScale(base.render)
+
+    def getScale(self):
+        return self.np.getScale()
+
     def transformChanged(self):
         self.recalcBoundingBox()
+        messenger.send('objectTransformChanged', [self])
 
     def showBoundingBox(self):
         self.boundsBox.np.reparentTo(self.np)
@@ -170,7 +309,7 @@ class MapObject(MapWritable):
         self.reparentTo(None)
         self.np.removeNode()
         self.np = None
-        self.entityData = None
+        self.properties = None
         self.metaData = None
 
     def __clearParent(self):
@@ -207,9 +346,26 @@ class MapObject(MapWritable):
 
     def writeKeyValues(self, keyvalues):
         keyvalues.setKeyValue("id", str(self.id))
-        keyvalues.setKeyValue("classname", self.classname)
+        # Write out our object properties
+        for name, prop in self.properties.items():
+            prop.writeKeyValues(keyvalues)
 
     def readKeyValues(self, keyvalues):
         self.id = int(keyvalues.getValue("id"))
         base.document.reserveID(self.id)
-        self.classname = keyvalues.getValue("classname")
+
+        for i in range(keyvalues.getNumKeys()):
+            key = keyvalues.getKey(i)
+            value = keyvalues.getValue(i)
+            if MetaData.isPropertyExcluded(key):
+                continue
+            # Find the property with this name.
+            prop = self.properties.get(key, None)
+            if not prop:
+                # Prop wasn't explicit or part of FGD metadata (if it's an Entity)
+                continue
+
+            nativeValue = prop.getUnserializedValue(value)
+
+            # Set the value!
+            self.updateProperties({prop.name: nativeValue})

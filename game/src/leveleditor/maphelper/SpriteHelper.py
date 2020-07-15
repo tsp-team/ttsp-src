@@ -21,11 +21,11 @@ class SpriteHelper(MapHelper):
         MapHelper.generate(self)
 
         # Check for a color255 to tint the sprite
-        color255Props = self.mapObject.getPropsWithDataType(['color255', 'color1'])
+        color255Props = self.mapObject.getPropsWithValueType(['color255', 'color1'])
         # If we have a color255 property, select the first one.
         color255Prop = color255Props[0] if len(color255Props) > 0 else None
         if color255Prop:
-            color = self.mapObject.entityData[color255Prop]
+            color = self.mapObject.getPropertyValue(color255Prop)
             color = CIGlobals.colorFromRGBScalar255(color)
         else:
             color = Vec4(1)

@@ -13,6 +13,7 @@ from src.leveleditor.ui.ObjectProperties import Ui_ObjectProperties
 from src.leveleditor.ui.ModelBrowser import ModelBrowser
 from src.leveleditor import LEUtils
 from src.leveleditor.mapobject import MetaData
+from src.leveleditor.mapobject.EntitySpawnflags import EntitySpawnflags
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 
 Bounds3DState = RenderState.make(
@@ -220,7 +221,6 @@ class StringEditor(BaseEditor):
         self.lineEdit.setText(self.getItemData())
 
     def setModelData(self, model, index):
-        print(self.lineEdit.text())
         model.setData(index, self.lineEdit.text(), QtCore.Qt.EditRole)
 
 class BaseVecEditor(BaseEditor):
@@ -301,7 +301,7 @@ class ChoicesEditor(BaseEditor):
         self.combo.clear()
         data = self.getItemData()
         prop = self.item.prop
-        for choice in prop.choices:
+        for choice in prop.metaData.choices:
             self.combo.addItem(choice.display_name)
         self.combo.setCurrentText(data)
 
@@ -411,7 +411,16 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 class ObjectPropertiesNullItem(QtGui.QStandardItem):
-    pass
+
+    def __init__(self, text = ""):
+        QtGui.QStandardItem.__init__(self)
+        self.setEditable(False)
+        self.setText(text)
+
+    def data(self, role):
+        if role == QtCore.Qt.SizeHintRole:
+            return QtCore.QSize(70, 25)
+        return QtGui.QStandardItem.data(self, role)
 
 class ObjectPropertiesItem(QtGui.QStandardItem):
 
@@ -421,8 +430,8 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
         self.entity = entity
         self.pairing = None
         self.propName = propName
-        self.prop = entity.getPropMetaData(propName)
-        self.propType = self.prop.value_type
+        self.prop = entity.getProperty(propName)
+        self.propType = self.prop.valueType
         self.isKey = isKey
 
         if self.isKey:
@@ -436,7 +445,7 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
         if fromUserEdit and not self.isKey and role == QtCore.Qt.EditRole:
             # Property value was changed... apply it to all the applicable entities
 
-            if self.prop.value_type == "choices":
+            if self.prop.valueType == "choices":
                 # Find the numerical value for the selected choice name
                 data = None
                 for choice in self.prop.choices:
@@ -453,16 +462,13 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
         QtGui.QStandardItem.setData(self, strData, role)
 
     def getKeyText(self):
-        if self.prop.display_name and len(self.prop.display_name) > 0:
-            return self.prop.display_name
-        else:
-            return self.propName
+        return self.prop.getDisplayName()
 
     def computeValueText(self):
-        isChoice = self.prop.value_type == "choices"
-        entVal = self.entity.getEntityData(self.propName, asString = not isChoice)
+        isChoice = self.prop.valueType == "choices"
+        entVal = self.entity.getPropertyValue(self.propName, asString = not isChoice)
         if isChoice:
-            entVal = self.prop.choice_by_value(entVal).display_name
+            entVal = self.prop.metaData.choice_by_value(entVal).display_name
         else:
             entVal = str(entVal)
         return entVal
@@ -470,7 +476,62 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
     def data(self, role):
         if role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
+        elif role == QtCore.Qt.SizeHintRole:
+            return QtCore.QSize(70, 25)
         return QtGui.QStandardItem.data(self, role)
+
+class ObjectPropertiesSpawnflagsItem(ObjectPropertiesItem):
+
+    def __init__(self, win, entity, propName):
+        ObjectPropertiesItem.__init__(self, win, entity, propName, True)
+
+        self.flagItems = []
+
+        for flag in self.prop.flagList:
+            childKey = ObjectPropertiesFlagItem(self, flag, True)
+            childValue = ObjectPropertiesFlagItem(self, flag, False)
+            self.appendRow([childKey, childValue])
+            self.flagItems.append(childValue)
+
+    def openChildEditors(self):
+        for child in self.flagItems:
+            self.win.ui.propertiesView.openPersistentEditor(child.index())
+
+    def computeValueText(self):
+        for child in self.flagItems:
+            child.setText(child.computeValueText())
+        return self.prop.name
+
+class ObjectPropertiesFlagItem(QtGui.QStandardItem):
+
+    def __init__(self, flagsItem, spawnFlag, isKey):
+        QtGui.QStandardItem.__init__(self)
+        self.flagsItem = flagsItem
+        self.spawnFlag = spawnFlag
+        self.isKey = isKey
+        self.propType = "boolean"
+
+        if self.isKey:
+            self.setEditable(False)
+            self.setText(self.spawnFlag.display_name)
+        else:
+            self.setEditable(True)
+            self.setText(self.computeValueText())
+
+    def setData(self, strData, role, fromUserEdit = True):
+        if fromUserEdit and not self.isKey and role == QtCore.Qt.EditRole:
+            isOn = bool(int(strData))
+            if isOn:
+                value = self.flagsItem.prop.getValue() | self.spawnFlag.value
+            else:
+                value = self.flagsItem.prop.getValue() & ~(self.spawnFlag.value)
+            action = EditObjectProperties(self.flagsItem.entity, {self.flagsItem.propName: value})
+            base.actionMgr.performAction(action)
+
+        QtGui.QStandardItem.setData(self, strData, role)
+
+    def computeValueText(self):
+        return LEUtils.boolToStr(self.flagsItem.prop.hasFlags(self.spawnFlag.value))
 
 class ObjectPropertiesModel(QtGui.QStandardItemModel):
 
@@ -513,11 +574,11 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DirectObject):
         self.clearAll()
         self.setEnabled(False)
 
-        self.accept('entityPropertyChanged', self.__handleEntityPropertyChanged)
+        self.accept('objectPropertyChanged', self.__handleObjectPropertyChanged)
 
-    def __handleEntityPropertyChanged(self, entity, key, value):
+    def __handleObjectPropertyChanged(self, entity, prop, value):
         if entity == self.entity:
-            item = self.valueItemByPropName.get(key, None)
+            item = self.valueItemByPropName.get(prop.name, None)
             if not item:
                 return
             item.setData(item.computeValueText(), QtCore.Qt.EditRole, False)
@@ -538,18 +599,19 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DirectObject):
 
     def __propertyClicked(self, idx):
         item = self.propertiesModel.itemFromIndex(idx)
-        self.updatePropertyDetailText(item.prop)
+        if isinstance(item, ObjectPropertiesItem):
+            self.updatePropertyDetailText(item.prop)
 
     def updatePropertyDetailText(self, prop):
-        if prop.display_name and len(prop.display_name) > 0:
-            self.ui.lblPropertyName.setText(prop.display_name)
+        displayName = prop.getDisplayName()
+        desc = prop.getDescription()
+
+        if len(displayName) > 0:
+            self.ui.lblPropertyName.setText(displayName)
         else:
             self.ui.lblPropertyName.setText(prop.name)
 
-        if prop.description and len(prop.description) > 0:
-            self.ui.lblPropertyDesc.setText(prop.description)
-        else:
-            self.ui.lblPropertyDesc.setText("")
+        self.ui.lblPropertyDesc.setText(desc)
 
     def __filterProperties(self, text):
         if len(text) == 0:
@@ -594,28 +656,58 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DirectObject):
         else:
             desc = ""
 
-        if selection.isPointEntity():
-            propNames = list(selection.transformProperties.keys())
-        else:
-            propNames = []
-        propNames += list(selection.entityData.keys())
-
         self.ui.lblPropertyName.setText(classname)
         self.ui.lblPropertyDesc.setText(desc)
         self.ui.comboClass.setCurrentText(classname)
 
         self.propertiesModel.removeRows(0, self.propertiesModel.rowCount())
+
         rowIdx = 0
-        for prop in propNames:
-            propItem = ObjectPropertiesItem(self, selection, prop, True)
-            valueItem = ObjectPropertiesItem(self, selection, prop, False)
+
+        groupName2propList = {}
+        propList = list(selection.properties.values())
+
+        for _, prop in selection.properties.items():
+            if prop.group is not None:
+                if prop.group not in groupName2propList:
+                    groupName2propList[prop.group] = [prop]
+                else:
+                    groupName2propList[prop.group].append(prop)
+                propList.remove(prop)
+
+        # Now add all the individual groups first
+        for groupName, groupPropList in groupName2propList.items():
+            parent = ObjectPropertiesNullItem(groupName)
+            self.propertiesModel.setItem(rowIdx, 0, parent)
+            rowIdx += 1
+
+            for prop in groupPropList:
+                self.createPropItemPair(prop, selection, 0, parent)
+
+        # Add the rest of the ungrouped properties
+        for prop in propList:
+            self.createPropItemPair(prop, selection, rowIdx)
+            rowIdx += 1
+
+        self.ui.propertiesView.expandToDepth(1)
+
+    def createPropItemPair(self, prop, selection, rowIdx, parent = None):
+        if prop.valueType == "flags":
+            valueItem = ObjectPropertiesSpawnflagsItem(self, selection, prop.name)
+            self.propertiesModel.setItem(rowIdx, 0, valueItem)
+            valueItem.openChildEditors()
+        else:
+            propItem = ObjectPropertiesItem(self, selection, prop.name, True)
+            valueItem = ObjectPropertiesItem(self, selection, prop.name, False)
             valueItem.pairing = propItem
             propItem.pairing = valueItem
-            self.propertiesModel.setItem(rowIdx, 0, propItem)
-            self.propertiesModel.setItem(rowIdx, 1, valueItem)
+            if not parent:
+                self.propertiesModel.setItem(rowIdx, 0, propItem)
+                self.propertiesModel.setItem(rowIdx, 1, valueItem)
+            else:
+                parent.appendRow([propItem, valueItem])
             self.ui.propertiesView.openPersistentEditor(valueItem.index())
-            self.valueItemByPropName[prop] = valueItem
-            rowIdx += 1
+        self.valueItemByPropName[prop.name] = valueItem
 
     def updateAvailableClasses(self):
         self.ui.comboClass.clear()
@@ -643,7 +735,7 @@ class SelectionManager(DirectObject):
 
         self.accept('delete', self.deleteSelectedObjects)
         self.accept('selectionsChanged', self.objectProperties.updateForSelection)
-        self.accept('entityTransformChanged', self.handleEntityTransformChange)
+        self.accept('objectTransformChanged', self.handleObjectTransformChange)
         self.accept('mapObjectBoundsChanged', self.handleMapObjectBoundsChanged)
 
     def handleMapObjectBoundsChanged(self, mapObject):
@@ -651,10 +743,10 @@ class SelectionManager(DirectObject):
             self.updateSelectionBounds()
             messenger.send('selectedObjectBoundsChanged', [mapObject])
 
-    def handleEntityTransformChange(self, entity):
+    def handleObjectTransformChange(self, entity):
         if entity in self.selectedObjects:
             self.updateSelectionBounds()
-            messenger.send('selectedEntityTransformChanged', [entity])
+            messenger.send('selectedObjectTransformChanged', [entity])
 
     def deleteSelectedObjects(self):
         selected = list(self.selectedObjects)
@@ -721,11 +813,7 @@ class SelectionManager(DirectObject):
         else:
             if len(self.selectedObjects) == 1:
                 obj = self.selectedObjects[0]
-                if isinstance(obj, Entity):
-                    text = obj.classname
-                    if "targetname" in obj.entityData and obj.entityData["targetname"] is not None:
-                        text += " - " + obj.entityData["targetname"]
-                    base.qtWindow.selectedLabel.setText(text)
+                base.qtWindow.selectedLabel.setText(obj.getName())
             else:
                 base.qtWindow.selectedLabel.setText("Selected %i objects." % len(self.selectedObjects))
 

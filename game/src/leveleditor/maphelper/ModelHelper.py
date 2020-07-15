@@ -6,22 +6,13 @@ from .MapHelper import MapHelper
 class ModelHelper(MapHelper):
 
     ChangeWith = [
-        "model",
-        "scale"
+        "model"
     ]
 
     def __init__(self, mapObject):
         MapHelper.__init__(self, mapObject)
         self.modelRoot = NodePath(ModelNode("modelHelper"))
-
-        # Model scale can be specified in entity data
-        scale = self.mapObject.entityData.get("scale")
-        if scale is not None:
-            scale = CKeyValues.to3f(scale)
-        else:
-            scale = Vec3(1.0)
-
-        self.modelRoot.setScale(scale * 16.0)
+        self.modelRoot.setScale(16.0)
         self.modelRoot.reparentTo(self.mapObject.np)
 
         self.vpRoots = []
@@ -66,7 +57,7 @@ class ModelHelper(MapHelper):
         if not modelPath:
             # Model wasn't specified in the class definition,
             # check for a property called "model"
-            modelPath = self.mapObject.entityData.get("model", None)
+            modelPath = self.mapObject.getPropertyValue("model", default = "models/smiley.egg.pz")
         else:
             # For some reason the fgd parser doesn't remove the quotes around the
             # model path string in the game class definition

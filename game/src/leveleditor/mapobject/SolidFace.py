@@ -9,15 +9,15 @@ class SolidFace(MapWritable):
 
     ObjectName = "side"
 
-    def __init__(self):
+    def __init__(self, id = 0, plane = LPlane(), solid = None):
         MapWritable.__init__(self)
-        self.id = 0
+        self.id = id
         self.material = None
         self.vertices = []
         self.isSelected = False
-        self.plane = LPlane()
+        self.plane = plane
         self.color = Vec4(1, 1, 1, 1)
-        self.solid = None
+        self.solid = solid
 
     def readKeyValues(self, kv):
         pass

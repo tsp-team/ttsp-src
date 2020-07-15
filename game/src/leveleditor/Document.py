@@ -24,6 +24,7 @@ class Document(DirectObject):
         self.filename = None
         self.unsaved = False
         self.idAllocator = None
+        self.faceIdAllocator = None
         self.root = Root()
         self.isOpen = False
 
@@ -58,6 +59,15 @@ class Document(DirectObject):
     def freeID(self, id):
         self.idAllocator.free(id)
 
+    def getNextFaceID(self):
+        return self.faceIdAllocator.allocate()
+
+    def reserveFaceID(self, id):
+        self.faceIdAllocator.initialReserveId(id)
+
+    def freeFaceID(self, id):
+        self.faceIdAllocator.free(id)
+
     def save(self, filename = None):
         # if filename is not none, this is a save-as
         if not filename:
@@ -76,6 +86,7 @@ class Document(DirectObject):
 
         self.root.clear()
         self.idAllocator = None
+        self.faceIdAllocator = None
         self.filename = None
         self.unsaved = False
         self.isOpen = False
@@ -92,6 +103,7 @@ class Document(DirectObject):
 
     def createIDAllocator(self):
         self.idAllocator = UniqueIdAllocator(0, 0xFFFF)
+        self.faceIdAllocator = UniqueIdAllocator(0, 0xFFFF)
 
     def r_open(self, kv, parent = None):
         cls = MapObjectFactory.MapObjectsByName.get(kv.getName())

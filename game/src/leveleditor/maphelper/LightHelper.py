@@ -18,12 +18,13 @@ class LightHelper(MapHelper):
         self.light = None
 
     def generate(self, helperInfo):
-        color = self.mapObject.entityData.get("_light", Vec4(255, 255, 255, 255))
+        color = self.mapObject.getPropertyValue("_light", default = Vec4(255, 255, 255, 255))
         color = CIGlobals.colorFromRGBScalar255(color)
         color = CIGlobals.vec3GammaToLinear(color)
-        constant = float(self.mapObject.entityData.get("_constant_attn", "0.0"))
-        linear = float(self.mapObject.entityData.get("_linear_attn", "0.0"))
-        quadratic = float(self.mapObject.entityData.get("_quadratic_attn", "1.0"))
+
+        constant = float(self.mapObject.getPropertyValue("_constant_attn", default = "0.0"))
+        linear = float(self.mapObject.getPropertyValue("_linear_attn", default = "0.0"))
+        quadratic = float(self.mapObject.getPropertyValue("_quadratic_attn", default = "1.0"))
 
         # Scale intensity for unit 100 distance
         ratio = (constant + 100 * linear + 100 * 100 * quadratic)

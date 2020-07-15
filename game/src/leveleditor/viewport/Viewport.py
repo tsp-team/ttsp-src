@@ -11,7 +11,7 @@ from src.coginvasion.globals import CIGlobals
 
 from .ViewportType import *
 from .ViewportGizmo import ViewportGizmo
-from src.leveleditor.Ray import Ray
+from src.leveleditor.math.Ray import Ray
 
 from direct.showbase.DirectObject import DirectObject
 

@@ -11,7 +11,7 @@ class EditObjectProperties(Action):
         # Copy the current values based on the new property keys
         self.oldProperties = {}
         for key, value in newProperties.items():
-            self.oldProperties[key] = ent.getEntityData(key)
+            self.oldProperties[key] = ent.getPropertyValue(key)
 
     def do(self):
         self.obj.updateProperties(self.newProperties)

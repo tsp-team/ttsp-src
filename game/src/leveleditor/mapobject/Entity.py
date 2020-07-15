@@ -2,8 +2,10 @@ from panda3d.core import CKeyValues, Vec3, Vec4, Vec2
 
 from .MapObject import MapObject
 from src.leveleditor.maphelper import HelperFactory
-from src.leveleditor.fgdtools import PropertyNotFound, FgdEntityProperty
+from src.leveleditor.fgdtools import PropertyNotFound
 from . import MetaData
+from .EntityProperty import EntityProperty
+from .EntitySpawnflags import EntitySpawnflags
 
 class Entity(MapObject):
 
@@ -11,14 +13,18 @@ class Entity(MapObject):
 
     def __init__(self):
         MapObject.__init__(self)
-        self.transformProperties = {
-            'origin': [self.getOrigin, self.setOrigin, MetaData.OriginMetaData],
-            'angles': [self.getAngles, self.setAngles, MetaData.AnglesMetaData],
-            'scale': [self.getScale, self.setScale, MetaData.ScaleMetaData]
-        }
         self.metaData = None
-        self.entityData = {}
         self.helpers = []
+
+    def getName(self):
+        name = self.classname
+        targetname = self.getPropertyValue("targetname")
+        if len(targetname) > 0:
+            name += " - %s" % targetname
+        return name
+
+    def hasSpawnflags(self):
+        return len(self.metaData.spawnflags) > 0
 
     def delete(self):
         self.removeHelpers()
@@ -50,89 +56,24 @@ class Entity(MapObject):
             if helper:
                 self.helpers.append(helper)
 
-    def getPropMetaData(self, prop):
-        if prop in self.transformProperties:
-            return self.transformProperties[prop][2]
-        return self.metaData.property_by_name(prop)
-
-    def getPropDefaultValue(self, prop):
-        if isinstance(prop, str):
-            prop = self.getPropMetaData(prop)
-
-        default = prop.default_value
-        if default is None:
-            default = MetaData.getDefaultValue(prop.value_type)
-        else:
-            func = MetaData.getUnserializeFunc(prop.value_type)
-            default = func(default)
-
-        return default
-
-    def propertyChanged(self, key, oldValue, newValue):
+    def propertyChanged(self, prop, oldValue, newValue):
         if oldValue != newValue:
+            # Check for any helpers that respond to a change
+            # in this property.
 
-            if key in self.transformProperties:
-                metaData = self.transformProperties[key][2]
-                # Make sure the value is in the unserialized native type
-                if not isinstance(newValue, MetaData.getNativeType(metaData.value_type)):
-                    func = MetaData.getUnserializeFunc(metaData.value_type)
-                    newValue = func(newValue)
-                self.transformProperties[key][1](newValue)
-            else:
-                # Check for any helpers that respond to a change
-                # in this property.
+            for helper in self.helpers:
+                # Does this helper respond to a change in this property by name?
+                if prop.name in helper.ChangeWith:
+                    self.updateHelpers()
+                    break
 
-                for helper in self.helpers:
-                    # Does this helper respond to a change in this property by name?
-                    if key in helper.ChangeWith:
-                        self.updateHelpers()
-                        break
+                # How about if it responds to a change in any property
+                # with this type?
+                if prop.valueType in helper.ChangeWithType:
+                    self.updateHelpers()
+                    break
 
-                    # How about if it responds to a change in any property
-                    # with this type?
-                    dt = self.getPropType(key)
-                    if dt in helper.ChangeWithType:
-                        self.updateHelpers()
-                        break
-            messenger.send('entityPropertyChanged', [self, key, newValue])
-
-    def updateProperties(self, data):
-        for key, value in data.items():
-            oldValue = self.getEntityData(key)
-            if not key in self.transformProperties:
-                # Make sure the value is the correct type
-                prop = self.getPropMetaData(key)
-                nativeType = MetaData.getNativeType(prop.value_type)
-                if not isinstance(value, nativeType):
-                    val = MetaData.getUnserializeFunc(prop.value_type)(value)
-                else:
-                    val = value
-                self.entityData[key] = val
-            else:
-                val = value
-            self.propertyChanged(key, oldValue, val)
-
-    # Returns list of property names with the specified value types.
-    def getPropsWithDataType(self, types):
-        if isinstance(types, str):
-            types = [types]
-        props = []
-        for schema in self.metaData.properties_schema:
-            if schema['type'] in types:
-                props.append(schema['name'])
-        return props
-
-    def getPropDataType(self, key):
-        try:
-            MetaData.getNativeType(self.getPropType(key))
-        except:
-            return str
-
-    def getPropType(self, key):
-        try:
-            return self.getPropMetaData(key).value_type
-        except:
-            return "string"
+        MapObject.propertyChanged(self, prop, oldValue, newValue)
 
     def getClassType(self):
         return self.metaData.class_type
@@ -145,69 +86,6 @@ class Entity(MapObject):
 
     def getDescription(self):
         return self.metaData.description
-
-    def transformChanged(self):
-        MapObject.transformChanged(self)
-        messenger.send('entityTransformChanged', [self])
-
-    def setAbsOrigin(self, origin):
-        self.np.setPos(base.render, origin)
-        self.transformChanged()
-
-    def setOrigin(self, origin):
-        self.np.setPos(origin)
-        self.transformChanged()
-
-    def getAbsOrigin(self):
-        return self.np.getPos(base.render)
-
-    def getOrigin(self):
-        return self.np.getPos()
-
-    def setAngles(self, angles):
-        self.np.setHpr(angles)
-        self.transformChanged()
-
-    def setAbsAngles(self, angles):
-        self.np.setHpr(base.render, angles)
-        self.transformChanged()
-
-    def getAbsAngles(self):
-        return self.np.getHpr(base.render)
-
-    def getAngles(self):
-        return self.np.getHpr()
-
-    def setScale(self, scale):
-        self.np.setScale(scale)
-        self.transformChanged()
-
-    def setAbsScale(self, scale):
-        self.np.setScale(base.render, scale)
-        self.transformChanged()
-
-    def getAbsScale(self):
-        return self.np.getScale(base.render)
-
-    def getScale(self):
-        return self.np.getScale()
-
-    def isTransformProperty(self, key):
-        return key in self.transformProperties
-
-    def getEntityData(self, key, asString = False):
-        # Hard coded transform properties
-        if key in self.transformProperties:
-            prop = self.transformProperties[key][2]
-            value = self.transformProperties[key][0]()
-        else:
-            prop = self.getPropMetaData(key)
-            value = self.entityData.get(key, "")
-
-        if asString:
-            return MetaData.getSerializeFunc(prop.value_type)(value)
-        else:
-            return value
 
     def setClassname(self, classname):
         MapObject.setClassname(self, classname)
@@ -223,40 +101,40 @@ class Entity(MapObject):
         if not self.metaData:
             return
 
-        # Prune out properties that are not part of this meta data
-        currData = dict(self.entityData)
-        for key in currData.keys():
+        # Prune out all FGD properties that are not part of this meta data
+        currData = dict(self.properties)
+        for name, prop in currData.items():
+            if prop.isExplicit() or not isinstance(prop, EntityProperty):
+                continue
+
             try:
-                self.metaData.property_by_name(key)
+                self.metaData.property_by_name(name)
             except PropertyNotFound:
-                del self.entityData[key]
+                del self.properties[name]
+
+        # Clear out spawnflags if we have them
+        if "spawnflags" in self.properties:
+            del self.properties["spawnflags"]
+
+        # Now add in the default values for FGD properties we don't already have.
 
         for prop in self.metaData.properties:
-            if MetaData.isPropertyExcluded(prop.name) or prop.name in self.entityData:
+            if MetaData.isPropertyExcluded(prop.name) or prop.name in self.properties:
                 continue
-            self.updateProperties({prop.name: self.getPropDefaultValue(prop)})
+
+            # New property
+            newProp = EntityProperty(prop, self)
+            self.updateProperties({newProp.name: newProp})
+
+        if len(self.metaData.spawnflags) > 0:
+            # We have spawnflags, add them
+            spawnflags = EntitySpawnflags(self.metaData.spawnflags, self)
+            self.updateProperties({spawnflags.name: spawnflags})
 
     def writeKeyValues(self, kv):
+        kv.setKeyValue("classname", self.classname)
         MapObject.writeKeyValues(self, kv)
 
-        kv.setKeyValue("classname", self.classname)
-        if self.isPointEntity():
-            for key, getset in self.transformProperties.items():
-                kv.setKeyValue(key, CKeyValues.toString(getset[0]()))
-        for key, value in self.entityData.items():
-            # Get the serialize function for this property type and serialize it!
-            func = MetaData.getSerializeFunc(self.getPropType(key))
-            kv.setKeyValue(key, func(value))
-
     def readKeyValues(self, kv):
-        MapObject.readKeyValues(self, kv)
-
         self.setClassname(kv.getValue("classname"))
-
-        for i in range(kv.getNumKeys()):
-            key = kv.getKey(i)
-            value = kv.getValue(i)
-            if MetaData.isPropertyExcluded(key):
-                continue
-            func = MetaData.getUnserializeFunc(self.getPropType(key))
-            self.updateProperties({key: func(value)})
+        MapObject.readKeyValues(self, kv)

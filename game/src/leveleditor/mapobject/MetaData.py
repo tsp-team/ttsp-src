@@ -7,14 +7,6 @@ from panda3d.core import LVecBase3f, LVecBase2f, LVecBase4f, CKeyValues
 from src.leveleditor.fgdtools import FgdEntityProperty
 from src.leveleditor import LEUtils
 
-# Hard coded properties for entity transform
-OriginMetaData = FgdEntityProperty("origin", "vec3", display_name="Origin",
-                                    default_value="0 0 0", description="Position of entity")
-AnglesMetaData = FgdEntityProperty("angles", "vec3", display_name="Angles (Yaw Pitch Roll)",
-                                    default_value="0 0 0", description="Angular orientation of entity")
-ScaleMetaData = FgdEntityProperty("scale", "vec3", display_name="Scale",
-                                  default_value="1 1 1", description="Scale of entity")
-
 MetaDataExclusions = [
     'id',
     'classname',

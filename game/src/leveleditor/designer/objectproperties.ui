@@ -232,6 +232,11 @@
        <string>Inputs</string>
       </attribute>
      </widget>
+     <widget class="QWidget" name="tabFlags">
+      <attribute name="title">
+       <string>Flags</string>
+      </attribute>
+     </widget>
     </widget>
    </item>
   </layout>
