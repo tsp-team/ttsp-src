@@ -339,6 +339,26 @@ class StudioEditor(BaseEditor):
     def setModelData(self, model, index):
         model.setData(index, self.lineEdit.text(), QtCore.Qt.EditRole)
 
+class BooleanEditor(BaseEditor):
+
+    def __init__(self, parent, item, model):
+        BaseEditor.__init__(self, parent, item, model)
+        self.check = QtWidgets.QCheckBox("", self)
+        self.check.stateChanged.connect(self.__checkStateChanged)
+        self.layout().addWidget(self.check)
+
+    def __checkStateChanged(self, state):
+        self.setModelData(self.model, self.item.index())
+
+    def setEditorData(self, index):
+        val = LEUtils.strToBool(self.getItemData())
+        self.check.blockSignals(True)
+        self.check.setChecked(val)
+        self.check.blockSignals(False)
+
+    def setModelData(self, model, index):
+        model.setData(index, LEUtils.boolToStr(self.check.isChecked()), QtCore.Qt.EditRole)
+
 class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
 
     PropTypeEditors = {
@@ -352,7 +372,8 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
         "vec3": Vec3Editor,
         "vec2": Vec2Editor,
         "vec4": Vec4Editor,
-        "float": FloatEditor
+        "float": FloatEditor,
+        "boolean": BooleanEditor
     }
 
     def __init__(self, window):
@@ -388,6 +409,9 @@ class ObjectPropertiesDelegate(QtWidgets.QStyledItemDelegate):
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
+
+class ObjectPropertiesNullItem(QtGui.QStandardItem):
+    pass
 
 class ObjectPropertiesItem(QtGui.QStandardItem):
 

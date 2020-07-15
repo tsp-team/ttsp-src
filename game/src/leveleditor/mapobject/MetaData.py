@@ -5,6 +5,7 @@
 from panda3d.core import LVecBase3f, LVecBase2f, LVecBase4f, CKeyValues
 
 from src.leveleditor.fgdtools import FgdEntityProperty
+from src.leveleditor import LEUtils
 
 # Hard coded properties for entity transform
 OriginMetaData = FgdEntityProperty("origin", "vec3", display_name="Origin",
@@ -30,11 +31,12 @@ MetaDataType = {
     'vec2': (LVecBase2f, CKeyValues.to2f, CKeyValues.toString, LVecBase2f(0, 0)),
     'integer': (int, int, str, 0),
     'choices': (int, int, str, 0),
-    'spawnflags': (int, int, str, 0),
+    'flags': (int, int, str, 0),
     'studio': (str, str, str, ""),
     'target_source': (str, str, str, ""),
     'target_destination': (str, str, str, ""),
-    'target_destinations': (str, str, str, "")
+    'target_destinations': (str, str, str, ""),
+    'boolean': (bool, LEUtils.strToBool, LEUtils.boolToStr, False)
 }
 
 def getMetaDataType(valueType):

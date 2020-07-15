@@ -171,3 +171,14 @@ def closestDistanceBetweenLines(l1, l2):
     else:
         a = dp.cross(dir1)
         return math.sqrt(a.dot(a) / v12)
+
+def roundVector(vec, num = 8):
+    for i in range(len(vec)):
+        vec[i] = round(vec[i], num)
+    return vec
+
+def strToBool(string):
+    return bool(int(string))
+
+def boolToStr(boolean):
+    return str(int(boolean))
