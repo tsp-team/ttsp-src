@@ -53,8 +53,7 @@ class Document(DirectObject):
         return self.idAllocator.allocate()
 
     def reserveID(self, id):
-        #self.idAllocator.initialReserveId(id)
-        pass
+        self.idAllocator.initialReserveId(id)
 
     def freeID(self, id):
         self.idAllocator.free(id)
@@ -109,7 +108,9 @@ class Document(DirectObject):
         cls = MapObjectFactory.MapObjectsByName.get(kv.getName())
         if not cls:
             return
-        obj = self.createObject(cls, keyValues = kv, parent = parent)
+        # Give a bogus id so we don't try to allocate an id. The id will be read
+        # from the keyvalues
+        obj = self.createObject(cls, keyValues = kv, parent = parent, id = -1)
         for i in range(kv.getNumChildren()):
             self.r_open(kv.getChild(i), obj)
 
