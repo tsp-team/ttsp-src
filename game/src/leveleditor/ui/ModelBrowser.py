@@ -28,6 +28,7 @@ class ModelFolder:
 class ModelFolderWidgetItem(QtWidgets.QTreeWidgetItem):
     pass
 
+
 class ModelBrowser(AssetBrowser):
 
     FileExtensions = ["bam", "egg", "egg.pz"]
@@ -144,6 +145,8 @@ class ModelBrowser(AssetBrowser):
         self.ui.folderView.clear()
 
         self.r_generateFolderWidgetTree(self.rootFolder, None)
+
+        self.ui.folderView.expandToDepth(0)
 
     def r_generateFolderWidgetTree(self, folder, parent):
         item = ModelFolderWidgetItem()
