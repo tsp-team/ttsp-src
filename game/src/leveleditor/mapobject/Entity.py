@@ -23,6 +23,12 @@ class Entity(MapObject):
             name += " - %s" % targetname
         return name
 
+    def getDescription(self):
+        if self.metaData.description is None:
+            return ""
+        else:
+            return self.metaData.description
+
     def hasSpawnflags(self):
         return len(self.metaData.spawnflags) > 0
 

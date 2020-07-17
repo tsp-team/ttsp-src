@@ -13,6 +13,7 @@ from src.leveleditor.viewport.ViewportManager import ViewportManager
 from src.leveleditor.tools.ToolManager import ToolManager
 from src.leveleditor.SelectionManager import SelectionManager
 from src.leveleditor.actions.ActionManager import ActionManager
+from src.leveleditor.brushes.BrushManager import BrushManager
 from src.leveleditor import LEUtils
 from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.Document import Document
@@ -421,6 +422,7 @@ class LevelEditor(BSPBase):
         self.qtWindow = self.qtApp.window
         self.selectionMgr = SelectionManager()
         self.actionMgr = ActionManager()
+        self.brushMgr = BrushManager()
         BSPBase.initialize(self)
 
         # Open a blank document
@@ -458,6 +460,7 @@ class LevelEditor(BSPBase):
         self.camLens.setNearFar(0.1, 10000)
         #self.shaderGenerator.setSunLight(self.dlnp)
 
+        self.brushMgr.addBrushes()
         self.toolMgr.addTools()
 
     def run(self):

@@ -650,15 +650,17 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DirectObject):
         selection = self.mgr.selectedObjects[len(self.mgr.selectedObjects) - 1]
         self.entity = selection
 
-        classname = selection.metaData.name
-        if selection.metaData.description:
-            desc = selection.metaData.description
-        else:
-            desc = ""
+
+        classname = selection.getName()
+        desc = selection.getDescription()
 
         self.ui.lblPropertyName.setText(classname)
         self.ui.lblPropertyDesc.setText(desc)
-        self.ui.comboClass.setCurrentText(classname)
+        if not isinstance(selection, Entity):
+            self.ui.comboClass.hide()
+        else:
+            self.ui.comboClass.show()
+            self.ui.comboClass.setCurrentText(classname)
 
         self.propertiesModel.removeRows(0, self.propertiesModel.rowCount())
 

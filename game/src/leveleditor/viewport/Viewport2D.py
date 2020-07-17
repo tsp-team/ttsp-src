@@ -107,6 +107,7 @@ class Viewport2D(Viewport):
     def makeGrid(self):
         self.grid = Grid2D(self)
         self.gridRoot.setDepthWrite(False, 1)
+        self.gridRoot.setBin("background", 0)
 
     def makeLens(self):
         lens = OrthographicLens()

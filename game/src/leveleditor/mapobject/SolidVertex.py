@@ -11,6 +11,11 @@ class SolidVertex(MapWritable):
         self.pos = pos
         self.face = face
 
+    def delete(self):
+        self.uv = None
+        self.pos = None
+        self.face = None
+
     def readKeyValues(self, kv):
         self.pos = CKeyValues.to3f(kv.getValue("location"))
         self.uv = LTexCoord(float(kv.getValue("textureu")), float(kv.getValue("texturev")))

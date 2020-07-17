@@ -1,4 +1,5 @@
 from panda3d.core import Point3, Vec3, Quat, LineSegs, CKeyValues, ButtonRegistry
+from panda3d.core import LPlane
 
 from direct.showbase.PythonUtil import invertDict
 
@@ -182,3 +183,40 @@ def strToBool(string):
 
 def boolToStr(boolean):
     return str(int(boolean))
+
+def getBoxFaces(start, end):
+    print(start, end)
+    topLeftBack = Point3(start.x, end.y, end.z)
+    topRightBack = end
+    topLeftFront = Point3(start.x, start.y, end.z)
+    topRightFront = Point3(end.x, start.y, end.z)
+
+    bottomLeftBack = Point3(start.x, end.y, start.z)
+    bottomRightBack = Point3(end.x, end.y, start.z)
+    bottomLeftFront = start
+    bottomRightFront = Point3(end.x, start.y, start.z)
+
+    return [
+        [topRightFront, topLeftFront, bottomLeftFront, bottomRightFront],
+        [topLeftBack, topRightBack, bottomRightBack, bottomLeftBack],
+        [topLeftFront, topLeftBack, bottomLeftBack, bottomLeftFront],
+        [topRightBack, topRightFront, bottomRightFront, bottomRightBack],
+        [topRightBack, topLeftBack, topLeftFront, topRightFront],
+        [bottomRightFront, bottomLeftFront, bottomLeftBack, bottomRightBack]
+    ]
+
+def getBoxPlanes(start, end):
+    faces = getBoxFaces(start, end)
+    planes = []
+    for i in range(6):
+        planes.append(LPlane(faces[i][0], faces[i][1], faces[i][2]))
+    return planes
+
+def getClosestAxis(normal):
+    absNormal = Vec3(abs(normal.x), abs(normal.y), abs(normal.z))
+    if absNormal.almostEqual(Vec3.unitX(), 0.5):
+        return Vec3.unitX()
+    elif absNormal.almostEqual(Vec3.unitY(), 0.5):
+        return Vec3.unitY()
+    else:
+        return Vec3.unitZ()

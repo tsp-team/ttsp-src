@@ -14,6 +14,28 @@ class Solid(MapObject):
         MapObject.__init__(self)
         self.faces = []
 
+    def select(self):
+        MapObject.select(self)
+        for face in self.faces:
+            face.select()
+
+    def deselect(self):
+        MapObject.deselect(self)
+        for face in self.faces:
+            face.deselect()
+
+    def getName(self):
+        return "Solid"
+
+    def getDescription(self):
+        return "Convex solid geometry."
+
+    def delete(self):
+        MapObject.delete(self)
+        for face in self.faces:
+            face.delete()
+        self.faces = None
+
     @staticmethod
     def createFromIntersectingPlanes(self, planes):
         solid = base.document.createObject(Solid)

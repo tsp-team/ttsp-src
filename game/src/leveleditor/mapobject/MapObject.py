@@ -49,6 +49,9 @@ class MapObject(MapWritable):
     def getName(self):
         return "Object"
 
+    def getDescription(self):
+        return "Object in a map."
+
     def addProperty(self, prop):
         self.properties[prop.name] = prop
 
