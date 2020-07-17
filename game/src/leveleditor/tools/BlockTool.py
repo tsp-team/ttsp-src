@@ -11,4 +11,4 @@ class BlockTool(BoxTool):
 
     def boxDrawnConfirm(self):
         base.brushMgr.brushes[0].create(self.state.boxStart, self.state.boxEnd,
-            MaterialPool.getMaterial("phase_12/maps/smoothwall_4.mat"), 2)
+            MaterialPool.getMaterial("materials/dev/dev_measuregeneric01b.mat"), 2)

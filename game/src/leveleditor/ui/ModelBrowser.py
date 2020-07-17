@@ -58,10 +58,11 @@ class ModelBrowser(AssetBrowser):
         props.setSize(96, 96)
         fbprops = core.FrameBufferProperties()
         fbprops.setSrgbColor(True)
+        fbprops.setRgbaBits(8, 8, 8, 0)
         flags = (core.GraphicsPipe.BFRefuseWindow | core.GraphicsPipe.BFSizeSquare)
         self.buffer = base.graphicsEngine.makeOutput(base.pipe, "modelBrowserBuffer", 0,
             fbprops, props, flags, base.gsg, None)
-        self.buffer.setClearColor(CIGlobals.vec3GammaToLinear(core.Vec4(0.5, 0.5, 0.5, 1.0)))
+        self.buffer.setClearColor(CIGlobals.vec3GammaToLinear(core.Vec4(82 / 255.0, 82 / 255.0, 82 / 255.0, 1.0)))
         self.buffer.setActive(False)
 
         self.displayRegion = self.buffer.makeDisplayRegion()
@@ -306,9 +307,9 @@ class ModelBrowser(AssetBrowser):
         qimage = QtGui.QImage(image.getXSize(), image.getYSize(), QtGui.QImage.Format_RGB888)
         for x in range(image.getXSize()):
             for y in range(image.getYSize()):
-                col = CIGlobals.vec3LinearToGamma(image.getXel(x, y))
+                col = CIGlobals.vec3LinearToGamma(image.getXelA(x, y))
                 qimage.setPixelColor(x, y,
-                    QtGui.QColor(int(col[0] * 255), int(col[1] * 255), int(col[2] * 255)))
+                    QtGui.QColor(int(col[0] * 255), int(col[1] * 255), int(col[2] * 255), int(col[3] * 255)))
 
         pixmap = QtGui.QPixmap.fromImage(qimage)
         icon = QtGui.QIcon(pixmap)

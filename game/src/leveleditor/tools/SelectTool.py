@@ -75,14 +75,16 @@ class SelectTool(BoxTool):
                 # We're doing single-selection. Deselect our current selections.
                 self.deselectAll()
 
-        entries = vp.click(GeomNode.getDefaultCollideMask())
+        entries = vp.click(base.selectionMgr.selectionMask)
         if not entries:
             return
+
+        key = base.selectionMgr.selectionKey
 
         for i in range(len(entries)):
             # Our entries have been sorted by distance, so use the first (closest) one.
             entry = entries[i]
-            np = entry.getIntoNodePath().findNetPythonTag("mapobject")
+            np = entry.getIntoNodePath().findNetPythonTag(key)
             if not np.isEmpty():
                 # Don't backface cull if there is a billboard effect on or above this node
                 if not LEUtils.hasNetBillboard(entry.getIntoNodePath()):
@@ -91,7 +93,7 @@ class SelectTool(BoxTool):
                     if surfNorm.dot(rayDir) >= 0:
                         # Backface cull
                         continue
-                obj = np.getPythonTag("mapobject")
+                obj = np.getPythonTag(key)
                 self.__toggleSelect(obj)
                 break
 
@@ -117,18 +119,19 @@ class SelectTool(BoxTool):
         box = CollisionBox(mins, maxs)
         node = CollisionNode("selectToolCollBox")
         node.addSolid(box)
-        node.setFromCollideMask(GeomNode.getDefaultCollideMask())
+        node.setFromCollideMask(base.selectionMgr.selectionMask)
         node.setIntoCollideMask(BitMask32.allOff())
         boxNp = base.render.attachNewNode(node)
         queue = CollisionHandlerQueue()
         base.clickTraverse(boxNp, queue)
         queue.sortEntries()
+        key = base.selectionMgr.selectionKey
         entries = queue.getEntries()
         # Select every MapObject our box intersected with
         for entry in entries:
-            np = entry.getIntoNodePath().findNetPythonTag("mapobject")
+            np = entry.getIntoNodePath().findNetPythonTag(key)
             if not np.isEmpty():
-                obj = np.getPythonTag("mapobject")
+                obj = np.getPythonTag(key)
                 if not obj in selection:
                     selection.append(obj)
         boxNp.removeNode()

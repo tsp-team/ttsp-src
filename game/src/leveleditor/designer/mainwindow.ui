@@ -103,6 +103,11 @@
    <addaction name="actionUndo"/>
    <addaction name="actionRedo"/>
    <addaction name="separator"/>
+   <addaction name="actionGroups"/>
+   <addaction name="actionObjects"/>
+   <addaction name="actionFaces"/>
+   <addaction name="actionVertices"/>
+   <addaction name="separator"/>
    <addaction name="actionToggleGrid"/>
    <addaction name="actionGridSnap"/>
    <addaction name="actionIncreaseGridSize"/>
@@ -269,6 +274,53 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
+  <action name="actionGroups">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Groups</string>
+   </property>
+   <property name="toolTip">
+    <string>Select object groups</string>
+   </property>
+  </action>
+  <action name="actionObjects">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Objects</string>
+   </property>
+   <property name="toolTip">
+    <string>Select individual objects</string>
+   </property>
+  </action>
+  <action name="actionFaces">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Faces</string>
+   </property>
+   <property name="toolTip">
+    <string>Select solid faces</string>
+   </property>
+  </action>
+  <action name="actionVertices">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Vertices</string>
+   </property>
+   <property name="toolTip">
+    <string>Select solid vertices</string>
+   </property>
+   <property name="visible">
+    <bool>true</bool>
    </property>
   </action>
  </widget>

@@ -11,7 +11,7 @@ from src.leveleditor.viewport.Viewport3D import Viewport3D
 from src.leveleditor.viewport.ViewportType import *
 from src.leveleditor.viewport.ViewportManager import ViewportManager
 from src.leveleditor.tools.ToolManager import ToolManager
-from src.leveleditor.SelectionManager import SelectionManager
+from src.leveleditor.SelectionManager import SelectionManager, SelectionMode
 from src.leveleditor.actions.ActionManager import ActionManager
 from src.leveleditor.brushes.BrushManager import BrushManager
 from src.leveleditor import LEUtils
@@ -106,6 +106,17 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.ui.actionUndo.triggered.connect(self.__undo)
         self.ui.actionRedo.triggered.connect(self.__redo)
 
+        selectionModeActions = [
+            (self.ui.actionGroups, SelectionMode.Groups), (self.ui.actionObjects, SelectionMode.Objects),
+            (self.ui.actionFaces, SelectionMode.Faces), (self.ui.actionVertices, SelectionMode.Vertices)
+        ]
+        self.ui.actionGroups.setChecked(True)
+        selectionModeGroup = QtWidgets.QActionGroup(self.ui.topBar)
+        for action, mode in selectionModeActions:
+            selectionModeGroup.addAction(action)
+            action.toggled.connect(lambda checked, mode=mode: self.__maybeSetSelelectionMode(checked, mode))
+
+
         # Since the viewports are separate windows from the Qt application,
         # they consume the keyboard events. This is bad when we want to save (ctrl-s) while
         # the mouse is inside a viewport. Or press enter to place an entity when the mouse is outside
@@ -116,6 +127,10 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         # We add these generic events onto the viewports for when any key is pressed.
         self.accept('btndown', self.__pandaButtonDown)
         self.accept('btnup', self.__pandaButtonUp)
+
+    def __maybeSetSelelectionMode(self, checked, mode):
+        if checked:
+            base.selectionMgr.setSelectionMode(mode)
 
     def __undo(self):
         base.actionMgr.undo()
@@ -349,14 +364,16 @@ class LevelEditor(BSPBase):
         TextNode.setDefaultFont(loader.loadFont("resources/models/fonts/consolas.ttf"))
 
         from panda3d.core import DirectionalLight, AmbientLight
-        #dlight = DirectionalLight('dlight')
-        #dlight.setColor((2.5, 2.5, 2.5, 1))
-        #dlnp = render.attachNewNode(dlight)
-        #dlnp.setHpr(165 - 180, -60, 0)
-        #render.setLight(dlnp)
-        #self.dlnp = dlnp
+        dlight = DirectionalLight('dlight')
+        dlight.setColor((1, 1, 1, 1))
+        dlnp = render.attachNewNode(dlight)
+        #direction = Vec3(1, 2, 3).normalized()
+        #dlnp.lookAt(direction)
+        dlnp.setHpr(45, -45, 0)
+        render.setLight(dlnp)
+        self.dlnp = dlnp
         alight = AmbientLight('alight')
-        alight.setColor((0.4, 0.4, 0.4, 1))
+        alight.setColor((0.5, 0.5, 0.5, 1))
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
 
@@ -456,7 +473,7 @@ class LevelEditor(BSPBase):
 
     def initStuff(self):
         BSPBase.initStuff(self)
-        self.camLens.setMinFov(70.0 / (4./3.))
+        self.camLens.setFov(90.0)
         self.camLens.setNearFar(0.1, 10000)
         #self.shaderGenerator.setSunLight(self.dlnp)
 

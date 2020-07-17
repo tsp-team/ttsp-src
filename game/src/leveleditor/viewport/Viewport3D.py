@@ -1,4 +1,4 @@
-from panda3d.core import WindowProperties, PerspectiveLens, NodePath, Fog, Vec4, Point3, LineSegs, TextNode
+from panda3d.core import WindowProperties, PerspectiveLens, NodePath, Fog, Vec4, Point3, LineSegs, TextNode, AntialiasAttrib
 
 from .Viewport import Viewport
 from .FlyCam import FlyCam

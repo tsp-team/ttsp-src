@@ -6,7 +6,7 @@ from panda3d.core import ColorAttrib, Vec3, Vec2
 from .MapWritable import MapWritable
 
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
-from src.leveleditor import LEUtils
+from src.leveleditor import LEUtils, LEGlobals
 
 class FaceMaterial:
 
@@ -55,6 +55,8 @@ class SolidFace(MapWritable):
 
     def generate(self):
         self.np = NodePath("solidface.%i" % self.id)
+        # This is selectable in object/group mode and face mode
+        self.np.setPythonTag("solidface", self)
         if self.solid:
             self.np.reparentTo(self.solid.np)
         self.np2D = self.np.attachNewNode(GeomNode("2d"))
@@ -65,6 +67,7 @@ class SolidFace(MapWritable):
         self.np3D.hide(~VIEWPORT_3D_MASK)
         if self.material.material:
             self.setMaterial(self.material.material)
+        self.np.setCollideMask(GeomNode.getDefaultCollideMask() | LEGlobals.FaceMask)
         self.regenerateGeometry()
 
     def setMaterial(self, mat):

@@ -16,7 +16,9 @@ class FlyCam(DirectObject):
 
         self.enabled = False
         self.mouseSensitivity = 0.3
-        self.cameraSpeed = 320
+        self.cameraSpeed = 1000
+        self.timeToSpeed = 0.5 # seconds
+        self.moveStart = 0.0
         self.cameraRotateSpeed = 75.0
         self.cameraSmooth = 0.7
         self.slideFactor = 0.75
@@ -24,6 +26,7 @@ class FlyCam(DirectObject):
         self.minPitch = -90
         self.diagonalFactor = math.sqrt(2.0) / 2.0
         self.lastSpeeds = Vec3(0)
+        self.moving = False
 
         inputState.watchWithModifiers("forward", "w")
         inputState.watchWithModifiers("reverse", "s")
@@ -124,11 +127,18 @@ class FlyCam(DirectObject):
             goalSpeeds = goalDir * self.cameraSpeed
 
         speeds = Vec3(goalSpeeds)
-        if not goalSpeeds.almostEqual(self.lastSpeeds, 0.01):
-            speeds *= dt
+        if speeds.lengthSquared() > 0.001:
+            now = globalClock.getFrameTime()
+            if not self.moving:
+                self.moving = True
+                self.moveStart = now
+            speedFactor = min((now - self.moveStart) / self.timeToSpeed, 1.0)
+            speeds *= dt * speedFactor
             # dont have float value be affected by direction, always completely up or down
             camera.setPos(camera.getPos() + camera.getQuat().xform(Vec3(speeds[0], speeds[1], 0)))
             camera.setZ(camera, speeds[2])
+        else:
+            self.moving = False
 
         # should never have a roll in the camera
         camera.setR(0)
