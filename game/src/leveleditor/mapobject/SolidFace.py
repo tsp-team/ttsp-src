@@ -78,6 +78,7 @@ class SolidFace(MapWritable):
         self.material.material = mat
         if self.np3D and mat:
             self.np3D.setBSPMaterial(mat.material)
+        self.calcTextureCoordinates(True)
 
     def setColor(self, color):
         if self.np2D:

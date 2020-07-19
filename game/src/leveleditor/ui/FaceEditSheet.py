@@ -9,8 +9,9 @@ from PyQt5 import QtWidgets, QtCore
 
 class FaceEditSheet(QtWidgets.QDockWidget):
 
-    def __init__(self):
+    def __init__(self, faceMode):
         QtWidgets.QDockWidget.__init__(self)
+        self.faceMode = faceMode
         self.setFeatures(QtWidgets.QDockWidget.AllDockWidgetFeatures)
         self.setWindowTitle("Face Edit Sheet")
         sheet = QtWidgets.QWidget()
@@ -105,9 +106,10 @@ class FaceEditSheet(QtWidgets.QDockWidget):
 
     def __materialFileEdited(self):
         filename = self.ui.materialFileEdit.text()
+        mat = MaterialPool.getMaterial(filename)
+        self.faceMode.activeMaterial = mat
         for face in self.faces:
-            face.setMaterial(MaterialPool.getMaterial(filename))
-            face.calcTextureCoordinates(True)
+            face.setMaterial(mat)
 
         self.updateMaterialIcon()
 
@@ -154,5 +156,7 @@ class FaceEditSheet(QtWidgets.QDockWidget):
 
         self.face = face
         self.faces = faces
+
+        self.faceMode.activeMaterial = self.face.material.material
 
         self.updateMaterialIcon()

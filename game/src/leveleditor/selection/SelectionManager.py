@@ -59,7 +59,8 @@ class SelectionManager(DirectObject):
         from .VertexMode import VertexMode
         self.addSelectionMode(GroupsMode(self))
         self.addSelectionMode(ObjectMode(self))
-        self.addSelectionMode(FaceMode(self))
+        self.faceMode = FaceMode(self)
+        self.addSelectionMode(self.faceMode)
         self.addSelectionMode(VertexMode(self))
 
     def setSelectionMode(self, mode):
