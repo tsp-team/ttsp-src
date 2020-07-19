@@ -11,6 +11,12 @@ class SolidVertex(MapWritable):
         self.pos = pos
         self.face = face
 
+    def getWorldPos(self):
+        if self.face.np is None:
+            return self.pos
+        else:
+            return base.render.getRelativePoint(self.face.np, self.pos)
+
     def delete(self):
         self.uv = None
         self.pos = None

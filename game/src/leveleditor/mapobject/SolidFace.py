@@ -1,12 +1,13 @@
 from panda3d.core import LPlane, GeomVertexData, GeomEnums, NodePath
 from panda3d.core import GeomNode, GeomTriangles, GeomLinestrips, GeomVertexFormat
 from panda3d.core import GeomVertexWriter, InternalName, Vec4, Geom
-from panda3d.core import ColorAttrib, Vec3, Vec2
+from panda3d.core import ColorAttrib, Vec3, Vec2, deg2Rad, Quat
 
 from .MapWritable import MapWritable
 
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 from src.leveleditor import LEUtils, LEGlobals
+from src.leveleditor.Align import Align
 
 class FaceMaterial:
 
@@ -83,6 +84,77 @@ class SolidFace(MapWritable):
             self.np2D.setColor(color)
         self.color = color
 
+    def alignTextureWithPointCloud(self, cloud, mode):
+        if self.material.material is None:
+            return
+
+        xvals = []
+        yvals = []
+        for extent in cloud.extents:
+            xvals.append(extent.dot(self.material.uAxis) / self.material.scale.x)
+            yvals.append(extent.dot(self.material.vAxis) / self.material.scale.y)
+
+        minU = min(xvals)
+        minV = min(yvals)
+        maxU = max(xvals)
+        maxV = max(yvals)
+
+        if mode == Align.Left:
+            self.material.shift.x = -minU
+        elif mode == Align.Right:
+            self.material.shift.x = -maxU + self.material.material.size.x
+        elif mode == Align.Center:
+            avgU = (minU + maxU) / 2
+            avgV = (minV + maxV) / 2
+            self.material.shift.x = -avgU + self.material.material.size.x / 2
+            self.material.shift.y = -avgV + self.material.material.size.y / 2
+        elif mode == Align.Top:
+            self.material.shift.y = -minV
+        elif mode == Align.Bottom:
+            self.material.shift.y = -maxV + self.material.material.size.y
+
+        self.calcTextureCoordinates(True)
+
+    def fitTextureToPointCloud(self, cloud, tileX, tileY):
+        if self.material.material is None:
+            return
+        if tileX <= 0:
+            tileX = 1
+        if tileY <= 0:
+            tileY = 1
+
+        # Scale will change, no need to use it in the calculations
+        xvals = []
+        yvals = []
+        for extent in cloud.extents:
+            xvals.append(extent.dot(self.material.uAxis))
+            yvals.append(extent.dot(self.material.vAxis))
+
+        minU = min(xvals)
+        minV = min(yvals)
+        maxU = max(xvals)
+        maxV = max(yvals)
+
+        self.material.scale.x = (maxU - minU) / (self.material.material.size.x * tileX)
+        self.material.scale.y = (maxV - minV) / (self.material.material.size.y * tileY)
+        self.material.shift.x = -minU / self.material.scale.x
+        self.material.shift.y = -minV / self.material.scale.y
+
+        self.calcTextureCoordinates(True)
+
+    def setTextureRotation(self, angle):
+        # Rotate texture around the face normal
+        rads = deg2Rad(self.material.rotation - angle)
+        # Rotate around the face normal
+        texNorm = self.material.vAxis.cross(self.material.uAxis).normalized()
+        transform = Quat()
+        transform.setFromAxisAngleRad(rads, texNorm)
+        self.material.uAxis = transform.xform(self.material.uAxis)
+        self.material.vAxis = transform.xform(self.material.vAxis)
+        self.material.rotation = angle
+
+        self.calcTextureCoordinates(True)
+
     def alignTextureToWorld(self):
         # Set the U and V axes to match the X, Y, or Z axes.
         # How they are calculated depends on which direction the plane is facing.
@@ -138,8 +210,9 @@ class SolidFace(MapWritable):
         vadd = self.material.shift.y / self.material.material.size.y
 
         for vert in self.vertices:
-            vert.uv.x = (vert.pos.dot(self.material.uAxis) / udiv) + uadd
-            vert.uv.y = (vert.pos.dot(self.material.vAxis) / vdiv) + vadd
+            vertPos = vert.getWorldPos()
+            vert.uv.x = (vertPos.dot(self.material.uAxis) / udiv) + uadd
+            vert.uv.y = (vertPos.dot(self.material.vAxis) / vdiv) + vadd
 
         if self.hasGeometry:
             self.modifyGeometryUVs()
