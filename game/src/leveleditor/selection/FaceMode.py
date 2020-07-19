@@ -21,6 +21,7 @@ class FaceMode(SelectionMode):
 
     def enable(self):
         SelectionMode.enable(self)
+        # Right click on face to apply active material
         self.accept('mouse3', self.applyActiveMaterial)
 
     def applyActiveMaterial(self):

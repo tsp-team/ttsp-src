@@ -81,7 +81,7 @@ class MoveWidgetAxis(NodePath):
 
         baseSegs = LineSegs()
         baseSegs.setColor(1, 1, 1, 1)
-        baseSegs.setThickness(3.0)
+        baseSegs.setThickness(2.0)
         baseSegs.moveTo(0, 0, 0)
         baseSegs.drawTo(0, 0.6, 0)
         self.base = self.attachNewNode(baseSegs.create())
