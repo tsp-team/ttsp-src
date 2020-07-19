@@ -11,7 +11,8 @@ from src.leveleditor.viewport.Viewport3D import Viewport3D
 from src.leveleditor.viewport.ViewportType import *
 from src.leveleditor.viewport.ViewportManager import ViewportManager
 from src.leveleditor.tools.ToolManager import ToolManager
-from src.leveleditor.SelectionManager import SelectionManager, SelectionMode
+from src.leveleditor.selection.SelectionManager import SelectionManager
+from src.leveleditor.selection.SelectionType import SelectionType
 from src.leveleditor.actions.ActionManager import ActionManager
 from src.leveleditor.brushes.BrushManager import BrushManager
 from src.leveleditor import LEUtils
@@ -107,8 +108,8 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.ui.actionRedo.triggered.connect(self.__redo)
 
         selectionModeActions = [
-            (self.ui.actionGroups, SelectionMode.Groups), (self.ui.actionObjects, SelectionMode.Objects),
-            (self.ui.actionFaces, SelectionMode.Faces), (self.ui.actionVertices, SelectionMode.Vertices)
+            (self.ui.actionGroups, SelectionType.Groups), (self.ui.actionObjects, SelectionType.Objects),
+            (self.ui.actionFaces, SelectionType.Faces), (self.ui.actionVertices, SelectionType.Vertices)
         ]
         self.ui.actionGroups.setChecked(True)
         selectionModeGroup = QtWidgets.QActionGroup(self.ui.topBar)

@@ -8,6 +8,7 @@ from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
 from src.leveleditor import RenderModes
 from src.leveleditor import LEGlobals
+from .SelectionType import SelectionType
 
 from enum import IntEnum
 
@@ -17,24 +18,6 @@ Bounds3DState = RenderState.make(
 
 Bounds2DState = RenderModes.DashedLineNoZ()
 Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
-
-class SelectionMode(IntEnum):
-    # Select individual MapObjects: entities, solids, etc
-    Objects = 0
-    # Select groups of MapObjects, i.e. when you click on one MapObject
-    # it will select that and everything that it is grouped to.
-    Groups = 1
-    # Select faces of Solids. This pops up the face edit sheet
-    Faces = 2
-    # Select vertices of Solids
-    Vertices = 3
-
-SelectionModeData = {
-    SelectionMode.Objects: ["mapobject", GeomNode.getDefaultCollideMask() | LEGlobals.EntityMask],
-    SelectionMode.Groups: ["mapobject", GeomNode.getDefaultCollideMask() | LEGlobals.EntityMask],
-    SelectionMode.Faces: ["solidface", LEGlobals.FaceMask],
-    SelectionMode.Vertices: ["solidvertex", LEGlobals.VertexMask]
-}
 
 class SelectionManager(DirectObject):
 
@@ -46,26 +29,46 @@ class SelectionManager(DirectObject):
         self.selectionCenter = Point3()
 
         # We'll select groups by default
-        self.selectionMode = SelectionMode.Groups
-        self.calcSelectionMask()
-
-        self.objectProperties = ObjectPropertiesWindow(self)
+        self.selectionModes = {}
+        self.selectionMode = None
 
         self.accept('delete', self.deleteSelectedObjects)
-        self.accept('selectionsChanged', self.objectProperties.updateForSelection)
         self.accept('objectTransformChanged', self.handleObjectTransformChange)
         self.accept('mapObjectBoundsChanged', self.handleMapObjectBoundsChanged)
 
+        self.addSelectionModes()
+
+        self.setSelectionMode(SelectionType.Groups)
+
+    def getSelectionKey(self):
+        return self.selectionMode.Key
+
+    def getSelectionMask(self):
+        return self.selectionMode.Mask
+
+    def isTransformAllowed(self, bits):
+        return (self.selectionMode.TransformBits & bits) != 0
+
+    def addSelectionMode(self, modeInst):
+        self.selectionModes[modeInst.Type] = modeInst
+
+    def addSelectionModes(self):
+        from .GroupsMode import GroupsMode
+        from .ObjectMode import ObjectMode
+        from .FaceMode import FaceMode
+        from .VertexMode import VertexMode
+        self.addSelectionMode(GroupsMode(self))
+        self.addSelectionMode(ObjectMode(self))
+        self.addSelectionMode(FaceMode(self))
+        self.addSelectionMode(VertexMode(self))
+
     def setSelectionMode(self, mode):
-        if mode != self.selectionMode:
+        if mode != self.selectionMode and self.selectionMode is not None:
             # Deselect everything from our old mode.
             self.deselectAll()
-        self.selectionMode = mode
-        self.calcSelectionMask()
-
-    def calcSelectionMask(self):
-        self.selectionKey = SelectionModeData[self.selectionMode][0]
-        self.selectionMask = SelectionModeData[self.selectionMode][1]
+            self.selectionMode.disable()
+        self.selectionMode = self.selectionModes[mode]
+        self.selectionMode.enable()
 
     def handleMapObjectBoundsChanged(self, mapObject):
         if mapObject in self.selectedObjects:
@@ -78,6 +81,10 @@ class SelectionManager(DirectObject):
             messenger.send('selectedObjectTransformChanged', [entity])
 
     def deleteSelectedObjects(self):
+        if not self.selectionMode.CanDelete:
+            # This mode doesn't allow deleting our selected objects.
+            return
+
         selected = list(self.selectedObjects)
         for obj in selected:
             base.document.deleteObject(obj)

@@ -75,11 +75,11 @@ class SelectTool(BoxTool):
                 # We're doing single-selection. Deselect our current selections.
                 self.deselectAll()
 
-        entries = vp.click(base.selectionMgr.selectionMask)
+        entries = vp.click(base.selectionMgr.getSelectionMask())
         if not entries:
             return
 
-        key = base.selectionMgr.selectionKey
+        key = base.selectionMgr.getSelectionKey()
 
         for i in range(len(entries)):
             # Our entries have been sorted by distance, so use the first (closest) one.
@@ -119,13 +119,13 @@ class SelectTool(BoxTool):
         box = CollisionBox(mins, maxs)
         node = CollisionNode("selectToolCollBox")
         node.addSolid(box)
-        node.setFromCollideMask(base.selectionMgr.selectionMask)
+        node.setFromCollideMask(base.selectionMgr.getSelectionMask())
         node.setIntoCollideMask(BitMask32.allOff())
         boxNp = base.render.attachNewNode(node)
         queue = CollisionHandlerQueue()
         base.clickTraverse(boxNp, queue)
         queue.sortEntries()
-        key = base.selectionMgr.selectionKey
+        key = base.selectionMgr.getSelectionKey()
         entries = queue.getEntries()
         # Select every MapObject our box intersected with
         for entry in entries:

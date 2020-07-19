@@ -39,8 +39,11 @@ class SolidFace(MapWritable):
         self.hasGeometry = False
         self.vdata = None
 
+    def getName(self):
+        return "Solid face"
+
     def select(self):
-        self.np.setColorScale(1, 0.5, 0.5, 1)
+        self.np.setColorScale(1, 0.75, 0.75, 1)
         self.isSelected = True
 
     def deselect(self):
@@ -79,6 +82,25 @@ class SolidFace(MapWritable):
         if self.np2D:
             self.np2D.setColor(color)
         self.color = color
+
+    def alignTextureToWorld(self):
+        # Set the U and V axes to match the X, Y, or Z axes.
+        # How they are calculated depends on which direction the plane is facing.
+
+        norm = self.plane.getNormal()
+        direction = LEUtils.getClosestAxis(norm)
+
+        # VHE behavior:
+        # U axis: If the closest axis to the normal is the X axis,
+        #         the U axis is unit Y. Otherwise, the U axis is unit X.
+        # V axis: If the closest axis to the normal is the Z axis,
+        #         the V axis is -unit Y. Otherwise, the V axis is -unit z.
+
+        self.material.uAxis = Vec3.unitY() if direction == Vec3.unitX() else Vec3.unitX()
+        self.material.vAxis = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
+        self.material.rotation = 0
+
+        self.calcTextureCoordinates(True)
 
     def alignTextureToFace(self):
         # Set the U and V axes to match the plane's normal

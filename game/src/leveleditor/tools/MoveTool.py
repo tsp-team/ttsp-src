@@ -7,6 +7,7 @@ from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
 from src.leveleditor.math.Ray import Ray
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
+from src.leveleditor.selection.SelectionType import SelectionModeTransform
 
 from .SelectTool import SelectTool
 from .BoxTool import BoxAction, ResizeHandle
@@ -229,7 +230,8 @@ class MoveTool(SelectTool):
             self.calcWidgetPoint()
 
     def selectionChanged(self):
-        if base.selectionMgr.hasSelectedObjects():
+        if base.selectionMgr.hasSelectedObjects() \
+            and base.selectionMgr.isTransformAllowed(SelectionModeTransform.Translate):
             if not self.hasWidgets:
                 self.enableWidget()
             else:
@@ -407,7 +409,8 @@ class MoveTool(SelectTool):
         self.accept('selectedObjectTransformChanged', self.handleSelectedObjectTransformChanged)
         # Same with bounds
         self.accept('selectedObjectBoundsChanged', self.handleSelectedObjectTransformChanged)
-        if base.selectionMgr.hasSelectedObjects():
+        if base.selectionMgr.hasSelectedObjects() \
+            and base.selectionMgr.isTransformAllowed(SelectionModeTransform.Translate):
             self.enableWidget()
         self.options.show()
 
