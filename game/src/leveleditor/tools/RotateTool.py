@@ -1,6 +1,6 @@
-from .SelectTool import SelectTool
+from .BaseTransformTool import BaseTransformTool
 
-class RotateTool(SelectTool):
+class RotateTool(BaseTransformTool):
 
     Name = "Rotate"
     ToolTip = "Rotate Tool [SHIFT+E]"

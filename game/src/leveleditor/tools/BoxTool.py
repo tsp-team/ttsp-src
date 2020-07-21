@@ -243,6 +243,8 @@ class BoxTool(BaseTool):
             and current[2] > start[2] and current[2] < end[2]:
             return ResizeHandle.Center
 
+        return None
+
     def __init__(self):
         BaseTool.__init__(self)
         self.handleWidth = 0.9
@@ -617,6 +619,12 @@ class BoxTool(BaseTool):
         self.state.boxEnd += delta
         self.state.action = BoxAction.Drawn
         self.resizeBoxDone()
+
+    #def scaleBox(self, scale,):
+    #    self.state.boxStart.componentwiseMult(scale)
+    #    self.state.boxEnd.componentwiseMult(scale)
+    #    self.state.action = BoxAction.Drawn
+    #    self.resizeBoxDone()
 
     def update(self):
         for vp in self.vps:

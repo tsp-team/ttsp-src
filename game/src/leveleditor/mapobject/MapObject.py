@@ -3,7 +3,7 @@ from panda3d.core import Point3, CKeyValues, BitMask32, RenderState, ColorAttrib
 
 from .MapWritable import MapWritable
 from src.leveleditor import LEGlobals
-from .TransformProperties import OriginProperty, AnglesProperty, ScaleProperty
+from .TransformProperties import OriginProperty, AnglesProperty, ScaleProperty, ShearProperty
 from . import MetaData
 from .ObjectProperty import ObjectProperty
 
@@ -45,6 +45,7 @@ class MapObject(MapWritable):
         self.addProperty(OriginProperty(self))
         self.addProperty(AnglesProperty(self))
         self.addProperty(ScaleProperty(self))
+        self.addProperty(ShearProperty(self))
 
     def getName(self):
         return "Object"
@@ -176,6 +177,20 @@ class MapObject(MapWritable):
 
     def getScale(self):
         return self.np.getScale()
+
+    def setShear(self, shear):
+        self.np.setShear(shear)
+        self.transformChanged()
+
+    def setAbsShear(self, shear):
+        self.np.setShear(base.render, shear)
+        self.transformChanged()
+
+    def getAbsShear(self):
+        return self.np.getShear(base.render)
+
+    def getShear(self):
+        return self.np.getShear()
 
     def transformChanged(self):
         self.recalcBoundingBox()

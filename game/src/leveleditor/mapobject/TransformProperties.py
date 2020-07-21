@@ -76,3 +76,22 @@ class ScaleProperty(TransformProperty):
 
     def getValue(self):
         return self.mapObject.getScale()
+
+class ShearProperty(TransformProperty):
+
+    def __init__(self, mapObject):
+        TransformProperty.__init__(self, mapObject)
+        self.name = "shear"
+
+    def getDisplayName(self):
+        return "Shear"
+
+    def getDescription(self):
+        return "Shear/skew of the object."
+
+    def setValue(self, value):
+        TransformProperty.setValue(self, value)
+        self.mapObject.setShear(value)
+
+    def getValue(self):
+        return self.mapObject.getShear()
