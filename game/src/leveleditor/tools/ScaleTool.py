@@ -90,8 +90,6 @@ class ScaleTool(BaseTransformTool):
         boxCenter = (self.state.boxStart + self.state.boxEnd) / 2.0
         self.setGizmoOrigin(boxCenter + scaleOffset)
 
-        localScale = self.toolRoot.getRelativeVector(base.render, scale)
-
         self.toolVisRoot.setScale(scale)
 
     def onMouseMoveTransforming3D(self, vp):
