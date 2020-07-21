@@ -5,6 +5,23 @@ from .SolidVertex import SolidVertex
 
 from src.leveleditor import LEUtils
 
+from .ObjectProperty import ObjectProperty
+
+class VisOccluder(ObjectProperty):
+
+    def __init__(self, mapObject):
+        ObjectProperty.__init__(self, mapObject)
+        self.valueType = "boolean"
+        self.value = True
+        self.defaultValue = True
+        self.name = "visoccluder"
+
+    def getDescription(self):
+        return "Turn this on to make the Solid block visibility of other objects."
+
+    def getDisplayName(self):
+        return "Vis Occluder"
+
 # A brush
 class Solid(MapObject):
 
@@ -13,6 +30,7 @@ class Solid(MapObject):
     def __init__(self):
         MapObject.__init__(self)
         self.faces = []
+        self.addProperty(VisOccluder(self))
 
     def select(self):
         MapObject.select(self)

@@ -220,3 +220,11 @@ def getClosestAxis(normal):
         return Vec3.unitY()
     else:
         return Vec3.unitZ()
+
+def circle(x, y, radius, vertices=32):
+    # Doesn't actually define a "circle" -- more of a pentagon. :)
+    result = []
+    for theta in range(0, 360, 360//vertices):
+        theta *= math.pi/180 # Degrees to radians
+        result.append((x + math.sin(theta)*radius, y + math.cos(theta)*radius))
+    return result

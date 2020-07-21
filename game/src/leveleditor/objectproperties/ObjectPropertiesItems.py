@@ -30,6 +30,7 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
         if self.isKey:
             self.setEditable(False)
             self.setText(self.getKeyText())
+            self.setToolTip(self.text())
         else:
             self.setEditable(True)
             self.setText(self.computeValueText())
@@ -107,6 +108,7 @@ class ObjectPropertiesFlagItem(QtGui.QStandardItem):
         if self.isKey:
             self.setEditable(False)
             self.setText(self.spawnFlag.display_name)
+            self.setToolTip(self.text())
         else:
             self.setEditable(True)
             self.setText(self.computeValueText())
