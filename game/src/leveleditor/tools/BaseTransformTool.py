@@ -53,6 +53,8 @@ class TransformToolOptions(QtWidgets.QDockWidget):
 class TransformWidgetAxis(NodePath):
 
     DotFade = True
+    DotRange = [0.95, 0.99]
+    OppositeDot = False
 
     def __init__(self, widget, axis):
         NodePath.__init__(self, "transformWidgetAxis")
@@ -85,8 +87,9 @@ class TransformWidgetAxis(NodePath):
             camToAxis.normalize()
 
             dot = abs(camToAxis.dot(self.direction))
-            if dot >= 0.95:
-                alpha = CIGlobals.remapVal(dot, 0.95, 0.99, 1.0, 0.0)
+            inRange = dot >= self.DotRange[0] if not self.OppositeDot else dot <= self.DotRange[0]
+            if inRange:
+                alpha = CIGlobals.remapVal(dot, self.DotRange[0], self.DotRange[1], 1.0, 0.0)
                 self.setAlphaScale(alpha)
             else:
                 self.setAlphaScale(1)

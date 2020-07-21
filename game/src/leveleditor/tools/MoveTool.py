@@ -1,6 +1,6 @@
 from panda3d.core import NodePath, CardMaker, Vec4, Quat, Vec3, SamplerState, OmniBoundingVolume, BillboardEffect
 from panda3d.core import CollisionBox, CollisionNode, CollisionTraverser, CollisionHandlerQueue, BitMask32, Point3
-from panda3d.core import LPlane, LineSegs
+from panda3d.core import LPlane, LineSegs, AntialiasAttrib
 
 from src.leveleditor import LEGlobals
 from src.leveleditor import LEUtils
@@ -32,6 +32,7 @@ class MoveWidgetAxis(TransformWidgetAxis):
         baseSegs.moveTo(0, 0, 0)
         baseSegs.drawTo(0, 0.6, 0)
         self.base = self.attachNewNode(baseSegs.create())
+        self.base.setAntialias(AntialiasAttrib.MLine)
 
     def getClickBox(self):
         return [Vec3(-0.06, 0.0, -0.06), Vec3(0.06, 0.8, 0.06)]

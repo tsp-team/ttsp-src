@@ -1,4 +1,4 @@
-from panda3d.core import LineSegs, Vec3, Point3
+from panda3d.core import LineSegs, Vec3, Point3, AntialiasAttrib
 
 from .BaseTransformTool import BaseTransformTool, TransformWidget, TransformWidgetAxis
 
@@ -20,6 +20,7 @@ class ScaleWidgetAxis(TransformWidgetAxis):
         baseSegs.moveTo(0, 0, 0)
         baseSegs.drawTo(0, 0.6, 0)
         self.base = self.attachNewNode(baseSegs.create())
+        self.base.setAntialias(AntialiasAttrib.MLine)
 
     def getClickBox(self):
         return [Vec3(-0.06, 0.0, -0.06), Vec3(0.06, 0.8, 0.06)]
