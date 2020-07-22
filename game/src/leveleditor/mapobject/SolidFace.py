@@ -7,6 +7,7 @@ from .MapWritable import MapWritable
 
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 from src.leveleditor import LEUtils, LEGlobals
+from src.leveleditor.math import PlaneClassification
 from src.leveleditor.Align import Align
 
 class FaceMaterial:
@@ -39,6 +40,11 @@ class SolidFace(MapWritable):
         self.solid = solid
         self.hasGeometry = False
         self.vdata = None
+
+    def getWorldPlane(self):
+        plane = LPlane(self.plane)
+        plane.xform(self.np.getMat(base.render))
+        return plane
 
     def getName(self):
         return "Solid face"
@@ -237,6 +243,27 @@ class SolidFace(MapWritable):
             self.material.shift.x += self.material.material.size.x
         if self.material.shift.y < -self.material.material.size.y / 2:
             self.material.shift.y += self.material.material.size.y
+
+    def classifyAgainstPlane(self, plane):
+        front = back = onplane = 0
+        count = len(self.vertices)
+
+        for vert in self.vertices:
+            test = plane.distToPlane(vert.getWorldPos())
+            if test <= 0:
+                back += 1
+            if test >= 0:
+                front += 1
+            if test == 0:
+                onplane += 1
+
+        if onplane == count:
+            return PlaneClassification.OnPlane
+        if front == count:
+            return PlaneClassification.Front
+        if back == count:
+            return PlaneClassification.Back
+        return PlaneClassification.Spanning
 
     def regenerateGeometry(self):
         # Remove existing geometry

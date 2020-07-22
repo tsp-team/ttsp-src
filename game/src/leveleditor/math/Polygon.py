@@ -16,7 +16,7 @@ class Polygon:
         return poly
 
     @staticmethod
-    def fromPlaneAndRadius(plane, radius = 1000000):
+    def fromPlaneAndRadius(plane, radius = 10000):
         norm = plane.getNormal()
         point = plane.getPoint()
         tempV = Vec3.back() if norm.almostEqual(Vec3.up(), 0.5) else Vec3.down()
@@ -32,6 +32,8 @@ class Polygon:
 
         poly = Polygon(verts, plane)
         poly.expand(radius)
+
+        return poly
 
     def isValid(self):
         for vert in self.vertices:

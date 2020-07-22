@@ -1,9 +1,12 @@
+from panda3d.core import LPlane
+
 from src.leveleditor.math.Polygon import Polygon
 from .MapObject import MapObject
 from .SolidFace import SolidFace
 from .SolidVertex import SolidVertex
 
 from src.leveleditor import LEUtils
+from src.leveleditor.math import PlaneClassification
 
 from .ObjectProperty import ObjectProperty
 
@@ -54,9 +57,39 @@ class Solid(MapObject):
             face.delete()
         self.faces = None
 
+    # Splits this solid into two solids by intersecting against a plane.
+    def split(self, plane, temp = False):
+        back = front = None
+
+        # Check that this solid actually spans the plane
+        classifications = []
+        for face in self.faces:
+            classify = face.classifyAgainstPlane(plane)
+            if classify not in classifications:
+                classifications.append(classify)
+        if PlaneClassification.Spanning not in classifications:
+            if PlaneClassification.Back in classifications:
+                back = self
+            elif PlaneClassification.Front in classifications:
+                front = self
+            return [False, front, back]
+
+        backPlanes = [plane]
+        frontPlanes = [LPlane(-plane[0], -plane[1], -plane[2], -plane[3])]
+
+        for face in self.faces:
+            classify = face.classifyAgainstPlane(plane)
+            if classify != PlaneClassification.Back:
+                frontPlanes.append(face.getWorldPlane())
+            if classify != PlaneClassification.Front:
+                backPlanes.append(face.getWorldPlane())
+
+        back = SolidFace.createFromIntersectingPlanes(backPlanes, temp)
+        front = SolidFace.createFromIntersectingPlanes(frontPlanes, temp)
+
     @staticmethod
-    def createFromIntersectingPlanes(self, planes):
-        solid = base.document.createObject(Solid)
+    def createFromIntersectingPlanes(planes, temp = False):
+        solid = base.document.createObject(Solid, id = -1 if temp else None)
         for i in range(len(planes)):
             # Split the polygon by all the other planes
             poly = Polygon.fromPlaneAndRadius(planes[i])
@@ -65,11 +98,10 @@ class Solid(MapObject):
                     poly.split(planes[j])
 
             # The final polygon is the face
-            face = SolidFace(base.document.getNextFaceID(), poly.plane, solid)
+            face = SolidFace(-1 if temp else base.document.getNextFaceID(), poly.plane, solid)
             for i in range(len(poly.vertices)):
                 # Round vertices a bit for sanity
                 face.vertices.append(SolidVertex(LEUtils.roundVector(poly.vertices[i], 2), face))
-            face.recalcBoundingBox()
             face.alignTextureToWorld()
             solid.faces.append(face)
 
