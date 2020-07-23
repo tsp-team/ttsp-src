@@ -14,7 +14,7 @@ class Root(MapObject):
         # We have to create a copy of our children to iterate through
         # because deleting a child object removes itself from our list of children.
         # Deleting from a list while iterating through it causes problems.
-        children = list(self.children)
+        children = list(self.children.values())
         for child in children:
             base.document.deleteObject(child)
 

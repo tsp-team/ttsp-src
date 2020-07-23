@@ -16,6 +16,22 @@ class Entity(MapObject):
         self.metaData = None
         self.helpers = []
 
+    def copy(self, generator):
+        e = base.document.createObject(Entity, id = generator.getNextID())
+        self.copyBase(e, generator)
+        return e
+
+    def paste(self, o, generator):
+        self.pasteBase(o, generator)
+
+    def clone(self):
+        e = base.document.createObject(Entity, id = self.id)
+        self.copyBase(e, None, True)
+        return e
+
+    def unclone(self, o):
+        self.pasteBase(o, None, True)
+
     def getName(self):
         name = self.classname
         targetname = self.getPropertyValue("targetname")

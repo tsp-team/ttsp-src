@@ -72,6 +72,13 @@ class ClipTool(BaseTool):
         self.accept('mouse1-up', self.mouseUp)
         self.accept('mouseMoved', self.mouseMoved)
         self.accept('control', self.controlDown)
+        self.accept('enter', self.confirmClip)
+
+    def confirmClip(self):
+        if self.point1 is None or self.point2 is None or self.point3 is None:
+            return
+
+        clipPlane = LPlane(self.point1, self.point2, self.point3)
 
     def controlDown(self):
         self.controlIsDown = True

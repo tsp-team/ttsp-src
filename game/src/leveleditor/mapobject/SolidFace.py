@@ -9,6 +9,7 @@ from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_
 from src.leveleditor import LEUtils, LEGlobals
 from src.leveleditor.math import PlaneClassification
 from src.leveleditor.Align import Align
+from src.leveleditor.IDGenerator import IDGenerator
 
 class FaceMaterial:
 
@@ -19,6 +20,16 @@ class FaceMaterial:
         self.uAxis = Vec3(0)
         self.vAxis = Vec3(0)
         self.rotation = 0.0
+
+    def clone(self):
+        mat = FaceMaterial()
+        mat.material = self.material
+        mat.scale = Vec2(self.scale)
+        mat.shift = Vec2(self.shift)
+        mat.uAxis = Vec3(self.uAxis)
+        mat.vAxis = Vec3(self.vAxis)
+        mat.rotation = float(self.rotation)
+        return mat
 
 class SolidFace(MapWritable):
 
@@ -40,6 +51,40 @@ class SolidFace(MapWritable):
         self.solid = solid
         self.hasGeometry = False
         self.vdata = None
+
+    def copy(self, generator):
+        f = SolidFace(generator.getNextID(), LPlane(self.plane), self.solid)
+        f.isSelected = self.isSelected
+        f.setColor(Vec4(self.color))
+        f.setMaterial(self.material.clone())
+        for i in range(len(self.vertices)):
+            newVert = self.vertices[i].clone()
+            newVert.face = f
+            f.vertices.append(newVert)
+        f.generate()
+        return f
+
+    def clone(self):
+        f = self.copy(IDGenerator())
+        f.id = self.id
+        return f
+
+    def paste(self, f):
+        self.plane = LPlane(f.plane)
+        self.setColor(Vec4(f.color))
+        self.isSelected = f.isSelected
+        self.setMaterial(f.material.clone())
+        self.solid = f.solid
+        self.vertices = []
+        for i in range(len(f.vertices)):
+            newVert = f.vertices[i].clone()
+            newVert.face = self
+            self.vertices.append(newVert)
+        self.generate()
+
+    def unclone(self, f):
+        self.paste(f)
+        self.id = f.id
 
     def getWorldPlane(self):
         plane = LPlane(self.plane)

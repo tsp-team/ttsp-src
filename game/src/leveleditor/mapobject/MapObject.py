@@ -30,7 +30,7 @@ class MapObject(MapWritable):
         self.selected = False
         self.classname = ""
         self.parent = None
-        self.children = []
+        self.children = {}
         self.np = None
         self.boundingBox = BoundingBox(Vec3(-0.5, -0.5, -0.5), Vec3(0.5, 0.5, 0.5))
         self.boundsBox = Box()
@@ -46,6 +46,71 @@ class MapObject(MapWritable):
         self.addProperty(AnglesProperty(self))
         self.addProperty(ScaleProperty(self))
         self.addProperty(ShearProperty(self))
+
+    def hasChildWithID(self, id):
+        return id in self.children
+
+    def copy(self, generator):
+        raise NotImplementedError
+
+    def paste(self, o, generator):
+        raise NotImplementedError
+
+    def clone(self):
+        raise NotImplementedError
+
+    def unclone(self, o):
+        raise NotImplementedError
+
+    #
+    # Base copy and paste functions shared by all MapObjects.
+    # Each specific MapObject must implement the functions above for their
+    # specific functionality.
+    #
+
+    def copyBase(self, other, generator, clone = False):
+        if clone and other.id != self.id:
+            parent = other.parent
+            setPar = other.parent is not None and other.parent.hasChildWithID(other.id) and other.parent.children[other.id] == other
+            if setPar:
+                other.reparentTo(None)
+            other.id = self.id
+            if setPar:
+                other.reparentTo(parent)
+        else:
+            other.reparentTo(self.parent)
+
+        for child in self.children.values():
+            if clone:
+                newChild = child.clone()
+            else:
+                newChild = child.copy(generator)
+            newChild.reparentTo(other)
+
+        other.setClassname(self.classname)
+        other.updateProperties(self.properties)
+        other.selected = self.selected
+
+    def pasteBase(self, o, generator, performUnclone = False):
+        if performUnclone and o.id != self.id:
+            parent = self.parent
+            setPar = self.parent is not None and self.parent.hasChildWithID(self.id) and self.parent.children[self.id] == self
+            if setPar:
+                self.reparentTo(None)
+            self.id = o.id
+            if setPar:
+                self.reparentTo(parent)
+
+        for child in o.children.values():
+            if performUnclone:
+                newChild = child.clone()
+            else:
+                newChild = child.copy(generator)
+            newChild.reparentTo(self)
+
+        self.setClassname(o.classname)
+        self.updateProperties(o.properties)
+        self.selected = o.selected
 
     def getName(self):
         return "Object"
@@ -311,7 +376,7 @@ class MapObject(MapWritable):
 
     def delete(self):
         # Take the children with us
-        for child in self.children:
+        for child in self.children.values():
             base.document.deleteObject(child)
         self.children = None
 
@@ -347,19 +412,18 @@ class MapObject(MapWritable):
         self.__setParent(other)
 
     def __addChild(self, child):
-        if not child in self.children:
-            self.children.append(child)
-            self.recalcBoundingBox()
+        self.children[child.id] = child
+        self.recalcBoundingBox()
 
     def __removeChild(self, child):
-        if child in self.children:
-            self.children.remove(child)
+        if child.id in self.children:
+            del self.children[child.id]
             self.recalcBoundingBox()
 
     def doWriteKeyValues(self, parent):
         kv = CKeyValues(self.ObjectName, parent)
         self.writeKeyValues(kv)
-        for child in self.children:
+        for child in self.children.values():
             child.doWriteKeyValues(kv)
 
     def writeKeyValues(self, keyvalues):

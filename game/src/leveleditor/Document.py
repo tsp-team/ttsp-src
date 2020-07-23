@@ -6,6 +6,7 @@ from src.leveleditor.mapobject.World import World
 from src.leveleditor.mapobject.Entity import Entity
 from src.leveleditor.mapobject.Root import Root
 from src.leveleditor.mapobject import MapObjectFactory
+from src.leveleditor.IDGenerator import IDGenerator
 
 models = [
     "models/cogB_robot/cogB_robot.bam",
@@ -23,10 +24,11 @@ class Document(DirectObject):
         DirectObject.__init__(self)
         self.filename = None
         self.unsaved = False
-        self.idAllocator = None
-        self.faceIdAllocator = None
+        self.idGenerator = None
         self.root = Root()
         self.isOpen = False
+        self.objectId2Object = {}
+        self.faceId2face = {}
 
     def createObject(self, classDef, classname = None, id = None, keyValues = None, parent = None):
         obj = classDef()
@@ -43,29 +45,32 @@ class Document(DirectObject):
         if parent is None:
             parent = self.root
         obj.reparentTo(parent)
+        self.objectId2Object[obj.id] = obj
         return obj
 
     def deleteObject(self, obj):
         self.freeID(obj.id)
+        if obj.id in self.objectId2Object:
+            del self.objectId2Object[obj.id]
         obj.delete()
 
     def getNextID(self):
-        return self.idAllocator.allocate()
+        return self.idGenerator.getNextID()
 
     def reserveID(self, id):
-        self.idAllocator.initialReserveId(id)
+        self.idGenerator.reserveID(id)
 
     def freeID(self, id):
-        self.idAllocator.free(id)
+        self.idGenerator.freeID(id)
 
     def getNextFaceID(self):
-        return self.faceIdAllocator.allocate()
+        return self.idGenerator.getNextFaceID()
 
     def reserveFaceID(self, id):
-        self.faceIdAllocator.initialReserveId(id)
+        self.idGenerator.reserveFaceID(id)
 
     def freeFaceID(self, id):
-        self.faceIdAllocator.free(id)
+        self.idGenerator.freeFaceID(id)
 
     def save(self, filename = None):
         # if filename is not none, this is a save-as
@@ -85,8 +90,7 @@ class Document(DirectObject):
             return
 
         self.root.clear()
-        self.idAllocator = None
-        self.faceIdAllocator = None
+        self.idGenerator = None
         self.filename = None
         self.unsaved = False
         self.isOpen = False
@@ -102,8 +106,7 @@ class Document(DirectObject):
         base.setEditorWindowTitle()
 
     def createIDAllocator(self):
-        self.idAllocator = UniqueIdAllocator(0, 0xFFFF)
-        self.faceIdAllocator = UniqueIdAllocator(0, 0xFFFF)
+        self.idGenerator = IDGenerator()
 
     def r_open(self, kv, parent = None):
         cls = MapObjectFactory.MapObjectsByName.get(kv.getName())

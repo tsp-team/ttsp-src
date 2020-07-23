@@ -58,7 +58,7 @@ class Solid(MapObject):
         self.faces = None
 
     # Splits this solid into two solids by intersecting against a plane.
-    def split(self, plane, temp = False):
+    def split(self, plane, generator):
         back = front = None
 
         # Check that this solid actually spans the plane
@@ -72,7 +72,7 @@ class Solid(MapObject):
                 back = self
             elif PlaneClassification.Front in classifications:
                 front = self
-            return [False, front, back]
+            return [False, back, front]
 
         backPlanes = [plane]
         frontPlanes = [LPlane(-plane[0], -plane[1], -plane[2], -plane[3])]
@@ -84,12 +84,39 @@ class Solid(MapObject):
             if classify != PlaneClassification.Front:
                 backPlanes.append(face.getWorldPlane())
 
-        back = SolidFace.createFromIntersectingPlanes(backPlanes, temp)
-        front = SolidFace.createFromIntersectingPlanes(frontPlanes, temp)
+        back = SolidFace.createFromIntersectingPlanes(backPlanes, generator)
+        front = SolidFace.createFromIntersectingPlanes(frontPlanes, generator)
+        self.copyBase(back, generator)
+        self.copyBase(front, generator)
+
+        unionOfFaces = list(set(front.faces) | set(back.faces))
+        for face in unionOfFaces:
+            face.setMaterial(unionOfFaces[0].material.clone())
+            face.alignTextureToFace()
+
+        # Restore textures (match the planes up on each face)
+        for orig in self.faces:
+            for face in back.faces:
+                classify = face.classifyAgainstPlane(orig.getWorldPlane())
+                if classify != PlaneClassification.OnPlane:
+                    continue
+                face.setMaterial(orig.material.clone())
+                break
+            for face in front.faces:
+                classify = face.classifyAgainstPlane(orig.getWorldPlane())
+                if classify != PlaneClassification.OnPlane:
+                    continue
+                face.setMaterial(orig.material.clone())
+                break
+
+        for face in unionOfFaces:
+            face.calcTextureCoordinates(True)
+
+        return [True, back, front]
 
     @staticmethod
-    def createFromIntersectingPlanes(planes, temp = False):
-        solid = base.document.createObject(Solid, id = -1 if temp else None)
+    def createFromIntersectingPlanes(planes, generator):
+        solid = base.document.createObject(Solid, id = generator.getNextID())
         for i in range(len(planes)):
             # Split the polygon by all the other planes
             poly = Polygon.fromPlaneAndRadius(planes[i])
@@ -98,7 +125,7 @@ class Solid(MapObject):
                     poly.split(planes[j])
 
             # The final polygon is the face
-            face = SolidFace(-1 if temp else base.document.getNextFaceID(), poly.plane, solid)
+            face = SolidFace(generator.getNextFaceID(), poly.plane, solid)
             for i in range(len(poly.vertices)):
                 # Round vertices a bit for sanity
                 face.vertices.append(SolidVertex(LEUtils.roundVector(poly.vertices[i], 2), face))
