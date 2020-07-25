@@ -225,14 +225,12 @@ class MapObject(MapWritable):
         return self.properties.get(name, None)
 
     def updateProperties(self, data):
-        print(data)
         for key, value in data.items():
             if not isinstance(value, ObjectProperty):
                 # If only a value was specified and not a property object itself,
                 # this is an update to an existing property.
 
                 prop = self.properties.get(key, None)
-                print(prop)
                 if not prop:
                     continue
 

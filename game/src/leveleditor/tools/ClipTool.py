@@ -1,5 +1,6 @@
 from panda3d.core import Point3, Vec3, ClipPlaneAttrib, NodePath, PlaneNode, \
-    LPlane, RenderState, ColorAttrib, Vec4, TransparencyAttrib, CullFaceAttrib
+    LPlane, RenderState, ColorAttrib, Vec4, TransparencyAttrib, CullFaceAttrib, \
+    CullBinAttrib, CardMaker, LineSegs
 
 from .BaseTool import BaseTool
 from src.leveleditor.geometry.Polygon import Polygon
@@ -8,6 +9,8 @@ from src.leveleditor.math.Polygon import Polygon as MathPolygon
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 from src.leveleditor.actions.Clip import Clip
 from src.leveleditor.math.Plane import Plane
+from src.leveleditor import LEGlobals
+from src.leveleditor.IDGenerator import IDGenerator
 
 from enum import IntEnum
 
@@ -25,36 +28,118 @@ class ClipSide(IntEnum):
     Back = 2
 
 PlaneVis3DState = RenderState.make(
-    ColorAttrib.makeFlat(Vec4(0.5, 0.5, 1.0, 0.5)),
+    ColorAttrib.makeFlat(Vec4(0, 1, 1, 0.5)),
     TransparencyAttrib.make(TransparencyAttrib.MAlpha),
     CullFaceAttrib.make(CullFaceAttrib.MCullNone)
 )
 
 PlaneVis2DState = RenderState.make(
-    ColorAttrib.makeFlat(Vec4(1)),
+    ColorAttrib.makeFlat(Vec4(0, 1, 1, 1)),
+    CullBinAttrib.make("fixed", LEGlobals.BoxSort),
     CullFaceAttrib.make(CullFaceAttrib.MCullNone)
 )
+
+# Draws the clip plane lines and move handles in each 2D viewport
+class ClipToolViewport2D:
+
+    def __init__(self, tool, vp):
+        self.tool = tool
+        self.vp = vp
+
+        self.hPoint1 = self.makeHandle()
+        self.hPoint2 = self.makeHandle()
+        self.hPoint3 = self.makeHandle()
+
+    def enable(self):
+        self.hPoint1.reparentTo(base.render)
+        self.hPoint2.reparentTo(base.render)
+        self.hPoint3.reparentTo(base.render)
+
+    def disable(self):
+        self.hPoint1.reparentTo(NodePath())
+        self.hPoint2.reparentTo(NodePath())
+        self.hPoint3.reparentTo(NodePath())
+
+    def update(self):
+        scale = 1.75 / self.vp.zoom
+        self.hPoint1.setScale(scale)
+        self.hPoint2.setScale(scale)
+        self.hPoint3.setScale(scale)
+        if self.tool.point1:
+            self.hPoint1.setPos(self.tool.point1)
+        if self.tool.point2:
+            self.hPoint2.setPos(self.tool.point2)
+        if self.tool.point3:
+            self.hPoint3.setPos(self.tool.point3)
+
+    def makeHandle(self):
+        cm = CardMaker('handle')
+        cm.setFrame(-0.5, 0.5, -0.5, 0.5)
+        np = NodePath(cm.generate())
+        np.setLightOff(1)
+        np.setFogOff(1)
+        np.setBin("fixed", LEGlobals.WidgetSort)
+        np.setDepthWrite(False)
+        np.setDepthTest(False)
+        np.setHpr(self.vp.getViewHpr())
+        np.hide(~self.vp.getViewportMask())
+        return np
 
 class ClipTool(BaseTool):
 
     Name = "Clip"
     Icon = "resources/icons/editor-slice.png"
-    Shortcut = "shift+d"
-    ToolTip = "Clip Tool [SHIFT+D]"
+    Shortcut = "shift+x"
+    ToolTip = "Clip Tool [SHIFT+X]"
 
     def __init__(self):
         # For this node, we will instance the objects we are slicing to this node
         # then apply a ClipPlaneAttrib to the node with the plane that the user
         # defined
-        self.visRoot = base.render.attachNewNode("sliceVisRoot")
-        self.visRoot.setColor(1, 0, 1, 1, 50)
-        self.planeNode = PlaneNode("clipPlaneNode", Plane())
-        self.planeNP = base.render.attachNewNode(self.planeNode)
-        self.planeVis = Polygon()
-        self.planeVis.addView(GeomView.Triangles, VIEWPORT_3D_MASK, state = PlaneVis3DState)
-        self.planeVis.addView(GeomView.LineStrips, VIEWPORT_2D_MASK, state = PlaneVis2DState)
-        self.planeVis.setVertices([Point3(1), Point3(2), Point3(3), Point3(4)])
+
+        # (Original solid, front, back)
+        self.tempSolids = []
+        self.lines2D = None
+
+        self.vp2Ds = []
+        for vp in base.viewportMgr.viewports:
+            if vp.is2D():
+                self.vp2Ds.append(ClipToolViewport2D(self, vp))
+
         self.reset()
+
+    def enable2DPoints(self):
+        for vp in self.vp2Ds:
+            vp.enable()
+
+    def update2DPoints(self):
+        for vp in self.vp2Ds:
+            vp.update()
+
+    def disable2DPoints(self):
+        for vp in self.vp2Ds:
+            vp.disable()
+
+    def disable2DLines(self):
+        if self.lines2D:
+            self.lines2D.removeNode()
+            self.lines2D = None
+
+    def update2DLines(self):
+        self.disable2DLines()
+        segs = LineSegs()
+        segs.setColor((0, 1, 1, 1))
+        segs.moveTo(self.point1)
+        segs.drawTo(self.point2)
+        segs.moveTo(self.point2)
+        segs.drawTo(self.point3)
+        segs.moveTo(self.point3)
+        segs.drawTo(self.point1)
+        self.lines2D = base.render.attachNewNode(segs.create())
+        self.lines2D.setBin("fixed", LEGlobals.BoxSort)
+        self.lines2D.setDepthWrite(False)
+        self.lines2D.setDepthTest(False)
+        self.lines2D.hide(~VIEWPORT_2D_MASK)
 
     def reset(self):
         self.point1 = None
@@ -64,9 +149,10 @@ class ClipTool(BaseTool):
         self.controlIsDown = False
         self.prevState = ClipState.Off
         self.state = ClipState.Off
-        self.side = ClipSide.Both
-        self.clearClipVis()
-        self.planeVis.np.reparentTo(NodePath())
+        self.side = ClipSide.Front
+        self.clearClipPlane()
+        self.disable2DPoints()
+        self.disable2DLines()
 
     def enable(self):
         BaseTool.enable(self)
@@ -75,6 +161,16 @@ class ClipTool(BaseTool):
         self.accept('mouseMoved', self.mouseMoved)
         self.accept('control', self.controlDown)
         self.accept('enter', self.confirmClip)
+        self.accept('escape', self.doResetKeepSide)
+        self.accept('shift-x', self.cycleClipSide)
+
+    def doResetKeepSide(self):
+        side = ClipSide(self.side)
+        self.reset()
+        self.side = side
+
+    def cycleClipSide(self):
+        self.updateClipSide((self.side + 1) % 3)
 
     def confirmClip(self):
         if self.point1 is None or self.point2 is None or self.point3 is None:
@@ -82,12 +178,14 @@ class ClipTool(BaseTool):
             return
 
         clipPlane = Plane.fromVertices(self.point1, self.point2, self.point3)
+        side = ClipSide(self.side)
+        self.reset()
         solids = []
         for obj in base.selectionMgr.selectedObjects:
             if obj.ObjectName == "solid":
                 solids.append(obj)
-        base.actionMgr.performAction(Clip(solids, clipPlane, self.side != ClipSide.Back, self.side != ClipSide.Front))
-        self.reset()
+        base.actionMgr.performAction(Clip(solids, clipPlane, side != ClipSide.Back, side != ClipSide.Front))
+        self.side = side
 
     def controlDown(self):
         self.controlIsDown = True
@@ -138,81 +236,98 @@ class ClipTool(BaseTool):
         if not vp.is2D():
             return
 
+        point1 = self.point1
+        point2 = self.point2
+        point3 = self.point3
+
         mouse = vp.getMouse()
         point = base.snapToGrid(vp.viewportToWorld(mouse, False))
         st = self.getStateAtPoint(mouse, vp)
         if self.state == ClipState.Drawing:
             self.state = ClipState.MovingPoint2
-            self.point1 = self.drawingPoint
-            self.point2 = point
-            self.point3 = self.point1 + base.snapToGrid(vp.getUnusedCoordinate(Vec3(128)))
-            if self.side != ClipSide.Both:
-                self.createClipVis()
-            self.updateClipPlane()
+            point1 = self.drawingPoint
+            point2 = point
+            point3 = point1 + base.snapToGrid(vp.getUnusedCoordinate(Vec3(128)))
+            self.enable2DPoints()
         elif self.state == ClipState.MovingPoint1:
             # Move point 1
-            cp1 = vp.getUnusedCoordinate(self.point1) + point
+            cp1 = vp.getUnusedCoordinate(point1) + point
             if self.controlIsDown:
                 diff = self.point1 - cp1
-                self.point2 -= diff
-                self.point3 -= diff
-            self.point1 = cp1
-            self.updateClipPlane()
+                point2 -= diff
+                point3 -= diff
+            point1 = cp1
         elif self.state == ClipState.MovingPoint2:
             # Move point 2
-            cp2 = vp.getUnusedCoordinate(self.point2) + point
+            cp2 = vp.getUnusedCoordinate(point2) + point
             if self.controlIsDown:
-                diff = self.point2 - cp2
-                self.point1 -= diff
-                self.point3 -= diff
-            self.point2 = cp2
-            self.updateClipPlane()
+                diff = point2 - cp2
+                point1 -= diff
+                point3 -= diff
+            point2 = cp2
         elif self.state == ClipState.MovingPoint3:
             # Move point 3
-            cp3 = vp.getUnusedCoordinate(self.point3) + point
+            cp3 = vp.getUnusedCoordinate(point3) + point
             if self.controlIsDown:
-                diff = self.point3 - cp3
-                self.point1 -= diff
-                self.point2 -= diff
-            self.point3 = cp1
+                diff = point3 - cp3
+                point1 -= diff
+                point2 -= diff
+            point3 = cp3
+
+        if point1 != self.point1 or point2 != self.point2 or point3 != self.point3:
+            self.point1 = point1
+            self.point2 = point2
+            self.point3 = point3
+            self.update2DLines()
+            self.update2DPoints()
             self.updateClipPlane()
+
+    def clearClipPlane(self):
+        for origSolid, front, back in self.tempSolids:
+            front.delete()
+            back.delete()
+            # Reshow the original solid
+            origSolid.np.unstash()
+        self.tempSolids = []
 
     def updateClipPlane(self):
-        # Create a ClipPlaneAttrib to quickly represent what the clip will look
-        # like. The actual faces are not actually split until we confirm the clip.
+        self.clearClipPlane()
+
         if self.point1 == self.point2 or self.point1 == self.point3 or self.point2 == self.point3:
-            self.planeVis.np.reparentTo(NodePath())
             return
         plane = Plane.fromVertices(self.point1, self.point2, self.point3)
-        # If we are keeping the back side, flip the plane
-        if self.side == ClipSide.Back:
-            plane.flip()
-        self.planeNode.setPlane(plane)
-        self.visRoot.setClipPlane(self.planeNP)
+        tempGen = IDGenerator()
 
-        mpoly = MathPolygon.fromPlaneAndRadius(plane)
-        self.planeVis.vertices = mpoly.vertices
-        self.planeVis.generateVertices()
-        self.planeVis.np.reparentTo(base.render)
-
-    def createClipVis(self):
         for obj in base.selectionMgr.selectedObjects:
-            if obj.ObjectName == "solid":
-                inst = obj.np.instanceTo(NodePath())
-                inst.wrtReparentTo(self.visRoot)
+            if obj.ObjectName != "solid":
+                continue
+            ret, back, front = obj.split(plane, tempGen)
+            if ret:
+                self.tempSolids.append((obj, front, back))
+                # Hide the original solid
+                obj.np.stash()
 
-    def clearClipVis(self):
-        self.visRoot.node().removeAllChildren()
+        self.updateClipSide(self.side)
 
     def updateClipSide(self, side):
-        if side == ClipSide.Both:
-            self.clearClipVis()
-            self.visRoot.clearClipPlane()
-        else:
-            if self.side == ClipSide.Both:
-                self.createClipVis()
-            self.updateClipPlane()
         self.side = side
+
+        for _, front, back in self.tempSolids:
+            if self.side == ClipSide.Both:
+                front.showBoundingBox()
+                front.showClipVisKeep()
+                back.showBoundingBox()
+                back.showClipVisKeep()
+            elif self.side == ClipSide.Front:
+                front.showClipVisKeep()
+                front.hideBoundingBox()
+                back.showClipVisRemove()
+                back.showBoundingBox()
+            elif self.side == ClipSide.Back:
+                front.showClipVisRemove()
+                front.showBoundingBox()
+                back.showClipVisKeep()
+                back.hideBoundingBox()
 
     def mouseUp(self):
         vp = base.viewportMgr.activeViewport
@@ -225,3 +340,6 @@ class ClipTool(BaseTool):
             self.state = self.prevState
         else:
             self.state = ClipState.Drawn
+
+    def update(self):
+        self.update2DPoints()

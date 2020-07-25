@@ -2,7 +2,7 @@ from panda3d.core import GeomVertexData, GeomEnums, NodePath
 from panda3d.core import GeomNode, GeomTriangles, GeomLinestrips, GeomVertexFormat
 from panda3d.core import GeomVertexWriter, InternalName, Vec4, Geom
 from panda3d.core import ColorAttrib, Vec3, Vec2, deg2Rad, Quat, Point3
-from panda3d.core import CullFaceAttrib
+from panda3d.core import CullFaceAttrib, AntialiasAttrib
 
 from .MapWritable import MapWritable
 
@@ -55,12 +55,24 @@ class SolidFace(MapWritable):
         self.hasGeometry = False
         self.vdata = None
 
+    def showClipVisRemove(self):
+        if not self.np3D.isStashed():
+            self.np3D.stash()
+        self.np3DLines.setColor(1, 0, 0, 1)
+        self.np2D.setColor(1, 0, 0, 1)
+
+    def showClipVisKeep(self):
+        if self.np3D.isStashed():
+            self.np3D.unstash()
+        self.np3DLines.setColor(1, 1, 0, 1)
+        self.np2D.setColor(1, 1, 1, 1)
+
     def show3DLines(self):
-        if self.np3DLines:
+        if self.np3DLines and self.np3DLines.isStashed():
             self.np3DLines.unstash()
 
     def hide3DLines(self):
-        if self.np3DLines:
+        if self.np3DLines and not self.np3DLines.isStashed():
             self.np3DLines.stash()
 
     def copy(self, generator):
@@ -157,6 +169,7 @@ class SolidFace(MapWritable):
         self.np3DLines = self.np.attachNewNode(GeomNode("3dlines"))
         self.np3DLines.hide(~VIEWPORT_3D_MASK)
         self.np3DLines.setColor(1, 1, 0, 1)
+        self.np3DLines.setAntialias(AntialiasAttrib.MLine)
         if self.material.material:
             self.setMaterial(self.material.material)
         self.np.setCollideMask(GeomNode.getDefaultCollideMask() | LEGlobals.FaceMask)

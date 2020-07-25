@@ -41,6 +41,14 @@ class Solid(MapObject):
         self.faces = []
         self.addProperty(VisOccluder(self))
 
+    def showClipVisRemove(self):
+        for face in self.faces:
+            face.showClipVisRemove()
+
+    def showClipVisKeep(self):
+        for face in self.faces:
+            face.showClipVisKeep()
+
     def showBoundingBox(self):
         for face in self.faces:
             face.show3DLines()
