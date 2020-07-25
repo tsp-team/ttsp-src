@@ -3,8 +3,8 @@ from panda3d.core import UniqueIdAllocator
 class IDGenerator:
 
     def __init__(self):
-        self.alloc = UniqueIdAllocator(0, 0xFFFFFFFF)
-        self.faceAlloc = UniqueIdAllocator(0, 0xFFFFFFFF)
+        self.alloc = UniqueIdAllocator(0, 0xFFFF)
+        self.faceAlloc = UniqueIdAllocator(0, 0xFFFF)
 
     def getNextFaceID(self):
         return self.faceAlloc.allocate()

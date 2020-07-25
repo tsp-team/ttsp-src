@@ -1,7 +1,8 @@
-from panda3d.core import LPlane, Vec3
+from panda3d.core import Vec3, Point3
 
 from .Line import Line
 from . import PlaneClassification
+from .Plane import Plane
 
 class Polygon:
 
@@ -11,7 +12,7 @@ class Polygon:
 
     @staticmethod
     def fromVertices(vertices):
-        poly = Polygon(vertices, LPlane(vertices[0], vertices[1], vertices[2]))
+        poly = Polygon(vertices, Plane.fromVertices(vertices[0], vertices[1], vertices[2]))
         poly.simplify()
         return poly
 
@@ -19,7 +20,8 @@ class Polygon:
     def fromPlaneAndRadius(plane, radius = 10000):
         norm = plane.getNormal()
         point = plane.getPoint()
-        tempV = Vec3.back() if norm.almostEqual(Vec3.up(), 0.5) else Vec3.down()
+        direction = plane.getClosestAxisToNormal()
+        tempV = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
         up = tempV.cross(norm).normalized()
         right = norm.cross(up).normalized()
 
@@ -28,6 +30,7 @@ class Polygon:
             point - right + up, # top left
             point - right - up, # bottom left
             point + right - up, # bottom right
+
         ]
 
         poly = Polygon(verts, plane)
@@ -37,7 +40,7 @@ class Polygon:
 
     def isValid(self):
         for vert in self.vertices:
-            if self.plane.distToPlane(vert) != 0:
+            if self.plane.onPlane(vert) != 0:
                 # Vert doesn't lie within the plane.
                 return False
 
@@ -45,7 +48,12 @@ class Polygon:
 
     def simplify(self):
         # Remove colinear vertices
-        for i in range(len(self.vertices - 2)):
+        i = 0
+        while 1:
+            numVerts = len(self.vertices) - 2
+            if i >= numVerts:
+                break
+
             v1 = self.vertices[i]
             v2 = self.vertices[i + 2]
             p = self.vertices[i + 1]
@@ -54,11 +62,13 @@ class Polygon:
             if line.closestPoint(p).almostEqual(p):
                 del self.vertices[i + 1]
 
+            i += 1
+
     def xform(self, mat):
         for i in range(len(self.vertices)):
             self.vertices[i] = mat.xformPoint(self.vertices[i])
 
-        self.plane = LPlane(self.vertices[0], self.vertices[1], self.vertices[2])
+        self.plane = Plane.fromVertices(self.vertices[0], self.vertices[1], self.vertices[2])
 
     def isConvex(self, epsilon = 0.001):
         for i in range(len(self.vertices)):
@@ -84,7 +94,7 @@ class Polygon:
         origin = self.getOrigin()
         for i in range(len(self.vertices)):
             self.vertices[i] = (self.vertices[i] - origin).normalized() * radius + origin
-        self.plane = LPlane(self.vertices[0], self.vertices[1], self.vertices[2])
+        self.plane = Plane.fromVertices(self.vertices[0], self.vertices[1], self.vertices[2])
 
     def classifyAgainstPlane(self, plane):
         front = 0
@@ -93,7 +103,7 @@ class Polygon:
         count = len(self.vertices)
 
         for i in range(count):
-            test = plane.distToPlane(self.vertices[i])
+            test = plane.onPlane(self.vertices[i])
             if test <= 0:
                 back += 1
             if test >= 0:
@@ -113,8 +123,9 @@ class Polygon:
     def splitInPlace(self, clipPlane):
         ret, _, back, _, _ = self.split(clipPlane)
         if ret:
-            self.vertices = back.vertices
-            self.plane = back.plane
+            self.vertices = list(back.vertices)
+            self.plane = Plane(back.plane)
+        return ret
 
     def split(self, clipPlane):
         front = back = cBack = cFront = None
@@ -136,19 +147,19 @@ class Polygon:
         frontVerts = []
         prev = 0
 
-        for i in range(len(self.vertices)):
+        for i in range(len(self.vertices) + 1):
             end = self.vertices[i % len(self.vertices)]
-            cls = clipPlane.distToPlane(end)
+            cls = clipPlane.onPlane(end)
 
             # Check plane crossing
             if i > 0 and cls != 0 and prev != 0 and prev != cls:
                 # This line end point has crossed the plane
                 # Add the line intersect to the
                 start = self.vertices[i - 1]
-                line = Line(start, end)
-                isect = Vec3()
-                ret = clipPlane.intersectsLine(line.start, line.end, isect)
-                assert ret
+
+                isect = clipPlane.getIntersectionPoint(start, end, True)
+                assert isect is not None
+
                 frontVerts.append(isect)
                 backVerts.append(isect)
 
@@ -160,7 +171,7 @@ class Polygon:
                 if cls <= 0:
                     backVerts.append(end)
 
-            prev = cls
+            prev = int(cls)
 
         back = Polygon.fromVertices(backVerts)
         front = Polygon.fromVertices(frontVerts)

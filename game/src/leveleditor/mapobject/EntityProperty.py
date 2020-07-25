@@ -19,6 +19,12 @@ class EntityProperty(ObjectProperty):
 
         self.value = self.defaultValue
 
+    def clone(self, mapObject):
+        prop = EntityProperty(self.metaData, mapObject)
+        self.copyBase(prop)
+        prop.metaData = self.metaData
+        return prop
+
     def getDisplayName(self):
         return self.metaData.display_name
 

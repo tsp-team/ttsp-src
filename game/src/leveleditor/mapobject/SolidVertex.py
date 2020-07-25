@@ -11,6 +11,9 @@ class SolidVertex(MapWritable):
         self.pos = pos
         self.face = face
 
+    def xform(self, mat):
+        self.pos = mat.xformPoint(self.pos)
+
     def getWorldPos(self):
         if self.face.np is None:
             return self.pos

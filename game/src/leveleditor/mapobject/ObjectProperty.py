@@ -11,6 +11,16 @@ class ObjectProperty:
         self.defaultValue = ""
         self.group = None
 
+    def copyBase(self, other):
+        other.value = self.value
+        other.name = self.name
+        other.valueType = self.valueType
+        other.defaultValue = self.defaultValue
+        other.group = self.group
+
+    def clone(self, mapObject):
+        raise NotImplementedError
+
     # Returns True if this property is explicit, meaning that it is defined in code
     # and part of the object regardless of the FGD meta data.
     def isExplicit(self):

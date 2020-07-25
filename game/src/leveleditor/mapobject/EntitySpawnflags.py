@@ -15,6 +15,11 @@ class EntitySpawnflags(ObjectProperty):
             if flag.default_value:
                 self.value |= flag.value
 
+    def clone(self, mapObject):
+        flags = EntitySpawnflags(list(self.flagList), mapObject)
+        self.copyBase(flags)
+        return flags
+
     def getDisplayName(self):
         return "Spawnflags"
 

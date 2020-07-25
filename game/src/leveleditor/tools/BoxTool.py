@@ -11,6 +11,7 @@ from src.leveleditor.geometry.Handles import Handles, HandleType
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.Rect import Rect
 from src.leveleditor.geometry.GeomView import GeomView
+from src.leveleditor import LEGlobals
 
 from enum import IntEnum
 import py_linq
@@ -115,12 +116,18 @@ class BoxToolViewport:
         self.topText = NodePath(ttext)
         self.topText.setHpr(vp.getViewHpr())
         self.topText.hide(~vp.getViewportMask())
+        self.topText.setBin("fixed", LEGlobals.WidgetSort)
+        self.topText.setDepthWrite(False)
+        self.topText.setDepthTest(False)
 
         ltext = TextNode("boxToolLeftText")
         ltext.setAlign(TextNode.ABoxedRight)
         self.leftText = NodePath(ltext)
         self.leftText.setHpr(vp.getViewHpr())
         self.leftText.hide(~vp.getViewportMask())
+        self.leftText.setBin("fixed", LEGlobals.WidgetSort)
+        self.leftText.setDepthWrite(False)
+        self.leftText.setDepthTest(False)
 
     def updateHandles(self, handles):
         self.handles.setHandles(handles)

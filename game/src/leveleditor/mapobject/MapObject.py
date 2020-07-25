@@ -1,5 +1,5 @@
 from panda3d.core import NodePath, CollisionBox, CollisionNode, Vec4, ModelNode, BoundingBox, Vec3
-from panda3d.core import Point3, CKeyValues, BitMask32, RenderState, ColorAttrib
+from panda3d.core import Point3, CKeyValues, BitMask32, RenderState, ColorAttrib, CullBinAttrib
 
 from .MapWritable import MapWritable
 from src.leveleditor import LEGlobals
@@ -16,7 +16,8 @@ BoundsBox3DState = RenderState.make(
 )
 
 BoundsBox2DState = RenderState.make(
-    ColorAttrib.makeFlat(Vec4(1, 0, 0, 1))
+    ColorAttrib.makeFlat(Vec4(1, 0, 0, 1)),
+    CullBinAttrib.make("selected-foreground", 0)
 )
 
 # Base class for any object in the map (brush, entity, etc)
@@ -39,6 +40,11 @@ class MapObject(MapWritable):
         self.boundsBox.generateGeometry()
         self.collNp = None
 
+        # Things we need to keep track of when we're stashed.
+        self.originalParentId = None
+        self.stashed = False
+        self.wasSelected = False
+
         self.properties = {}
 
         # All MapObjects have transform
@@ -46,6 +52,50 @@ class MapObject(MapWritable):
         self.addProperty(AnglesProperty(self))
         self.addProperty(ScaleProperty(self))
         self.addProperty(ShearProperty(self))
+
+    # Detaches the object from the scene graph and frees
+    # the ID. The object is not actually gone from memory, so it can
+    # be restored later.
+    def stash(self):
+        if self.stashed:
+            return
+
+        if self.id is not None:
+            base.document.freeID(self.id)
+        if self.parent:
+            self.originalParentId = self.parent.id
+        else:
+            self.originalParentId = None
+        self.reparentTo(None)
+
+        self.wasSelected = self.selected
+        base.selectionMgr.deselect(self)
+
+        self.stashed = True
+
+        for child in self.children.values():
+            child.stash()
+
+    # Reattaches the object to the scene graph and reserves
+    # the ID.
+    def unstash(self):
+        if not self.stashed:
+            return
+
+        if self.id is not None:
+            base.document.reserveID(self.id)
+        if self.originalParentId is None:
+            self.reparentTo(base.document.root)
+        else:
+            self.reparentTo(base.document.objectId2object[self.originalParentId])
+        self.originalParentId = None
+        self.stashed = False
+
+        if self.wasSelected:
+            base.selectionMgr.select(self)
+
+        for child in self.children.values():
+            child.unstash()
 
     def hasChildWithID(self, id):
         return id in self.children
@@ -68,6 +118,13 @@ class MapObject(MapWritable):
     # specific functionality.
     #
 
+    def copyProperties(self, props):
+        newProps = {}
+        for key, prop in props.items():
+            newProp = prop.clone(self)
+            newProps[key] = newProp
+        self.updateProperties(newProps)
+
     def copyBase(self, other, generator, clone = False):
         if clone and other.id != self.id:
             parent = other.parent
@@ -88,7 +145,7 @@ class MapObject(MapWritable):
             newChild.reparentTo(other)
 
         other.setClassname(self.classname)
-        other.updateProperties(self.properties)
+        other.copyProperties(self.properties)
         other.selected = self.selected
 
     def pasteBase(self, o, generator, performUnclone = False):
@@ -109,7 +166,7 @@ class MapObject(MapWritable):
             newChild.reparentTo(self)
 
         self.setClassname(o.classname)
-        self.updateProperties(o.properties)
+        self.copyProperties(o.properties)
         self.selected = o.selected
 
     def getName(self):
@@ -168,12 +225,14 @@ class MapObject(MapWritable):
         return self.properties.get(name, None)
 
     def updateProperties(self, data):
+        print(data)
         for key, value in data.items():
             if not isinstance(value, ObjectProperty):
                 # If only a value was specified and not a property object itself,
                 # this is an update to an existing property.
 
                 prop = self.properties.get(key, None)
+                print(prop)
                 if not prop:
                     continue
 
@@ -365,9 +424,9 @@ class MapObject(MapWritable):
     def generate(self):
         self.np = NodePath(ModelNode("mapobject_unknown"))
         self.np.setPythonTag("mapobject", self)
-        self.collNp = self.np.attachNewNode(CollisionNode("pickBox"))
-        self.collNp.node().setIntoCollideMask(LEGlobals.EntityMask)
-        self.collNp.node().setFromCollideMask(BitMask32.allOff())
+        #self.collNp = self.np.attachNewNode(CollisionNode("pickBox"))
+        #self.collNp.node().setIntoCollideMask(LEGlobals.EntityMask)
+        #self.collNp.node().setFromCollideMask(BitMask32.allOff())
         #self.collNp.show()
 
     # Called after the keyvalues have been read for this object

@@ -29,7 +29,7 @@ class Line:
         if u > 1:
             return self.end # point is after the segment end
 
-        return self.start + u * delta
+        return self.start + (delta * u)
 
     def classifyAgainstPlane(self, plane):
         start = plane.distToPlane(self.start)

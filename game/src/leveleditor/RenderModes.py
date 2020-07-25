@@ -2,6 +2,8 @@ from panda3d.core import RenderState, DepthTestAttrib, DepthWriteAttrib, ShaderA
 from panda3d.core import LVector2i, Vec4, CullBinAttrib
 from panda3d.bsp import BSPMaterial, BSPMaterialAttrib
 
+from src.leveleditor import LEGlobals
+
 StippleShader = None
 def getStippleShader():
     global StippleShader
@@ -23,7 +25,7 @@ def DashedLineNoZ():
             DepthWriteAttrib.make(DepthWriteAttrib.MOff),
             CullFaceAttrib.make(CullFaceAttrib.MCullNone),
         )
-        _DashedLineNoZ = _DashedLineNoZ.setAttrib(CullBinAttrib.make("fixed", 0))
+        _DashedLineNoZ = _DashedLineNoZ.setAttrib(CullBinAttrib.make("fixed", LEGlobals.BoxSort))
     return _DashedLineNoZ
 
 _DoubleSidedNoZ = None
@@ -34,6 +36,6 @@ def DoubleSidedNoZ():
             CullFaceAttrib.make(CullFaceAttrib.MCullNone),
             DepthTestAttrib.make(DepthTestAttrib.MOff),
             DepthWriteAttrib.make(DepthWriteAttrib.MOff),
-            CullBinAttrib.make("fixed", 0)
+            CullBinAttrib.make("fixed", LEGlobals.WidgetSort)
         )
     return _DoubleSidedNoZ

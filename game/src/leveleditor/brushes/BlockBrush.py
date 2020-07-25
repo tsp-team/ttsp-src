@@ -1,11 +1,10 @@
-from panda3d.core import LPlane
-
 from .BaseBrush import BaseBrush
 
 from src.leveleditor import LEUtils
 from src.leveleditor.mapobject.Solid import Solid
 from src.leveleditor.mapobject.SolidFace import SolidFace
 from src.leveleditor.mapobject.SolidVertex import SolidVertex
+from src.leveleditor.math.Plane import Plane
 
 class BlockBrush(BaseBrush):
     Name = "Block"
@@ -17,7 +16,7 @@ class BlockBrush(BaseBrush):
         faces = LEUtils.getBoxFaces(mins, maxs)
         for faceVerts in faces:
             face = SolidFace(base.document.getNextFaceID(),
-                             LPlane(faceVerts[0], faceVerts[1], faceVerts[2]),
+                             Plane.fromVertices(faceVerts[0] - center, faceVerts[1] - center, faceVerts[2] - center),
                              solid)
             face.setMaterial(material)
             for vert in faceVerts:

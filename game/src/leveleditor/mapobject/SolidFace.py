@@ -1,13 +1,15 @@
-from panda3d.core import LPlane, GeomVertexData, GeomEnums, NodePath
+from panda3d.core import GeomVertexData, GeomEnums, NodePath
 from panda3d.core import GeomNode, GeomTriangles, GeomLinestrips, GeomVertexFormat
 from panda3d.core import GeomVertexWriter, InternalName, Vec4, Geom
-from panda3d.core import ColorAttrib, Vec3, Vec2, deg2Rad, Quat
+from panda3d.core import ColorAttrib, Vec3, Vec2, deg2Rad, Quat, Point3
+from panda3d.core import CullFaceAttrib
 
 from .MapWritable import MapWritable
 
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 from src.leveleditor import LEUtils, LEGlobals
 from src.leveleditor.math import PlaneClassification
+from src.leveleditor.math.Plane import Plane
 from src.leveleditor.Align import Align
 from src.leveleditor.IDGenerator import IDGenerator
 
@@ -35,7 +37,7 @@ class SolidFace(MapWritable):
 
     ObjectName = "side"
 
-    def __init__(self, id = 0, plane = LPlane(), solid = None):
+    def __init__(self, id = 0, plane = Plane(0, 0, 1, 0), solid = None):
         MapWritable.__init__(self)
         self.id = id
         self.material = FaceMaterial()
@@ -48,12 +50,21 @@ class SolidFace(MapWritable):
         self.np2D = None
         # 3D renders this
         self.np3D = None
+        self.np3DLines = None
         self.solid = solid
         self.hasGeometry = False
         self.vdata = None
 
+    def show3DLines(self):
+        if self.np3DLines:
+            self.np3DLines.unstash()
+
+    def hide3DLines(self):
+        if self.np3DLines:
+            self.np3DLines.stash()
+
     def copy(self, generator):
-        f = SolidFace(generator.getNextID(), LPlane(self.plane), self.solid)
+        f = SolidFace(generator.getNextID(), Plane(self.plane), self.solid)
         f.isSelected = self.isSelected
         f.setColor(Vec4(self.color))
         f.setMaterial(self.material.clone())
@@ -70,7 +81,7 @@ class SolidFace(MapWritable):
         return f
 
     def paste(self, f):
-        self.plane = LPlane(f.plane)
+        self.plane = Plane(f.plane)
         self.setColor(Vec4(f.color))
         self.isSelected = f.isSelected
         self.setMaterial(f.material.clone())
@@ -86,8 +97,23 @@ class SolidFace(MapWritable):
         self.paste(f)
         self.id = f.id
 
+    def xform(self, mat):
+        for vert in self.vertices:
+            vert.xform(mat)
+        self.plane = Plane.fromVertices(self.vertices[0].pos, self.vertices[1].pos, self.vertices[2].pos)
+        self.calcTextureCoordinates(True)
+        if self.hasGeometry:
+            self.regenerateGeometry()
+
+    def getAbsOrigin(self):
+        avg = Point3(0)
+        for vert in self.vertices:
+            avg += vert.getWorldPos()
+        avg /= len(self.vertices)
+        return avg
+
     def getWorldPlane(self):
-        plane = LPlane(self.plane)
+        plane = Plane(self.plane)
         plane.xform(self.np.getMat(base.render))
         return plane
 
@@ -95,11 +121,19 @@ class SolidFace(MapWritable):
         return "Solid face"
 
     def select(self):
-        self.np.setColorScale(1, 0.75, 0.75, 1)
+        self.np3D.setColorScale(1, 0.75, 0.75, 1)
+        self.np2D.setColor(1, 0, 0, 1)
+        self.np2D.setBin("fixed", LEGlobals.SelectedSort)
+        self.np2D.setDepthWrite(False)
+        self.np2D.setDepthTest(False)
         self.isSelected = True
 
     def deselect(self):
-        self.np.setColorScale(1, 1, 1, 1)
+        self.np3D.clearColorScale()
+        self.np2D.setColor(self.color)
+        self.np2D.setDepthWrite(True)
+        self.np2D.setDepthTest(True)
+        self.np2D.clearBin()
         self.isSelected = False
 
     def readKeyValues(self, kv):
@@ -120,6 +154,9 @@ class SolidFace(MapWritable):
             self.setColor(self.color)
         self.np3D = self.np.attachNewNode(GeomNode("3d"))
         self.np3D.hide(~VIEWPORT_3D_MASK)
+        self.np3DLines = self.np.attachNewNode(GeomNode("3dlines"))
+        self.np3DLines.hide(~VIEWPORT_3D_MASK)
+        self.np3DLines.setColor(1, 1, 0, 1)
         if self.material.material:
             self.setMaterial(self.material.material)
         self.np.setCollideMask(GeomNode.getDefaultCollideMask() | LEGlobals.FaceMask)
@@ -211,8 +248,7 @@ class SolidFace(MapWritable):
         # Set the U and V axes to match the X, Y, or Z axes.
         # How they are calculated depends on which direction the plane is facing.
 
-        norm = self.plane.getNormal()
-        direction = LEUtils.getClosestAxis(norm)
+        direction = self.plane.getClosestAxisToNormal()
 
         # VHE behavior:
         # U axis: If the closest axis to the normal is the X axis,
@@ -232,7 +268,7 @@ class SolidFace(MapWritable):
         # Then we can calculate U based on that, and the real V afterwards.
 
         norm = self.plane.getNormal()
-        direction = LEUtils.getClosestAxis(norm)
+        direction = self.plane.getClosestAxisToNormal()
 
         tempV = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
         self.material.uAxis = norm.cross(tempV).normalized()
@@ -294,7 +330,7 @@ class SolidFace(MapWritable):
         count = len(self.vertices)
 
         for vert in self.vertices:
-            test = plane.distToPlane(vert.getWorldPos())
+            test = plane.onPlane(vert.getWorldPos())
             if test <= 0:
                 back += 1
             if test >= 0:
@@ -310,9 +346,16 @@ class SolidFace(MapWritable):
             return PlaneClassification.Back
         return PlaneClassification.Spanning
 
+    def flip(self):
+        self.vertices.reverse()
+        self.plane = Plane.fromVertices(self.vertices[0].pos, self.vertices[1].pos, self.vertices[2].pos)
+        if self.hasGeometry:
+            self.regenerateGeometry()
+
     def regenerateGeometry(self):
         # Remove existing geometry
         self.np2D.node().removeAllGeoms()
+        self.np3DLines.node().removeAllGeoms()
         self.np3D.node().removeAllGeoms()
 
         #
@@ -341,7 +384,7 @@ class SolidFace(MapWritable):
         # Triangles in 3D view
         prim3D = GeomTriangles(GeomEnums.UHStatic)
         for i in range(1, numVerts - 1):
-            prim3D.addVertices(0, i, i + 1)
+            prim3D.addVertices(i + 1, i, 0)
             prim3D.closePrimitive()
 
         # Line loop in 2D view.. using line strips
@@ -360,6 +403,10 @@ class SolidFace(MapWritable):
         geom3D.addPrimitive(prim3D)
         self.np3D.node().addGeom(geom3D)
 
+        geom3DLines = Geom(vdata)
+        geom3DLines.addPrimitive(prim2D)
+        self.np3DLines.node().addGeom(geom3DLines)
+
         geom2D = Geom(vdata)
         geom2D.addPrimitive(prim2D)
         self.np2D.node().addGeom(geom2D)
@@ -375,6 +422,8 @@ class SolidFace(MapWritable):
         self.id = None
         self.material = None
         self.color = None
+        self.np3DLines.removeNode()
+        self.np3DLines = None
         self.np3D.removeNode()
         self.np3D = None
         self.np2D.removeNode()

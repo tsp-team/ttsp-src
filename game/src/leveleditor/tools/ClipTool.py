@@ -1,4 +1,4 @@
-from panda3d.core import LPlane, Point3, Vec3, ClipPlaneAttrib, NodePath, PlaneNode, \
+from panda3d.core import Point3, Vec3, ClipPlaneAttrib, NodePath, PlaneNode, \
     LPlane, RenderState, ColorAttrib, Vec4, TransparencyAttrib, CullFaceAttrib
 
 from .BaseTool import BaseTool
@@ -6,6 +6,8 @@ from src.leveleditor.geometry.Polygon import Polygon
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.math.Polygon import Polygon as MathPolygon
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
+from src.leveleditor.actions.Clip import Clip
+from src.leveleditor.math.Plane import Plane
 
 from enum import IntEnum
 
@@ -46,9 +48,7 @@ class ClipTool(BaseTool):
         # defined
         self.visRoot = base.render.attachNewNode("sliceVisRoot")
         self.visRoot.setColor(1, 0, 1, 1, 50)
-        self.visRoot.setPos(256, 256, 0)
-        #self.visRoot.setDepthOffset(50)
-        self.planeNode = PlaneNode("clipPlaneNode", LPlane())
+        self.planeNode = PlaneNode("clipPlaneNode", Plane())
         self.planeNP = base.render.attachNewNode(self.planeNode)
         self.planeVis = Polygon()
         self.planeVis.addView(GeomView.Triangles, VIEWPORT_3D_MASK, state = PlaneVis3DState)
@@ -64,7 +64,9 @@ class ClipTool(BaseTool):
         self.controlIsDown = False
         self.prevState = ClipState.Off
         self.state = ClipState.Off
-        self.side = ClipSide.Front
+        self.side = ClipSide.Both
+        self.clearClipVis()
+        self.planeVis.np.reparentTo(NodePath())
 
     def enable(self):
         BaseTool.enable(self)
@@ -76,9 +78,16 @@ class ClipTool(BaseTool):
 
     def confirmClip(self):
         if self.point1 is None or self.point2 is None or self.point3 is None:
+            self.reset()
             return
 
-        clipPlane = LPlane(self.point1, self.point2, self.point3)
+        clipPlane = Plane.fromVertices(self.point1, self.point2, self.point3)
+        solids = []
+        for obj in base.selectionMgr.selectedObjects:
+            if obj.ObjectName == "solid":
+                solids.append(obj)
+        base.actionMgr.performAction(Clip(solids, clipPlane, self.side != ClipSide.Back, self.side != ClipSide.Front))
+        self.reset()
 
     def controlDown(self):
         self.controlIsDown = True
@@ -174,7 +183,7 @@ class ClipTool(BaseTool):
         if self.point1 == self.point2 or self.point1 == self.point3 or self.point2 == self.point3:
             self.planeVis.np.reparentTo(NodePath())
             return
-        plane = LPlane(self.point1, self.point2, self.point3)
+        plane = Plane.fromVertices(self.point1, self.point2, self.point3)
         # If we are keeping the back side, flip the plane
         if self.side == ClipSide.Back:
             plane.flip()
@@ -185,8 +194,6 @@ class ClipTool(BaseTool):
         self.planeVis.vertices = mpoly.vertices
         self.planeVis.generateVertices()
         self.planeVis.np.reparentTo(base.render)
-
-        self.visRoot.ls()
 
     def createClipVis(self):
         for obj in base.selectionMgr.selectedObjects:

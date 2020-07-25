@@ -17,6 +17,11 @@ class OriginProperty(TransformProperty):
         TransformProperty.__init__(self, mapObject)
         self.name = "origin"
 
+    def clone(self, mapObject):
+        prop = OriginProperty(mapObject)
+        self.copyBase(prop)
+        return prop
+
     def getDisplayName(self):
         return "Origin"
 
@@ -35,6 +40,11 @@ class AnglesProperty(TransformProperty):
     def __init__(self, mapObject):
         TransformProperty.__init__(self, mapObject)
         self.name = "angles"
+
+    def clone(self, mapObject):
+        prop = AnglesProperty(mapObject)
+        self.copyBase(prop)
+        return prop
 
     def getDisplayName(self):
         return "Angles (Yaw Pitch Roll)"
@@ -55,6 +65,11 @@ class ScaleProperty(TransformProperty):
         TransformProperty.__init__(self, mapObject)
         self.defaultValue = Vec3(1)
         self.name = "scale"
+
+    def clone(self, mapObject):
+        prop = ScaleProperty(mapObject)
+        self.copyBase(prop)
+        return prop
 
     def getDisplayName(self):
         return "Scale"
@@ -82,6 +97,11 @@ class ShearProperty(TransformProperty):
     def __init__(self, mapObject):
         TransformProperty.__init__(self, mapObject)
         self.name = "shear"
+
+    def clone(self, mapObject):
+        prop = ShearProperty(mapObject)
+        self.copyBase(prop)
+        return prop
 
     def getDisplayName(self):
         return "Shear"

@@ -1,6 +1,7 @@
 from panda3d.core import WindowProperties, NativeWindowHandle, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
 from panda3d.core import TextNode, Filename, KeyboardButton, ButtonRegistry
+from panda3d.core import CullBinManager
 
 from direct.showbase.DirectObject import DirectObject
 
@@ -15,7 +16,7 @@ from src.leveleditor.selection.SelectionManager import SelectionManager
 from src.leveleditor.selection.SelectionType import SelectionType
 from src.leveleditor.actions.ActionManager import ActionManager
 from src.leveleditor.brushes.BrushManager import BrushManager
-from src.leveleditor import LEUtils
+from src.leveleditor import LEUtils, LEGlobals
 from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.Document import Document
 from src.leveleditor.ui import About

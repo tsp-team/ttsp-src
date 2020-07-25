@@ -184,6 +184,7 @@ def strToBool(string):
 def boolToStr(boolean):
     return str(int(boolean))
 
+# THE FACES ARE COUNTER-CLOCKWISE!!!
 def getBoxFaces(start, end):
     print(start, end)
     topLeftBack = Point3(start.x, end.y, end.z)
@@ -197,12 +198,12 @@ def getBoxFaces(start, end):
     bottomRightFront = Point3(end.x, start.y, start.z)
 
     return [
-        [topRightFront, topLeftFront, bottomLeftFront, bottomRightFront],
-        [topLeftBack, topRightBack, bottomRightBack, bottomLeftBack],
-        [topLeftFront, topLeftBack, bottomLeftBack, bottomLeftFront],
-        [topRightBack, topRightFront, bottomRightFront, bottomRightBack],
-        [topRightBack, topLeftBack, topLeftFront, topRightFront],
-        [bottomRightFront, bottomLeftFront, bottomLeftBack, bottomRightBack]
+        [topLeftFront, topRightFront, bottomRightFront, bottomLeftFront],
+        [topRightBack, topLeftBack, bottomLeftBack, bottomRightBack],
+        [topLeftBack, topLeftFront, bottomLeftFront, bottomLeftBack],
+        [topRightFront, topRightBack, bottomRightBack, bottomRightFront],
+        [topLeftBack, topRightBack, topRightFront, topLeftFront],
+        [bottomLeftFront, bottomRightFront, bottomRightBack, bottomLeftBack]
     ]
 
 def getBoxPlanes(start, end):

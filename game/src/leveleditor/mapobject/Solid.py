@@ -1,4 +1,4 @@
-from panda3d.core import LPlane
+from panda3d.core import Point3, Vec3, NodePath
 
 from src.leveleditor.math.Polygon import Polygon
 from .MapObject import MapObject
@@ -7,6 +7,7 @@ from .SolidVertex import SolidVertex
 
 from src.leveleditor import LEUtils
 from src.leveleditor.math import PlaneClassification
+from src.leveleditor.math.Plane import Plane
 
 from .ObjectProperty import ObjectProperty
 
@@ -18,6 +19,11 @@ class VisOccluder(ObjectProperty):
         self.value = True
         self.defaultValue = True
         self.name = "visoccluder"
+
+    def clone(self, mapObject):
+        prop = VisOccluder(mapObject)
+        self.copyBase(prop)
+        return prop
 
     def getDescription(self):
         return "Turn this on to make the Solid block visibility of other objects."
@@ -35,6 +41,14 @@ class Solid(MapObject):
         self.faces = []
         self.addProperty(VisOccluder(self))
 
+    def showBoundingBox(self):
+        for face in self.faces:
+            face.show3DLines()
+
+    def hideBoundingBox(self):
+        for face in self.faces:
+            face.hide3DLines()
+
     def select(self):
         MapObject.select(self)
         for face in self.faces:
@@ -44,6 +58,27 @@ class Solid(MapObject):
         MapObject.deselect(self)
         for face in self.faces:
             face.deselect()
+
+    def getAbsSolidOrigin(self):
+        avg = Point3(0)
+        for face in self.faces:
+            avg += face.getAbsOrigin()
+        avg /= len(self.faces)
+        return avg
+
+    def setToSolidOrigin(self):
+        # Moves the solid origin to median of all face vertex positions,
+        # and transforms all faces to be relative to the median position.
+        # Resets angles, scale, and shear.
+        origin = self.getAbsSolidOrigin()
+        self.setAbsOrigin(origin)
+        self.setAbsAngles(Vec3(0))
+        self.setAbsScale(Vec3(1))
+        self.setAbsShear(Vec3(0))
+        mat = self.np.getMat(NodePath())
+        mat.invertInPlace()
+        for face in self.faces:
+            face.xform(mat)
 
     def getName(self):
         return "Solid"
@@ -75,7 +110,9 @@ class Solid(MapObject):
             return [False, back, front]
 
         backPlanes = [plane]
-        frontPlanes = [LPlane(-plane[0], -plane[1], -plane[2], -plane[3])]
+        flippedFront = Plane(plane)
+        flippedFront.flip()
+        frontPlanes = [flippedFront]
 
         for face in self.faces:
             classify = face.classifyAgainstPlane(plane)
@@ -84,14 +121,15 @@ class Solid(MapObject):
             if classify != PlaneClassification.Front:
                 backPlanes.append(face.getWorldPlane())
 
-        back = SolidFace.createFromIntersectingPlanes(backPlanes, generator)
-        front = SolidFace.createFromIntersectingPlanes(frontPlanes, generator)
+        back = Solid.createFromIntersectingPlanes(backPlanes, generator)
+        front = Solid.createFromIntersectingPlanes(frontPlanes, generator)
         self.copyBase(back, generator)
         self.copyBase(front, generator)
 
-        unionOfFaces = list(set(front.faces) | set(back.faces))
+        unionOfFaces = front.faces + back.faces
         for face in unionOfFaces:
-            face.setMaterial(unionOfFaces[0].material.clone())
+            face.material = self.faces[0].material.clone()
+            face.setMaterial(face.material.material)
             face.alignTextureToFace()
 
         # Restore textures (match the planes up on each face)
@@ -100,13 +138,15 @@ class Solid(MapObject):
                 classify = face.classifyAgainstPlane(orig.getWorldPlane())
                 if classify != PlaneClassification.OnPlane:
                     continue
-                face.setMaterial(orig.material.clone())
+                face.material = orig.material.clone()
+                face.setMaterial(face.material.material)
                 break
             for face in front.faces:
                 classify = face.classifyAgainstPlane(orig.getWorldPlane())
                 if classify != PlaneClassification.OnPlane:
                     continue
-                face.setMaterial(orig.material.clone())
+                face.material = orig.material.clone()
+                face.setMaterial(face.material.material)
                 break
 
         for face in unionOfFaces:
@@ -122,21 +162,27 @@ class Solid(MapObject):
             poly = Polygon.fromPlaneAndRadius(planes[i])
             for j in range(len(planes)):
                 if i != j:
-                    poly.split(planes[j])
+                    poly.splitInPlace(planes[j])
 
             # The final polygon is the face
-            face = SolidFace(generator.getNextFaceID(), poly.plane, solid)
+            face = SolidFace(generator.getNextFaceID(), planes[i], solid)
             for i in range(len(poly.vertices)):
                 # Round vertices a bit for sanity
                 face.vertices.append(SolidVertex(LEUtils.roundVector(poly.vertices[i], 2), face))
             face.alignTextureToWorld()
             solid.faces.append(face)
+            face.generate()
+
+        solid.setToSolidOrigin()
 
         # Ensure all faces point outwards
-        origin = solid.getOrigin()
+        origin = Point3(0)
         for face in solid.faces:
-            if face.plane.distToPlane(origin) >= 0:
+            # The solid origin should be on or behind the face plane.
+            # If the solid origin is in front of the face plane, flip the face.
+            if face.plane.distToPlane(origin) > 0:
                 face.flip()
 
         solid.recalcBoundingBox()
+
         return solid
