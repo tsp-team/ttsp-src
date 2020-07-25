@@ -1,4 +1,4 @@
-from panda3d.core import Point3, Vec3, NodePath
+from panda3d.core import Point3, Vec3, NodePath, CKeyValues
 
 from src.leveleditor.math.Polygon import Polygon
 from .MapObject import MapObject
@@ -40,6 +40,26 @@ class Solid(MapObject):
         MapObject.__init__(self)
         self.faces = []
         self.addProperty(VisOccluder(self))
+
+    def writeKeyValues(self, keyvalues):
+        MapObject.writeKeyValues(self, keyvalues)
+
+        # Write or faces or "sides"
+        for face in self.faces:
+            faceKv = CKeyValues("side", keyvalues)
+            face.writeKeyValues(faceKv)
+
+    def readKeyValues(self, kv):
+        MapObject.readKeyValues(self, kv)
+
+        numChildren = kv.getNumChildren()
+        for i in range(numChildren):
+            child = kv.getChild(i)
+            if child.getName() == "side":
+                face = SolidFace(solid = self)
+                face.readKeyValues(child)
+                face.generate()
+                self.faces.append(face)
 
     def showClipVisRemove(self):
         for face in self.faces:

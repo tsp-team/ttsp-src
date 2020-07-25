@@ -2,9 +2,10 @@ from panda3d.core import GeomVertexData, GeomEnums, NodePath
 from panda3d.core import GeomNode, GeomTriangles, GeomLinestrips, GeomVertexFormat
 from panda3d.core import GeomVertexWriter, InternalName, Vec4, Geom
 from panda3d.core import ColorAttrib, Vec3, Vec2, deg2Rad, Quat, Point3
-from panda3d.core import CullFaceAttrib, AntialiasAttrib
+from panda3d.core import CullFaceAttrib, AntialiasAttrib, CKeyValues
 
 from .MapWritable import MapWritable
+from .SolidVertex import SolidVertex
 
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 from src.leveleditor import LEUtils, LEGlobals
@@ -12,6 +13,7 @@ from src.leveleditor.math import PlaneClassification
 from src.leveleditor.math.Plane import Plane
 from src.leveleditor.Align import Align
 from src.leveleditor.IDGenerator import IDGenerator
+from src.leveleditor import MaterialPool
 
 class FaceMaterial:
 
@@ -22,6 +24,22 @@ class FaceMaterial:
         self.uAxis = Vec3(0)
         self.vAxis = Vec3(0)
         self.rotation = 0.0
+
+    def writeKeyValues(self, kv):
+        kv.setKeyValue("material", self.material.filename.getFullpath())
+        kv.setKeyValue("scale", CKeyValues.toString(self.scale))
+        kv.setKeyValue("shift", CKeyValues.toString(self.shift))
+        kv.setKeyValue("uaxis", CKeyValues.toString(self.uAxis))
+        kv.setKeyValue("vaxis", CKeyValues.toString(self.vAxis))
+        kv.setKeyValue("rotation", str(self.rotation))
+
+    def readKeyValues(self, kv):
+        self.material = MaterialPool.getMaterial(kv.getValue("material"))
+        self.scale = CKeyValues.to2f(kv.getValue("scale"))
+        self.shift = CKeyValues.to2f(kv.getValue("shift"))
+        self.uAxis = CKeyValues.to3f(kv.getValue("uaxis"))
+        self.vAxis = CKeyValues.to3f(kv.getValue("vaxis"))
+        self.rotation = float(kv.getValue("rotation"))
 
     def clone(self):
         mat = FaceMaterial()
@@ -149,10 +167,31 @@ class SolidFace(MapWritable):
         self.isSelected = False
 
     def readKeyValues(self, kv):
-        pass
+
+        self.id = int(self.id)
+        base.document.reserveFaceID(self.id)
+
+        self.plane = Plane(CKeyValues.to4f(kv.getValue("plane")))
+
+        for i in range(kv.getNumChildren()):
+            child = kv.getChild(i)
+            if child.getName() == "material":
+                self.material.readKeyValues(child)
+            elif child.getName() == "vertex":
+                vert = SolidVertex(face = self)
+                vert.readKeyValues(child)
+                self.vertices.append(vert)
 
     def writeKeyValues(self, kv):
-        pass
+        kv.setKeyValue("id", str(self.id))
+        kv.setKeyValue("plane", CKeyValues.toString(self.plane))
+
+        matKv = CKeyValues("material", kv)
+        self.material.writeKeyValues(matKv)
+
+        for vert in self.vertices:
+            vertKv = CKeyValues("vertex", kv)
+            vert.writeKeyValues(vertKv)
 
     def generate(self):
         self.np = NodePath("solidface.%i" % self.id)
@@ -170,6 +209,7 @@ class SolidFace(MapWritable):
         self.np3DLines.hide(~VIEWPORT_3D_MASK)
         self.np3DLines.setColor(1, 1, 0, 1)
         self.np3DLines.setAntialias(AntialiasAttrib.MLine)
+        self.hide3DLines()
         if self.material.material:
             self.setMaterial(self.material.material)
         self.np.setCollideMask(GeomNode.getDefaultCollideMask() | LEGlobals.FaceMask)

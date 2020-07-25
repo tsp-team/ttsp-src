@@ -20,6 +20,6 @@ class Root(MapObject):
 
     def doWriteKeyValues(self):
         kv = CKeyValues()
-        for child in self.children:
+        for child in self.children.values():
             child.doWriteKeyValues(kv)
         return kv

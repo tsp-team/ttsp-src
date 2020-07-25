@@ -5,7 +5,7 @@ from .MapWritable import MapWritable
 # Single vertex of a brush face
 class SolidVertex(MapWritable):
 
-    def __init__(self, pos, face):
+    def __init__(self, pos = Point3(0), face = None):
         MapWritable.__init__(self)
         self.uv = LTexCoord(0, 0)
         self.pos = pos
