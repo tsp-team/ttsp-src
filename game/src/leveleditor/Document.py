@@ -4,7 +4,6 @@ from direct.showbase.DirectObject import DirectObject
 
 from src.leveleditor.mapobject.World import World
 from src.leveleditor.mapobject.Entity import Entity
-from src.leveleditor.mapobject.Root import Root
 from src.leveleditor.mapobject import MapObjectFactory
 from src.leveleditor.IDGenerator import IDGenerator
 
@@ -24,35 +23,9 @@ class Document(DirectObject):
         DirectObject.__init__(self)
         self.filename = None
         self.unsaved = False
-        self.idGenerator = None
-        self.root = Root()
+        self.idGenerator = IDGenerator()
+        self.world = None
         self.isOpen = False
-        self.objectId2Object = {}
-        self.faceId2face = {}
-
-    def createObject(self, classDef, classname = None, id = None, keyValues = None, parent = None):
-        obj = classDef()
-        if id is None:
-            obj.id = self.getNextID()
-        else:
-            obj.id = id
-        obj.generate()
-        if keyValues is not None:
-            obj.readKeyValues(keyValues)
-        obj.announceGenerate()
-        if classname is not None:
-            obj.setClassname(classname)
-        if parent is None:
-            parent = self.root
-        obj.reparentTo(parent)
-        self.objectId2Object[obj.id] = obj
-        return obj
-
-    def deleteObject(self, obj):
-        self.freeID(obj.id)
-        if obj.id in self.objectId2Object:
-            del self.objectId2Object[obj.id]
-        obj.delete()
 
     def getNextID(self):
         return self.idGenerator.getNextID()
@@ -60,24 +33,19 @@ class Document(DirectObject):
     def reserveID(self, id):
         self.idGenerator.reserveID(id)
 
-    def freeID(self, id):
-        self.idGenerator.freeID(id)
-
     def getNextFaceID(self):
         return self.idGenerator.getNextFaceID()
 
     def reserveFaceID(self, id):
         self.idGenerator.reserveFaceID(id)
 
-    def freeFaceID(self, id):
-        self.idGenerator.freeFaceID(id)
-
     def save(self, filename = None):
         # if filename is not none, this is a save-as
         if not filename:
             filename = self.filename
 
-        kv = self.root.doWriteKeyValues()
+        kv = CKeyValues()
+        self.world.doWriteKeyValues(kv)
         kv.write(filename, 4)
 
         self.filename = filename
@@ -89,38 +57,42 @@ class Document(DirectObject):
         if not self.isOpen:
             return
 
-        self.root.clear()
-        self.idGenerator = None
+        self.world.delete()
+        self.world = None
+        self.idGenerator.reset()
         self.filename = None
         self.unsaved = False
         self.isOpen = False
 
     def __newMap(self):
         self.unsaved = True
-        self.createIDAllocator()
-        self.createObject(World)
+        self.idGenerator.reset()
+        self.world = World(self.getNextID())
+        self.world.generate()
+        self.world.reparentTo(base.render)
         self.isOpen = True
         if base.toolMgr.selectTool:
             # Open with the select tool by default
             base.toolMgr.selectTool.toggle()
         base.setEditorWindowTitle()
 
-    def createIDAllocator(self):
-        self.idGenerator = IDGenerator()
-
     def r_open(self, kv, parent = None):
-        cls = MapObjectFactory.MapObjectsByName.get(kv.getName())
-        if not cls:
+        classDef = MapObjectFactory.MapObjectsByName.get(kv.getName())
+        if not classDef:
             return
-        # Give a bogus id so we don't try to allocate an id. The id will be read
-        # from the keyvalues
-        obj = self.createObject(cls, keyValues = kv, parent = parent, id = -1)
+
+        id = int(kv.getValue("id"))
+        self.reserveID(id)
+        obj = classDef(id)
+        obj.generate()
+        obj.readKeyValues(kv)
+        obj.reparentTo(parent)
+
+        if classDef is World:
+            self.world = obj
+
         for i in range(kv.getNumChildren()):
             self.r_open(kv.getChild(i), obj)
-
-        if not parent:
-            # Return the root level object (the world)
-            return obj
 
     def open(self, filename = None):
         # if filename is none, this is a new document/map
@@ -130,7 +102,7 @@ class Document(DirectObject):
 
         # opening a map from disk, read through the keyvalues and
         # generate the objects
-        self.createIDAllocator()
+        self.idGenerator.reset()
         root = CKeyValues.load(filename)
         for i in range(root.getNumChildren()):
             self.r_open(root.getChild(i))

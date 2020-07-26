@@ -11,8 +11,8 @@ class Entity(MapObject):
 
     ObjectName = "entity"
 
-    def __init__(self):
-        MapObject.__init__(self)
+    def __init__(self, id):
+        MapObject.__init__(self, id)
         self.metaData = None
         self.helpers = []
 

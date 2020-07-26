@@ -49,8 +49,8 @@ class RotateTool(BaseTransformTool):
         for obj, _, inst in self.xformObjects:
             transform = inst.getTransform(obj.np.getParent())
             action = EditObjectProperties(obj,
-                {"origin": transform.getPos(),
-                 "angles": transform.getHpr()})
+                {"origin": Point3(transform.getPos()),
+                 "angles": Vec3(transform.getHpr())})
             base.actionMgr.performAction(action)
         self.toolVisRoot.setHpr(Vec3(0))
         self.setBoxToSelection()

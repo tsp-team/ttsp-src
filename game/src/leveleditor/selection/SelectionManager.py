@@ -9,6 +9,7 @@ from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_
 from src.leveleditor import RenderModes
 from src.leveleditor import LEGlobals
 from .SelectionType import SelectionType
+from src.leveleditor.actions.Delete import Delete
 
 from enum import IntEnum
 
@@ -87,8 +88,7 @@ class SelectionManager(DirectObject):
             return
 
         selected = list(self.selectedObjects)
-        for obj in selected:
-            base.document.deleteObject(obj)
+        base.actionMgr.performAction(Delete(selected))
         self.selectedObjects = []
         self.updateSelectionBounds()
         messenger.send('selectionsChanged')

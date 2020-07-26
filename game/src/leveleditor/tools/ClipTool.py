@@ -301,8 +301,10 @@ class ClipTool(BaseTool):
         for obj in base.selectionMgr.selectedObjects:
             if obj.ObjectName != "solid":
                 continue
-            ret, back, front = obj.split(plane, tempGen)
+            ret, back, front = obj.split(plane, tempGen, True)
             if ret:
+                front.reparentTo(base.render)
+                back.reparentTo(base.render)
                 self.tempSolids.append((obj, front, back))
                 # Hide the original solid
                 obj.np.stash()

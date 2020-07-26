@@ -10,20 +10,22 @@ class BlockBrush(BaseBrush):
     Name = "Block"
 
     def create(self, mins, maxs, material, roundDecimals):
-        solid = base.document.createObject(Solid)
-        center = (maxs + mins) / 2.0
-        solid.np.setPos(center)
+        solid = Solid(base.document.getNextID())
+
         faces = LEUtils.getBoxFaces(mins, maxs)
         for faceVerts in faces:
             face = SolidFace(base.document.getNextFaceID(),
-                             Plane.fromVertices(faceVerts[0] - center, faceVerts[1] - center, faceVerts[2] - center),
+                             Plane.fromVertices(faceVerts[0], faceVerts[1], faceVerts[2]),
                              solid)
             face.setMaterial(material)
             for vert in faceVerts:
-                vert = vert - center
                 face.vertices.append(SolidVertex(LEUtils.roundVector(vert, roundDecimals), face))
             face.alignTextureToFace()
-            face.generate()
             solid.faces.append(face)
+
+        solid.generate()
+        solid.setToSolidOrigin()
+        solid.generateFaces()
         solid.recalcBoundingBox()
+
         return [solid]

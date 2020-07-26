@@ -1,4 +1,4 @@
-from .CreateEditDelete import CreateEditDelete
+from .CreateEditDelete import CreateEditDelete, CreateReference, DeleteReference
 
 class Clip(CreateEditDelete):
 
@@ -25,16 +25,17 @@ class Clip(CreateEditDelete):
                 ret, back, front = solid.split(self.plane, base.document.idGenerator)
                 if not ret:
                     continue
-                if solid.selected:
-                    base.selectionMgr.select(back)
-                    base.selectionMgr.select(front)
-                back.stash()
-                front.stash()
+                front.selected = back.selected = solid.selected
                 if self.keepBack:
-                    self.create(back)
-                if self.keepFront:
-                    self.create(front)
+                    self.create(CreateReference(solid.parent.id, back))
+                else:
+                    back.delete()
 
-                self.delete(solid)
+                if self.keepFront:
+                    self.create(CreateReference(solid.parent.id, front))
+                else:
+                    front.delete()
+
+                self.delete(DeleteReference(solid))
 
         CreateEditDelete.do(self)

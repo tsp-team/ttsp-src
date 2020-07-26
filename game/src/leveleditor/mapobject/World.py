@@ -5,6 +5,6 @@ class World(Entity):
 
     ObjectName = "world"
 
-    def __init__(self):
-        Entity.__init__(self)
+    def __init__(self, id):
+        Entity.__init__(self, id)
         self.setClassname("worldspawn")

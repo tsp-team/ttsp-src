@@ -11,6 +11,8 @@ from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
 
+from enum import IntEnum
+
 BoundsBox3DState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(1, 1, 0, 1))
 )
@@ -25,9 +27,10 @@ class MapObject(MapWritable):
 
     ObjectName = "object"
 
-    def __init__(self):
+    def __init__(self, id):
         MapWritable.__init__(self)
-        self.id = None
+        self.isGenerated = False
+        self.id = id
         self.selected = False
         self.classname = ""
         self.parent = None
@@ -40,11 +43,6 @@ class MapObject(MapWritable):
         self.boundsBox.generateGeometry()
         self.collNp = None
 
-        # Things we need to keep track of when we're stashed.
-        self.originalParentId = None
-        self.stashed = False
-        self.wasSelected = False
-
         self.properties = {}
 
         # All MapObjects have transform
@@ -53,49 +51,19 @@ class MapObject(MapWritable):
         self.addProperty(ScaleProperty(self))
         self.addProperty(ShearProperty(self))
 
-    # Detaches the object from the scene graph and frees
-    # the ID. The object is not actually gone from memory, so it can
-    # be restored later.
-    def stash(self):
-        if self.stashed:
-            return
+    def findChildByID(self, id):
+        if id == self.id:
+            return self
 
-        if self.id is not None:
-            base.document.freeID(self.id)
-        if self.parent:
-            self.originalParentId = self.parent.id
-        else:
-            self.originalParentId = None
-        self.reparentTo(None)
-
-        self.wasSelected = self.selected
-        base.selectionMgr.deselect(self)
-
-        self.stashed = True
+        if id in self.children:
+            return self.children[id]
 
         for child in self.children.values():
-            child.stash()
+            ret = child.findChildByID(id)
+            if ret is not None:
+                return ret
 
-    # Reattaches the object to the scene graph and reserves
-    # the ID.
-    def unstash(self):
-        if not self.stashed:
-            return
-
-        if self.id is not None:
-            base.document.reserveID(self.id)
-        if self.originalParentId is None:
-            self.reparentTo(base.document.root)
-        else:
-            self.reparentTo(base.document.objectId2object[self.originalParentId])
-        self.originalParentId = None
-        self.stashed = False
-
-        if self.wasSelected:
-            base.selectionMgr.select(self)
-
-        for child in self.children.values():
-            child.unstash()
+        return None
 
     def hasChildWithID(self, id):
         return id in self.children
@@ -130,12 +98,12 @@ class MapObject(MapWritable):
             parent = other.parent
             setPar = other.parent is not None and other.parent.hasChildWithID(other.id) and other.parent.children[other.id] == other
             if setPar:
-                other.reparentTo(None)
+                other.reparentTo(NodePath())
             other.id = self.id
             if setPar:
                 other.reparentTo(parent)
-        else:
-            other.reparentTo(self.parent)
+
+        other.parent = self.parent
 
         for child in self.children.values():
             if clone:
@@ -153,7 +121,7 @@ class MapObject(MapWritable):
             parent = self.parent
             setPar = self.parent is not None and self.parent.hasChildWithID(self.id) and self.parent.children[self.id] == self
             if setPar:
-                self.reparentTo(None)
+                self.reparentTo(NodePath())
             self.id = o.id
             if setPar:
                 self.reparentTo(parent)
@@ -420,21 +388,14 @@ class MapObject(MapWritable):
     # Called when the object first comes into existence, before the
     # keyvalues are read
     def generate(self):
-        self.np = NodePath(ModelNode("mapobject_unknown"))
+        self.np = NodePath(ModelNode(self.ObjectName + ".%i" % self.id))
         self.np.setPythonTag("mapobject", self)
-        #self.collNp = self.np.attachNewNode(CollisionNode("pickBox"))
-        #self.collNp.node().setIntoCollideMask(LEGlobals.EntityMask)
-        #self.collNp.node().setFromCollideMask(BitMask32.allOff())
-        #self.collNp.show()
-
-    # Called after the keyvalues have been read for this object
-    def announceGenerate(self):
-        self.np.setName("mapobject_%s.%i" % (self.classname, self.id))
+        self.isGenerated = True
 
     def delete(self):
         # Take the children with us
         for child in self.children.values():
-            base.document.deleteObject(child)
+            child.delete()
         self.children = None
 
         # if we are selected, deselect
@@ -446,11 +407,12 @@ class MapObject(MapWritable):
 
         self.removePickBox()
 
-        self.reparentTo(None)
+        self.reparentTo(NodePath())
         self.np.removeNode()
         self.np = None
         self.properties = None
         self.metaData = None
+        self.isGenerated = None
 
     def __clearParent(self):
         if self.parent:
@@ -459,12 +421,26 @@ class MapObject(MapWritable):
             self.parent = None
 
     def __setParent(self, other):
-        self.parent = other
-        if self.parent:
-            self.parent.__addChild(self)
-            self.np.reparentTo(self.parent.np)
+        if isinstance(other, NodePath):
+            # We are reparenting directly to a NodePath, outside of the MapObject tree.
+            self.parent = None
+            self.np.reparentTo(other)
+        else:
+            self.parent = other
+            if self.parent:
+                self.parent.__addChild(self)
+                self.np.reparentTo(self.parent.np)
+            else:
+                # If None was passed, assume base.render
+                self.np.reparentTo(base.render)
 
     def reparentTo(self, other):
+        # If a NodePath is passed to this method, the object will be placed under the specified node
+        # in the Panda3D scene graph, but will be taken out of the MapObject tree. If None is passed,
+        # the object will be parented to base.render and taken out of the MapObject tree.
+        #
+        # Use reparentTo(NodePath()) to place the object outside of both the scene graph and the
+        # MapObject tree.
         self.__clearParent()
         self.__setParent(other)
 
@@ -490,9 +466,6 @@ class MapObject(MapWritable):
             prop.writeKeyValues(keyvalues)
 
     def readKeyValues(self, keyvalues):
-        self.id = int(keyvalues.getValue("id"))
-        base.document.reserveID(self.id)
-
         for i in range(keyvalues.getNumKeys()):
             key = keyvalues.getKey(i)
             value = keyvalues.getValue(i)

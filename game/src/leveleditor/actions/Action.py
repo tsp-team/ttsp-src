@@ -5,11 +5,18 @@ from direct.showbase.DirectObject import DirectObject
 class Action(DirectObject):
     Name = "Action"
 
+    NeverPerformed = 0
+    Done = 1
+    Undone = 2
+
+    def __init__(self):
+        self.state = self.NeverPerformed
+
     def do(self):
-        raise NotImplementedError
+        self.state = self.Done
 
     def undo(self):
-        raise NotImplementedError
+        self.state = self.Undone
 
     def cleanup(self):
-        raise NotImplementedError
+        self.state = None

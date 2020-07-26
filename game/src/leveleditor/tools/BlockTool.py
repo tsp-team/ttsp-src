@@ -1,4 +1,5 @@
 from .BoxTool import BoxTool
+from src.leveleditor.actions.Create import MultiCreate
 
 from src.leveleditor import MaterialPool
 
@@ -10,5 +11,10 @@ class BlockTool(BoxTool):
     Icon = "resources/icons/editor-block.png"
 
     def boxDrawnConfirm(self):
-        base.brushMgr.brushes[0].create(self.state.boxStart, self.state.boxEnd,
+        solids = base.brushMgr.brushes[0].create(self.state.boxStart, self.state.boxEnd,
             MaterialPool.getMaterial("materials/dev/dev_measuregeneric01b.mat"), 2)
+
+        creations = []
+        for solid in solids:
+            creations.append((base.document.world.id, solid))
+        base.actionMgr.performAction(MultiCreate(creations))

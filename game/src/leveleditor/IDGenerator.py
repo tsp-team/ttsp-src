@@ -3,23 +3,25 @@ from panda3d.core import UniqueIdAllocator
 class IDGenerator:
 
     def __init__(self):
-        self.alloc = UniqueIdAllocator(0, 0xFFFF)
-        self.faceAlloc = UniqueIdAllocator(0, 0xFFFF)
+        self.objectId = 0
+        self.faceId = 0
+
+    def reset(self):
+        self.objectId = 0
+        self.faceId = 0
 
     def getNextFaceID(self):
-        return self.faceAlloc.allocate()
-
-    def freeFaceID(self, id):
-        self.faceAlloc.free(id)
+        newId = self.faceId
+        self.faceId += 1
+        return newId
 
     def reserveFaceID(self, id):
-        self.faceAlloc.initialReserveId(id)
+        self.faceId = max(self.faceId, id + 1)
 
     def getNextID(self):
-        return self.alloc.allocate()
-
-    def freeID(self, id):
-        self.alloc.free(id)
+        newId = self.objectId
+        self.objectId += 1
+        return newId
 
     def reserveID(self, id):
-        self.alloc.initialReserveId(id)
+        self.objectId = max(self.objectId, id + 1)

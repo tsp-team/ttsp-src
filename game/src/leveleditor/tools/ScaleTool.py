@@ -56,10 +56,10 @@ class ScaleTool(BaseTransformTool):
             # the origin will also change. And if our object has non-zero
             # angles, the angles will be changed, as well as shear.
             action = EditObjectProperties(obj,
-                {"origin": transform.getPos(),
-                 "scale": transform.getScale(),
-                 "shear": transform.getShear(),
-                 "angles": transform.getHpr()})
+                {"origin": Point3(transform.getPos()),
+                 "scale": Vec3(transform.getScale()),
+                 "shear": Vec3(transform.getShear()),
+                 "angles": Vec3(transform.getHpr())})
             base.actionMgr.performAction(action)
 
         # Reset the scaling on the vis root

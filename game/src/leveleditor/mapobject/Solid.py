@@ -36,10 +36,14 @@ class Solid(MapObject):
 
     ObjectName = "solid"
 
-    def __init__(self):
-        MapObject.__init__(self)
+    def __init__(self, id):
+        MapObject.__init__(self, id)
         self.faces = []
         self.addProperty(VisOccluder(self))
+
+    def generateFaces(self):
+        for face in self.faces:
+            face.generate()
 
     def writeKeyValues(self, keyvalues):
         MapObject.writeKeyValues(self, keyvalues)
@@ -115,13 +119,13 @@ class Solid(MapObject):
         return "Convex solid geometry."
 
     def delete(self):
-        MapObject.delete(self)
         for face in self.faces:
             face.delete()
         self.faces = None
+        MapObject.delete(self)
 
     # Splits this solid into two solids by intersecting against a plane.
-    def split(self, plane, generator):
+    def split(self, plane, generator, temp = False):
         back = front = None
 
         # Check that this solid actually spans the plane
@@ -184,7 +188,7 @@ class Solid(MapObject):
 
     @staticmethod
     def createFromIntersectingPlanes(planes, generator):
-        solid = base.document.createObject(Solid, id = generator.getNextID())
+        solid = Solid(generator.getNextID())
         for i in range(len(planes)):
             # Split the polygon by all the other planes
             poly = Polygon.fromPlaneAndRadius(planes[i])
@@ -199,9 +203,10 @@ class Solid(MapObject):
                 face.vertices.append(SolidVertex(LEUtils.roundVector(poly.vertices[i], 2), face))
             face.alignTextureToWorld()
             solid.faces.append(face)
-            face.generate()
 
+        solid.generate()
         solid.setToSolidOrigin()
+        solid.generateFaces()
 
         # Ensure all faces point outwards
         origin = Point3(0)
