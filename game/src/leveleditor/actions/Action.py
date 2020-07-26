@@ -9,6 +9,8 @@ class Action(DirectObject):
     Done = 1
     Undone = 2
 
+    ModifiesState = False
+
     def __init__(self):
         self.state = self.NeverPerformed
 

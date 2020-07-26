@@ -65,7 +65,7 @@ class Document(DirectObject):
         self.isOpen = False
 
     def __newMap(self):
-        self.unsaved = True
+        self.unsaved = False
         self.idGenerator.reset()
         self.world = World(self.getNextID())
         self.world.generate()

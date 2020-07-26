@@ -31,6 +31,8 @@ class DeleteReference:
 
 class CreateEditDelete(Action):
 
+    ModifiesState = True
+
     def __init__(self):
         Action.__init__(self)
         self.createObjects = []

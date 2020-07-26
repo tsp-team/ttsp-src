@@ -3,6 +3,7 @@ from .Action import Action
 class EditObjectProperties(Action):
 
     Name = "Edit Object Properties"
+    ModifiesState = True
 
     def __init__(self, ent, newProperties):
         self.obj = ent

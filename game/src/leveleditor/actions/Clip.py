@@ -2,6 +2,8 @@ from .CreateEditDelete import CreateEditDelete, CreateReference, DeleteReference
 
 class Clip(CreateEditDelete):
 
+    Name = "Clip Solid(s)"
+
     def __init__(self, solids, plane, keepFront, keepBack):
         CreateEditDelete.__init__(self)
         self.solids = solids

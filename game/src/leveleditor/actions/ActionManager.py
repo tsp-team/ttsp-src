@@ -6,13 +6,27 @@ class ActionManager(DirectObject):
         DirectObject.__init__(self)
         self.historyIndex = -1
         self.savedIndex = -1
+        self.stateChangeIndex = -1
         self.history = []
 
+    def getCurrentStateChangeIndex(self):
+        if self.historyIndex == -1:
+            return -1
+
+        # Search back from the current history index to find the most recent state.
+        for i in range(self.historyIndex + 1):
+            idx = self.historyIndex - i
+            action = self.history[idx]
+            if action.ModifiesState:
+                return idx
+
+        return -1
+
     def documentSaved(self):
-        self.savedIndex = self.historyIndex
+        self.savedIndex = self.stateChangeIndex
 
     def updateSaveStatus(self):
-        if self.historyIndex != self.savedIndex:
+        if self.stateChangeIndex != self.savedIndex:
             base.document.markUnsaved()
         else:
             base.document.markSaved()
@@ -29,7 +43,9 @@ class ActionManager(DirectObject):
         # Move the history index back
         self.historyIndex -= 1
 
-        self.updateSaveStatus()
+        if action.ModifiesState:
+            self.stateChangeIndex = self.getCurrentStateChangeIndex()
+            self.updateSaveStatus()
 
         base.statusBar.showMessage("Undo %s" % action.Name)
 
@@ -44,7 +60,9 @@ class ActionManager(DirectObject):
         action = self.history[self.historyIndex]
         action.do()
 
-        self.updateSaveStatus()
+        if action.ModifiesState:
+            self.stateChangeIndex = self.getCurrentStateChangeIndex()
+            self.updateSaveStatus()
 
         base.statusBar.showMessage("Redo %s" % action.Name)
 
@@ -61,10 +79,18 @@ class ActionManager(DirectObject):
                 other.cleanup()
             del self.history[first:]
 
+            if self.savedIndex > self.historyIndex:
+                # If the saved index is ahead of the history index, the
+                # saved index is now invalid since those actions have
+                # been deleted.
+                self.savedIndex = -1
+
         action.do()
         self.history.append(action)
         self.historyIndex += 1
 
-        self.updateSaveStatus()
+        if action.ModifiesState:
+            self.stateChangeIndex = self.getCurrentStateChangeIndex()
+            self.updateSaveStatus()
 
         base.statusBar.showMessage(action.Name)
