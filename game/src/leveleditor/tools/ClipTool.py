@@ -14,6 +14,8 @@ from src.leveleditor.IDGenerator import IDGenerator
 
 from enum import IntEnum
 
+HandleSize = 1
+
 class ClipState(IntEnum):
     Off = 0
     Drawing = 1
@@ -61,7 +63,7 @@ class ClipToolViewport2D:
         self.hPoint3.reparentTo(NodePath())
 
     def update(self):
-        scale = 1.75 / self.vp.zoom
+        scale = HandleSize / self.vp.zoom
         self.hPoint1.setScale(scale)
         self.hPoint2.setScale(scale)
         self.hPoint3.setScale(scale)
@@ -74,7 +76,7 @@ class ClipToolViewport2D:
 
     def makeHandle(self):
         cm = CardMaker('handle')
-        cm.setFrame(-0.5, 0.5, -0.5, 0.5)
+        cm.setFrame(-1, 1, -1, 1)
         np = NodePath(cm.generate())
         np.setLightOff(1)
         np.setFogOff(1)
@@ -206,13 +208,13 @@ class ClipTool(BaseTool):
         p2 = viewport.flatten(self.point2)
         p3 = viewport.flatten(self.point3)
 
-        d = 5 / viewport.zoom
+        d = HandleSize / viewport.zoom
 
-        if (p.x >= p1.x - d and p.x <= p1.x + d and p.y >= p1.y - d and p.y <= p1.y + d):
+        if (p.x >= p1.x - d and p.x <= p1.x + d and p.z >= p1.z - d and p.z <= p1.z + d):
             return ClipState.MovingPoint1
-        if (p.x >= p2.x - d and p.x <= p2.x + d and p.y >= p2.y - d and p.y <= p2.y + d):
+        if (p.x >= p2.x - d and p.x <= p2.x + d and p.z >= p2.z - d and p.z <= p2.z + d):
             return ClipState.MovingPoint2
-        if (p.x >= p3.x - d and p.x <= p3.x + d and p.y >= p3.y - d and p.y <= p3.y + d):
+        if (p.x >= p3.x - d and p.x <= p3.x + d and p.z >= p3.z - d and p.z <= p3.z + d):
             return ClipState.MovingPoint3
 
         return ClipState.Off
