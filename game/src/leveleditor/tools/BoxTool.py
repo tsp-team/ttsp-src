@@ -360,7 +360,7 @@ class BoxTool(BaseTool):
         toWorld = vp.viewportToWorld(mouse)
         expanded = vp.expand(toWorld)
         self.state.boxStart = base.snapToGrid(expanded)
-        self.state.boxEnd = self.state.boxStart
+        self.state.boxEnd = Point3(self.state.boxStart)
         self.state.handle = ResizeHandle.BottomLeft
         self.onBoxChanged()
 
