@@ -186,7 +186,7 @@ class ClipTool(BaseTool):
         for obj in base.selectionMgr.selectedObjects:
             if obj.ObjectName == "solid":
                 solids.append(obj)
-        base.actionMgr.performAction(Clip(solids, clipPlane, side != ClipSide.Back, side != ClipSide.Front))
+        base.actionMgr.performAction("Clip %i solid(s)" % len(solids), Clip(solids, clipPlane, side != ClipSide.Back, side != ClipSide.Front))
         self.side = side
 
     def controlDown(self):

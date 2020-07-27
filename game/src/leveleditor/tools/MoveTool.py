@@ -7,6 +7,7 @@ from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
 from src.leveleditor.math.Ray import Ray
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
+from src.leveleditor.actions.ActionGroup import ActionGroup
 from src.leveleditor.selection.SelectionType import SelectionModeTransform
 
 from .BaseTransformTool import BaseTransformTool, Rollover, Ready, Down, Global, \
@@ -64,11 +65,13 @@ class MoveTool(BaseTransformTool):
     def onFinishTransforming(self):
         # We finished moving some objects, apply the ghost position
         # to the actual position
+        actions = []
         for obj, _, inst in self.xformObjects:
             # Set it through the entity property so the change reflects in the
             # object properties panel.
             action = EditObjectProperties(obj, {"origin": inst.getPos(obj.np.getParent())})
-            base.actionMgr.performAction(action)
+            actions.append(action)
+        base.actionMgr.performAction("Move %i object(s)" % len(self.xformObjects), ActionGroup(actions))
 
     def onMouseMoveTransforming3D(self, vp):
         # 3D is a little more complicated. We need to define a plane parallel to the selected

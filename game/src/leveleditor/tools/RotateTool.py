@@ -2,6 +2,7 @@ from .BaseTransformTool import BaseTransformTool, TransformWidget, TransformWidg
 from src.leveleditor.selection.SelectionType import SelectionModeTransform
 from src.leveleditor import LEUtils
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
+from src.leveleditor.actions.ActionGroup import ActionGroup
 
 from panda3d.core import LineSegs, Vec3, AntialiasAttrib, LPlane, Point3
 
@@ -46,12 +47,14 @@ class RotateTool(BaseTransformTool):
         self.widget = RotateWidget(self)
 
     def onFinishTransforming(self):
+        actions = []
         for obj, _, inst in self.xformObjects:
             transform = inst.getTransform(obj.np.getParent())
             action = EditObjectProperties(obj,
                 {"origin": Point3(transform.getPos()),
                  "angles": Vec3(transform.getHpr())})
-            base.actionMgr.performAction(action)
+            actions.append(action)
+        base.actionMgr.performAction("Rotate %i object(s)" % len(self.xformObjects), ActionGroup(actions))
         self.toolVisRoot.setHpr(Vec3(0))
         self.setBoxToSelection()
 

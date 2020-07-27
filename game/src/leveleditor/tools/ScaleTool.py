@@ -4,6 +4,7 @@ from .BaseTransformTool import BaseTransformTool, TransformWidget, TransformWidg
 
 from src.leveleditor.selection.SelectionType import SelectionModeTransform
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
+from src.leveleditor.actions.ActionGroup import ActionGroup
 
 class ScaleWidgetAxis(TransformWidgetAxis):
 
@@ -49,6 +50,7 @@ class ScaleTool(BaseTransformTool):
         self.widget = ScaleWidget(self)
 
     def onFinishTransforming(self):
+        actions = []
         for obj, _, inst in self.xformObjects:
             transform = inst.getTransform(obj.np.getParent())
             # Jeez, scaling has the possibility of changing everything.
@@ -60,7 +62,8 @@ class ScaleTool(BaseTransformTool):
                  "scale": Vec3(transform.getScale()),
                  "shear": Vec3(transform.getShear()),
                  "angles": Vec3(transform.getHpr())})
-            base.actionMgr.performAction(action)
+            actions.append(action)
+        base.actionMgr.performAction("Scale %i object(s)" % len(self.xformObjects), ActionGroup(actions))
 
         # Reset the scaling on the vis root
         self.toolVisRoot.setScale(1)

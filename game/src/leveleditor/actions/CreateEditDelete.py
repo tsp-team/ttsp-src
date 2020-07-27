@@ -31,13 +31,14 @@ class DeleteReference:
 
 class CreateEditDelete(Action):
 
-    ModifiesState = True
-
     def __init__(self):
         Action.__init__(self)
         self.createObjects = []
         self.deleteObjects = []
         self.editObjects = []
+
+    def modifiesState(self):
+        return True
 
     def create(self, create):
         self.createObjects.append(create)

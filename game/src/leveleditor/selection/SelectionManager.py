@@ -88,7 +88,7 @@ class SelectionManager(DirectObject):
             return
 
         selected = list(self.selectedObjects)
-        base.actionMgr.performAction(Delete(selected))
+        base.actionMgr.performAction("Delete %i object(s)" % len(selected), Delete(selected))
         self.selectedObjects = []
         self.updateSelectionBounds()
         messenger.send('selectionsChanged')

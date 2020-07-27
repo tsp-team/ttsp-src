@@ -1,5 +1,25 @@
 from direct.showbase.DirectObject import DirectObject
 
+class ActionEntry:
+
+    def __init__(self, desc, action):
+        self.desc = desc
+        self.action = action
+
+    def do(self):
+        self.action.do()
+
+    def undo(self):
+        self.action.undo()
+
+    def modifiesState(self):
+        return self.action.modifiesState()
+
+    def cleanup(self):
+        self.action.cleanup()
+        self.action = None
+        self.desc = None
+
 class ActionManager(DirectObject):
 
     def __init__(self):
@@ -17,7 +37,7 @@ class ActionManager(DirectObject):
         for i in range(self.historyIndex + 1):
             idx = self.historyIndex - i
             action = self.history[idx]
-            if action.ModifiesState:
+            if action.modifiesState():
                 return idx
 
         return -1
@@ -43,11 +63,11 @@ class ActionManager(DirectObject):
         # Move the history index back
         self.historyIndex -= 1
 
-        if action.ModifiesState:
+        if action.modifiesState():
             self.stateChangeIndex = self.getCurrentStateChangeIndex()
             self.updateSaveStatus()
 
-        base.statusBar.showMessage("Undo %s" % action.Name)
+        base.statusBar.showMessage("Undo %s" % action.desc)
 
     def redo(self):
         # Anything to redo?
@@ -60,13 +80,13 @@ class ActionManager(DirectObject):
         action = self.history[self.historyIndex]
         action.do()
 
-        if action.ModifiesState:
+        if action.modifiesState():
             self.stateChangeIndex = self.getCurrentStateChangeIndex()
             self.updateSaveStatus()
 
-        base.statusBar.showMessage("Redo %s" % action.Name)
+        base.statusBar.showMessage("Redo %s" % action.desc)
 
-    def performAction(self, action):
+    def performAction(self, description, action):
         # We are overriding everything after the current history index.
         # If the history index is not at the end of the list,
         # shave off everything from the current index to the end of the list.
@@ -86,11 +106,11 @@ class ActionManager(DirectObject):
                 self.savedIndex = -1
 
         action.do()
-        self.history.append(action)
+        self.history.append(ActionEntry(description, action))
         self.historyIndex += 1
 
-        if action.ModifiesState:
+        if action.modifiesState():
             self.stateChangeIndex = self.getCurrentStateChangeIndex()
             self.updateSaveStatus()
 
-        base.statusBar.showMessage(action.Name)
+        base.statusBar.showMessage(description)

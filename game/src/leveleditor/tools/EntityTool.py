@@ -239,7 +239,7 @@ class EntityTool(BaseTool):
         # whatever without having to manually select it.
         ent.selected = True
         base.selectionMgr.deselectAll()
-        base.actionMgr.performAction(Create(base.document.world.id, ent))
+        base.actionMgr.performAction("Create entity", Create(base.document.world.id, ent))
 
         self.reset()
 

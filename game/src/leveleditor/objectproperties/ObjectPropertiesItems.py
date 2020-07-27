@@ -51,7 +51,7 @@ class ObjectPropertiesItem(QtGui.QStandardItem):
                 data = strData
 
             action = EditObjectProperties(self.entity, {self.propName: data})
-            base.actionMgr.performAction(action)
+            base.actionMgr.performAction("Edit object properties", action)
 
         QtGui.QStandardItem.setData(self, strData, role)
 
@@ -121,7 +121,7 @@ class ObjectPropertiesFlagItem(QtGui.QStandardItem):
             else:
                 value = self.flagsItem.prop.getValue() & ~(self.spawnFlag.value)
             action = EditObjectProperties(self.flagsItem.entity, {self.flagsItem.propName: value})
-            base.actionMgr.performAction(action)
+            base.actionMgr.performAction("Edit object spawnflag", action)
 
         QtGui.QStandardItem.setData(self, strData, role)
 

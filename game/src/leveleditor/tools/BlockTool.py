@@ -38,7 +38,7 @@ class BlockTool(BoxTool):
             creations = []
             for solid in solids:
                 creations.append((base.document.world.id, solid))
-            base.actionMgr.performAction(MultiCreate(creations))
+            base.actionMgr.performAction("Create %i solid(s)" % len(creations), MultiCreate(creations))
 
             self.lastBox = box
 
