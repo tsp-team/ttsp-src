@@ -10,6 +10,8 @@ from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.mapobject.Entity import Entity
 from src.leveleditor import LEUtils, LEGlobals
 from src.leveleditor.actions.Create import Create
+from src.leveleditor.actions.Select import Deselect
+from src.leveleditor.actions.ActionGroup import ActionGroup
 
 VisState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(0, 1, 0, 1)),
@@ -238,8 +240,8 @@ class EntityTool(BaseTool):
          # Select the entity right away so we can conveniently move it around and
         # whatever without having to manually select it.
         ent.selected = True
-        base.selectionMgr.deselectAll()
-        base.actionMgr.performAction("Create entity", Create(base.document.world.id, ent))
+        base.actionMgr.performAction("Create entity",
+            ActionGroup([Deselect(all = True), Create(base.document.world.id, ent)]))
 
         self.reset()
 

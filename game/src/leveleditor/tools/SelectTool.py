@@ -5,6 +5,7 @@ from .BoxTool import BoxTool, ResizeHandle, BoxAction
 from src.leveleditor import LEGlobals
 from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
+from src.leveleditor.actions.Select import Select, Deselect
 
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
@@ -46,14 +47,14 @@ class SelectTool(BoxTool):
 
     def __toggleSelect(self, obj):
         if not self.multiSelect:
-            base.selectionMgr.select(obj)
+            base.actionMgr.performAction("Select %s" % obj.getName(), Select([obj], True))
         else:
             # In multi-select (shift held), if the object we clicked on has
             # already been selected, deselect it.
             if base.selectionMgr.isSelected(obj):
-                base.selectionMgr.deselect(obj)
+                base.actionMgr.performAction("Deselect %s" % obj.getName(), Deselect([obj]))
             else:
-                base.selectionMgr.select(obj)
+                base.actionMgr.performAction("Append select %s" % obj.getName(), Select([obj], False))
 
     def selectionChanged(self):
         pass
@@ -136,7 +137,7 @@ class SelectTool(BoxTool):
                     selection.append(obj)
         boxNp.removeNode()
 
-        base.selectionMgr.multiSelect(selection)
+        base.actionMgr.performAction("Select %i objects" % len(selection), Select(selection, True))
 
     def wheelUp(self):
         if not self.mouseIsDown:
@@ -149,7 +150,8 @@ class SelectTool(BoxTool):
     def deselectAll(self):
         self.lastEntries = None
         self.entryIdx = 0
-        base.selectionMgr.deselectAll()
+
+        base.actionMgr.performAction("Deselect all", Deselect(all = True))
 
     def disable(self):
         BoxTool.disable(self)

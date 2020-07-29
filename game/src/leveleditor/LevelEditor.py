@@ -20,6 +20,7 @@ from src.leveleditor import LEUtils, LEGlobals
 from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.Document import Document
 from src.leveleditor.ui import About
+from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
 from .EntityEdit import EntityEdit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -108,13 +109,14 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.ui.actionUndo.triggered.connect(self.__undo)
         self.ui.actionRedo.triggered.connect(self.__redo)
 
-        selectionModeActions = [
-            (self.ui.actionGroups, SelectionType.Groups), (self.ui.actionObjects, SelectionType.Objects),
-            (self.ui.actionFaces, SelectionType.Faces), (self.ui.actionVertices, SelectionType.Vertices)
-        ]
+        selectionModeActions = {
+            SelectionType.Groups: self.ui.actionGroups, SelectionType.Objects: self.ui.actionObjects,
+            SelectionType.Faces: self.ui.actionFaces, SelectionType.Vertices: self.ui.actionVertices
+        }
+        self.selectionModeActions = selectionModeActions
         self.ui.actionGroups.setChecked(True)
         selectionModeGroup = QtWidgets.QActionGroup(self.ui.topBar)
-        for action, mode in selectionModeActions:
+        for mode, action in selectionModeActions.items():
             selectionModeGroup.addAction(action)
             action.toggled.connect(lambda checked, mode=mode: self.__maybeSetSelelectionMode(checked, mode))
 
@@ -132,7 +134,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
 
     def __maybeSetSelelectionMode(self, checked, mode):
         if checked:
-            base.selectionMgr.setSelectionMode(mode)
+            base.actionMgr.performAction("Change selection mode", ChangeSelectionMode(mode))
 
     def __undo(self):
         base.actionMgr.undo()
