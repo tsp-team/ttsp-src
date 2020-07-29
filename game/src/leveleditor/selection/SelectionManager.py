@@ -65,9 +65,11 @@ class SelectionManager(DirectObject):
         self.addSelectionMode(VertexMode(self))
 
     def setSelectionMode(self, mode):
+        if self.selectionMode is not None:
+            oldMode = self.selectionMode.Type
+        else:
+            oldMode = None
         if mode != self.selectionMode and self.selectionMode is not None:
-            # Deselect everything from our old mode.
-            self.deselectAll()
             self.selectionMode.disable()
         self.selectionMode = self.selectionModes[mode]
         self.selectionMode.enable()

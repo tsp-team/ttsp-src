@@ -27,3 +27,8 @@ class SelectionMode(DirectObject):
 
     def onSelectionsChanged(self):
         raise NotImplementedError
+
+    # Returns a list of objects that will be selected
+    # when switching to this mode from prevMode.
+    def getTranslatedSelections(self, prevMode):
+        return []

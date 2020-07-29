@@ -19,8 +19,20 @@ class FaceMode(SelectionMode):
         self.faceEditSheet = FaceEditSheet(self)
         self.activeMaterial = MaterialPool.getMaterial("materials/dev/dev_measuregeneric01b.mat")
 
+    def getTranslatedSelections(self, mode):
+        if mode in [SelectionType.Groups, SelectionType.Objects]:
+            # Select each face of each solid we currently have selected
+            faces = []
+            for obj in self.mgr.selectedObjects:
+                if obj.ObjectName == "solid":
+                    faces += obj.faces
+            return faces
+        else:
+            return []
+
     def enable(self):
         SelectionMode.enable(self)
+
         # Right click on face to apply active material
         self.accept('mouse3', self.applyActiveMaterial)
 
