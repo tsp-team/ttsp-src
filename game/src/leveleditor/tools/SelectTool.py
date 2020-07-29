@@ -71,13 +71,11 @@ class SelectTool(BoxTool):
         if self.suppressSelect:
             return
 
-        if self.state.action != BoxAction.ReadyToResize:
-            if not self.multiSelect:
-                # We're doing single-selection. Deselect our current selections.
-                self.deselectAll()
-
         entries = vp.click(base.selectionMgr.getSelectionMask())
         if not entries:
+            if not self.multiSelect and self.state.action != BoxAction.ReadyToResize:
+                # Deselect all if not doing multi-select and no hits
+                self.deselectAll()
             return
 
         key = base.selectionMgr.getSelectionKey()
@@ -151,7 +149,8 @@ class SelectTool(BoxTool):
         self.lastEntries = None
         self.entryIdx = 0
 
-        base.actionMgr.performAction("Deselect all", Deselect(all = True))
+        if base.selectionMgr.hasSelectedObjects():
+            base.actionMgr.performAction("Deselect all", Deselect(all = True))
 
     def disable(self):
         BoxTool.disable(self)
