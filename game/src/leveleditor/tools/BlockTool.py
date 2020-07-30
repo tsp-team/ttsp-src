@@ -2,8 +2,10 @@ from panda3d.core import Point3
 
 from .BoxTool import BoxTool
 from src.leveleditor.actions.Create import MultiCreate
-from src.leveleditor.actions.Select import Select
+from src.leveleditor.actions.Select import Select, Deselect
 from src.leveleditor.actions.ActionGroup import ActionGroup
+from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
+from src.leveleditor.selection.SelectionType import SelectionType
 from src.leveleditor.grid.GridSettings import GridSettings
 
 from src.leveleditor import MaterialPool
@@ -42,8 +44,10 @@ class BlockTool(BoxTool):
                 creations.append((base.document.world.id, solid))
             base.actionMgr.performAction("Create %i solid(s)" % len(creations),
                 ActionGroup([
+                    Deselect(all = True),
                     MultiCreate(creations),
-                    Select(solids, True)
+                    ChangeSelectionMode(SelectionType.Groups),
+                    Select(solids, False)
                 ])
             )
 

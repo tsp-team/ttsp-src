@@ -11,6 +11,9 @@ from src.leveleditor.mapobject.Entity import Entity
 from src.leveleditor import LEUtils, LEGlobals
 from src.leveleditor.actions.Create import Create
 from src.leveleditor.actions.Select import Deselect
+from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
+from src.leveleditor.selection.SelectionType import SelectionType
+from src.leveleditor.actions.Select import Select
 from src.leveleditor.actions.ActionGroup import ActionGroup
 
 VisState = RenderState.make(
@@ -237,11 +240,16 @@ class EntityTool(BaseTool):
         ent.generate()
         ent.setClassname(self.classname)
         ent.np.setPos(self.pos)
-         # Select the entity right away so we can conveniently move it around and
+        # Select the entity right away so we can conveniently move it around and
         # whatever without having to manually select it.
-        ent.selected = True
         base.actionMgr.performAction("Create entity",
-            ActionGroup([Deselect(all = True), Create(base.document.world.id, ent)]))
+            ActionGroup([
+                Deselect(all = True),
+                Create(base.document.world.id, ent),
+                ChangeSelectionMode(SelectionType.Groups),
+                Select([ent], False)
+            ])
+        )
 
         self.reset()
 
