@@ -25,6 +25,101 @@ class FaceMaterial:
         self.vAxis = Vec3(0)
         self.rotation = 0.0
 
+    def alignTextureToFace(self, face):
+        # Set the U and V axes to match the plane's normal
+        # Need to start with the world alignment on the V axis so that we don't align backwards.
+        # Then we can calculate U based on that, and the real V afterwards.
+
+        norm = face.plane.getNormal()
+        direction = face.plane.getClosestAxisToNormal()
+
+        tempV = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
+        self.uAxis = norm.cross(tempV).normalized()
+        self.vAxis = self.uAxis.cross(norm).normalized()
+
+        self.rotation = 0.0
+
+    def alignTextureToWorld(self, face):
+        # Set the U and V axes to match the X, Y, or Z axes.
+        # How they are calculated depends on which direction the plane is facing.
+
+        direction = face.plane.getClosestAxisToNormal()
+
+        # VHE behavior:
+        # U axis: If the closest axis to the normal is the X axis,
+        #         the U axis is unit Y. Otherwise, the U axis is unit X.
+        # V axis: If the closest axis to the normal is the Z axis,
+        #         the V axis is -unit Y. Otherwise, the V axis is -unit z.
+
+        self.uAxis = Vec3.unitY() if direction == Vec3.unitX() else Vec3.unitX()
+        self.vAxis = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
+        self.rotation = 0
+
+    def setTextureRotation(self, angle):
+        # Rotate texture around the face normal
+        rads = deg2Rad(self.rotation - angle)
+        # Rotate around the face normal
+        texNorm = self.vAxis.cross(self.uAxis).normalized()
+        transform = Quat()
+        transform.setFromAxisAngleRad(rads, texNorm)
+        self.uAxis = transform.xform(self.uAxis)
+        self.vAxis = transform.xform(self.vAxis)
+        self.rotation = angle
+
+    def fitTextureToPointCloud(self, cloud, tileX, tileY):
+        if self.material is None:
+            return
+        if tileX <= 0:
+            tileX = 1
+        if tileY <= 0:
+            tileY = 1
+
+        # Scale will change, no need to use it in the calculations
+        xvals = []
+        yvals = []
+        for extent in cloud.extents:
+            xvals.append(extent.dot(self.uAxis))
+            yvals.append(extent.dot(self.vAxis))
+
+        minU = min(xvals)
+        minV = min(yvals)
+        maxU = max(xvals)
+        maxV = max(yvals)
+
+        self.scale.x = (maxU - minU) / (self.material.size.x * tileX)
+        self.scale.y = (maxV - minV) / (self.material.size.y * tileY)
+        self.shift.x = -minU / self.scale.x
+        self.shift.y = -minV / self.scale.y
+
+    def alignTextureWithPointCloud(self, cloud, mode):
+        if self.material is None:
+            return
+
+        xvals = []
+        yvals = []
+        for extent in cloud.extents:
+            xvals.append(extent.dot(self.uAxis) / self.scale.x)
+            yvals.append(extent.dot(self.vAxis) / self.scale.y)
+
+        minU = min(xvals)
+        minV = min(yvals)
+        maxU = max(xvals)
+        maxV = max(yvals)
+
+        if mode == Align.Left:
+            self.shift.x = -minU
+        elif mode == Align.Right:
+            self.shift.x = -maxU + self.material.size.x
+        elif mode == Align.Center:
+            avgU = (minU + maxU) / 2
+            avgV = (minV + maxV) / 2
+            self.shift.x = -avgU + self.material.size.x / 2
+            self.shift.y = -avgV + self.material.size.y / 2
+        elif mode == Align.Top:
+            self.shift.y = -minV
+        elif mode == Align.Bottom:
+            self.shift.y = -maxV + self.material.size.y
+
     def writeKeyValues(self, kv):
         kv.setKeyValue("material", self.material.filename.getFullpath())
         kv.setKeyValue("scale", CKeyValues.toString(self.scale))
@@ -226,109 +321,16 @@ class SolidFace(MapWritable):
             self.np2D.setColor(color)
         self.color = color
 
-    def alignTextureWithPointCloud(self, cloud, mode):
-        if self.material.material is None:
-            return
+    def setFaceMaterial(self, faceMat):
+        self.material = faceMat
+        self.setMaterial(self.material.material)
 
-        xvals = []
-        yvals = []
-        for extent in cloud.extents:
-            xvals.append(extent.dot(self.material.uAxis) / self.material.scale.x)
-            yvals.append(extent.dot(self.material.vAxis) / self.material.scale.y)
-
-        minU = min(xvals)
-        minV = min(yvals)
-        maxU = max(xvals)
-        maxV = max(yvals)
-
-        if mode == Align.Left:
-            self.material.shift.x = -minU
-        elif mode == Align.Right:
-            self.material.shift.x = -maxU + self.material.material.size.x
-        elif mode == Align.Center:
-            avgU = (minU + maxU) / 2
-            avgV = (minV + maxV) / 2
-            self.material.shift.x = -avgU + self.material.material.size.x / 2
-            self.material.shift.y = -avgV + self.material.material.size.y / 2
-        elif mode == Align.Top:
-            self.material.shift.y = -minV
-        elif mode == Align.Bottom:
-            self.material.shift.y = -maxV + self.material.material.size.y
-
-        self.calcTextureCoordinates(True)
-
-    def fitTextureToPointCloud(self, cloud, tileX, tileY):
-        if self.material.material is None:
-            return
-        if tileX <= 0:
-            tileX = 1
-        if tileY <= 0:
-            tileY = 1
-
-        # Scale will change, no need to use it in the calculations
-        xvals = []
-        yvals = []
-        for extent in cloud.extents:
-            xvals.append(extent.dot(self.material.uAxis))
-            yvals.append(extent.dot(self.material.vAxis))
-
-        minU = min(xvals)
-        minV = min(yvals)
-        maxU = max(xvals)
-        maxV = max(yvals)
-
-        self.material.scale.x = (maxU - minU) / (self.material.material.size.x * tileX)
-        self.material.scale.y = (maxV - minV) / (self.material.material.size.y * tileY)
-        self.material.shift.x = -minU / self.material.scale.x
-        self.material.shift.y = -minV / self.material.scale.y
-
-        self.calcTextureCoordinates(True)
-
-    def setTextureRotation(self, angle):
-        # Rotate texture around the face normal
-        rads = deg2Rad(self.material.rotation - angle)
-        # Rotate around the face normal
-        texNorm = self.material.vAxis.cross(self.material.uAxis).normalized()
-        transform = Quat()
-        transform.setFromAxisAngleRad(rads, texNorm)
-        self.material.uAxis = transform.xform(self.material.uAxis)
-        self.material.vAxis = transform.xform(self.material.vAxis)
-        self.material.rotation = angle
-
+    def alignTextureToFace(self):
+        self.material.alignTextureToFace(self)
         self.calcTextureCoordinates(True)
 
     def alignTextureToWorld(self):
-        # Set the U and V axes to match the X, Y, or Z axes.
-        # How they are calculated depends on which direction the plane is facing.
-
-        direction = self.plane.getClosestAxisToNormal()
-
-        # VHE behavior:
-        # U axis: If the closest axis to the normal is the X axis,
-        #         the U axis is unit Y. Otherwise, the U axis is unit X.
-        # V axis: If the closest axis to the normal is the Z axis,
-        #         the V axis is -unit Y. Otherwise, the V axis is -unit z.
-
-        self.material.uAxis = Vec3.unitY() if direction == Vec3.unitX() else Vec3.unitX()
-        self.material.vAxis = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
-        self.material.rotation = 0
-
-        self.calcTextureCoordinates(True)
-
-    def alignTextureToFace(self):
-        # Set the U and V axes to match the plane's normal
-        # Need to start with the world alignment on the V axis so that we don't align backwards.
-        # Then we can calculate U based on that, and the real V afterwards.
-
-        norm = self.plane.getNormal()
-        direction = self.plane.getClosestAxisToNormal()
-
-        tempV = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
-        self.material.uAxis = norm.cross(tempV).normalized()
-        self.material.vAxis = self.material.uAxis.cross(norm).normalized()
-
-        self.material.rotation = 0.0
-
+        self.material.alignTextureToWorld(self)
         self.calcTextureCoordinates(True)
 
     def calcTextureCoordinates(self, minimizeShiftValues):

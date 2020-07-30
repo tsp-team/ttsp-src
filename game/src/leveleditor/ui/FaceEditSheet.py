@@ -4,6 +4,8 @@ from .Ui_FaceEditSheet import Ui_FaceEditSheet
 from src.leveleditor import MaterialPool
 from src.leveleditor.math.PointCloud import PointCloud
 from src.leveleditor.Align import Align
+from src.leveleditor.actions.EditFaceMaterial import EditFaceMaterial
+from src.leveleditor.actions.ActionGroup import ActionGroup
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -24,11 +26,7 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.face = None
         self.treatAsOne = False
 
-        self.ui.textureScaleXSpin.valueChanged.connect(self.__xScaleChanged)
-        self.ui.textureScaleYSpin.valueChanged.connect(self.__yScaleChanged)
-        self.ui.textureShiftXSpin.valueChanged.connect(self.__xShiftChanged)
-        self.ui.textureShiftYSpin.valueChanged.connect(self.__yShiftChanged)
-        self.ui.rotationSpin.valueChanged.connect(self.__rotationChanged)
+        self.connectEditSignals()
         self.ui.materialFileEdit.returnPressed.connect(self.__materialFileEdited)
         self.ui.btnBrowse.clicked.connect(self.__browseForMaterial)
         self.ui.btnAlignFace.clicked.connect(self.__alignFace)
@@ -62,24 +60,40 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         return PointCloud(points)
 
     def __fitTexture(self):
+        actions = []
+
         if self.treatAsOne:
             cloud = self.__getPointCloud(self.faces)
             for face in self.faces:
-                face.fitTextureToPointCloud(cloud, 1, 1)
+                action = EditFaceMaterial(face)
+                action.material.fitTextureToPointCloud(cloud, 1, 1)
+                actions.append(action)
         else:
             for face in self.faces:
                 cloud = self.__getPointCloud([face])
-                face.fitTextureToPointCloud(cloud, 1, 1)
+                action = EditFaceMaterial(face)
+                action.material.fitTextureToPointCloud(cloud, 1, 1)
+                actions.append(action)
+
+        base.actionMgr.performAction("Fit texture", ActionGroup(actions))
 
     def __doAlign(self, mode):
+        actions = []
+
         if self.treatAsOne:
             cloud = self.__getPointCloud(self.faces)
             for face in self.faces:
-                face.alignTextureWithPointCloud(cloud, mode)
+                action = EditFaceMaterial(face)
+                action.material.alignTextureWithPointCloud(cloud, mode)
+                actions.append(action)
         else:
             for face in self.faces:
                 cloud = self.__getPointCloud([face])
-                face.alignTextureWithPointCloud(cloud, mode)
+                action = EditFaceMaterial(face)
+                action.material.alignTextureWithPointCloud(cloud, mode)
+                actions.append(action)
+
+        base.actionMgr.performAction("Align texture %s" % mode.name, ActionGroup(actions))
 
     def __justifyBottom(self):
         self.__doAlign(Align.Bottom)
@@ -100,13 +114,23 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.treatAsOne = checkState
 
     def __alignWorld(self):
+        actions = []
         for face in self.faces:
-            face.alignTextureToWorld()
+            action = EditFaceMaterial(face)
+            action.material.alignTextureToWorld(face)
+            actions.append(action)
+        base.actionMgr.performAction("Align texture to world", ActionGroup(actions))
+
         self.updateForSelection()
 
     def __alignFace(self):
+        actions = []
         for face in self.faces:
-            face.alignTextureToFace()
+            action = EditFaceMaterial(face)
+            action.material.alignTextureToFace(face)
+            actions.append(action)
+        base.actionMgr.performAction("Align texture to face", ActionGroup(actions))
+
         self.updateForSelection()
 
     def updateMaterialIcon(self):
@@ -119,36 +143,77 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.__changeMaterial(filename)
 
     def __changeMaterial(self, filename):
+        actions = []
+
         mat = MaterialPool.getMaterial(filename)
         self.faceMode.activeMaterial = mat
         for face in self.faces:
-            face.setMaterial(mat)
+            action = EditFaceMaterial(face)
+            action.material.material = mat
+            actions.append(action)
+
+        base.actionMgr.performAction("Change face material", ActionGroup(actions))
 
         self.updateMaterialIcon()
 
     def __xScaleChanged(self, val):
+        actions = []
         for face in self.faces:
-            face.material.scale.x = val
-            face.calcTextureCoordinates(True)
+            action = EditFaceMaterial(face)
+            action.material.scale.x = val
+            actions.append(action)
+
+        base.actionMgr.performAction("Texture X scale", ActionGroup(actions))
 
     def __yScaleChanged(self, val):
+        actions = []
         for face in self.faces:
-            face.material.scale.y = val
-            face.calcTextureCoordinates(True)
+            action = EditFaceMaterial(face)
+            action.material.scale.y = val
+            actions.append(action)
+
+        base.actionMgr.performAction("Texture Y scale", ActionGroup(actions))
 
     def __xShiftChanged(self, val):
+        actions = []
         for face in self.faces:
-            face.material.shift.x = val
-            face.calcTextureCoordinates(True)
+            action = EditFaceMaterial(face)
+            action.material.shift.x = val
+            actions.append(action)
+
+        base.actionMgr.performAction("Texture X shift", ActionGroup(actions))
 
     def __yShiftChanged(self, val):
+        actions = []
         for face in self.faces:
-            face.material.shift.y = val
-            face.calcTextureCoordinates(True)
+            action = EditFaceMaterial(face)
+            action.material.shift.x = val
+            actions.append(action)
+
+        base.actionMgr.performAction("Texture Y shift", ActionGroup(actions))
 
     def __rotationChanged(self, val):
+        actions = []
         for face in self.faces:
-            face.setTextureRotation(val)
+            action = EditFaceMaterial(face)
+            action.material.setTextureRotation(val)
+            actions.append(action)
+
+        base.actionMgr.performAction("Texture rotation", ActionGroup(actions))
+
+    def connectEditSignals(self):
+        self.ui.textureScaleXSpin.valueChanged.connect(self.__xScaleChanged)
+        self.ui.textureScaleYSpin.valueChanged.connect(self.__yScaleChanged)
+        self.ui.textureShiftXSpin.valueChanged.connect(self.__xShiftChanged)
+        self.ui.textureShiftYSpin.valueChanged.connect(self.__yShiftChanged)
+        self.ui.rotationSpin.valueChanged.connect(self.__rotationChanged)
+
+    def disconnectEditSignals(self):
+        self.ui.textureScaleXSpin.valueChanged.disconnect(self.__xScaleChanged)
+        self.ui.textureScaleYSpin.valueChanged.disconnect(self.__yScaleChanged)
+        self.ui.textureShiftXSpin.valueChanged.disconnect(self.__xShiftChanged)
+        self.ui.textureShiftYSpin.valueChanged.disconnect(self.__yShiftChanged)
+        self.ui.rotationSpin.valueChanged.disconnect(self.__rotationChanged)
 
     def updateForSelection(self):
         self.faces = []
@@ -156,6 +221,8 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         faces = list(base.selectionMgr.selectedObjects)
         numFaces = len(faces)
         face = faces[numFaces - 1]
+
+        self.disconnectEditSignals()
 
         self.ui.textureScaleXSpin.setValue(face.material.scale.x)
         self.ui.textureScaleYSpin.setValue(face.material.scale.y)
@@ -166,6 +233,8 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.ui.rotationSpin.setValue(face.material.rotation)
 
         self.ui.materialFileEdit.setText(face.material.material.filename.getFullpath())
+
+        self.connectEditSignals()
 
         self.face = face
         self.faces = faces
