@@ -324,6 +324,7 @@ class SolidFace(MapWritable):
     def setFaceMaterial(self, faceMat):
         self.material = faceMat
         self.setMaterial(self.material.material)
+        messenger.send('faceMaterialChanged', [self])
 
     def alignTextureToFace(self):
         self.material.alignTextureToFace(self)

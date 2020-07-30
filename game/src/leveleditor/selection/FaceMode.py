@@ -33,6 +33,7 @@ class FaceMode(SelectionMode):
     def enable(self):
         SelectionMode.enable(self)
 
+        self.accept('faceMaterialChanged', self.faceEditSheet.faceMaterialChanged)
         # Right click on face to apply active material
         self.accept('mouse3', self.applyActiveMaterial)
 

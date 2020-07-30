@@ -43,6 +43,10 @@ class FaceEditSheet(QtWidgets.QDockWidget):
 
         self.hide()
 
+    def faceMaterialChanged(self, face):
+        if face == self.face:
+            self.updateForSelection()
+
     def __browseForMaterial(self):
         base.materialBrowser.show(self, self.__materialBrowserDone)
 
