@@ -13,12 +13,19 @@ class MaterialReference:
         self.filename = filename
         if self.material.hasKeyvalue("$basetexture"):
             baseTexturePath = self.material.getKeyvalue("$basetexture")
-            imageData = bytes(VirtualFileSystem.getGlobalPtr().readFile(baseTexturePath, True))
-            byteArray = QtCore.QByteArray.fromRawData(imageData)
-            image = QtGui.QImage.fromData(byteArray)
-            self.pixmap = QtGui.QPixmap.fromImage(image)
-            self.icon = QtGui.QIcon(self.pixmap)
-            self.size = LVector2i(image.width(), image.height())
+            vfs = VirtualFileSystem.getGlobalPtr()
+            if vfs.exists(baseTexturePath):
+                imageData = bytes(VirtualFileSystem.getGlobalPtr().readFile(baseTexturePath, True))
+                byteArray = QtCore.QByteArray.fromRawData(imageData)
+                image = QtGui.QImage.fromData(byteArray)
+                self.pixmap = QtGui.QPixmap.fromImage(image)
+                self.icon = QtGui.QIcon(self.pixmap)
+                self.size = LVector2i(image.width(), image.height())
+            else:
+                self.texture = None
+                self.size = LVector2i(0, 0)
+                self.icon = None
+                self.pixmap = None
         else:
             self.texture = None
             self.size = LVector2i(0, 0)

@@ -12,19 +12,14 @@ class StudioEditor(BaseEditor):
         self.browseBtn = QtWidgets.QPushButton("Browse", self)
         self.browseBtn.clicked.connect(self.__browseForModel)
         self.layout().addWidget(self.browseBtn)
-        self.modelBrowser = None
 
     def __browseForModel(self):
-        self.modelBrowser = ModelBrowser(self)
-        self.modelBrowser.finished.connect(self.__modelBrowserDone)
-        self.modelBrowser.show()
+        base.modelBrowser.show(self, self.__modelBrowserDone)
 
-    def __modelBrowserDone(self, ret):
+    def __modelBrowserDone(self, ret, path):
         if ret:
-            self.lineEdit.setText(self.modelBrowser.selectedModel.getFullpath())
+            self.lineEdit.setText(path.getFullpath())
             self.setModelData(self.model, self.item.index())
-
-        self.modelBrowser = None
 
     def setEditorData(self, index):
         self.lineEdit.setText(self.getItemData())

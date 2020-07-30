@@ -22,6 +22,8 @@ from src.leveleditor.Document import Document
 from src.leveleditor.ui import About
 from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
 from .EntityEdit import EntityEdit
+from src.leveleditor.ui.ModelBrowser import ModelBrowser
+from src.leveleditor.ui.MaterialBrowser import MaterialBrowser
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtWidgets import QMessageBox
@@ -369,15 +371,14 @@ class LevelEditor(BSPBase):
 
         from panda3d.core import DirectionalLight, AmbientLight
         dlight = DirectionalLight('dlight')
-        dlight.setColor((1, 1, 1, 1))
+        dlight.setColor((0.35, 0.35, 0.35, 1))
         dlnp = render.attachNewNode(dlight)
-        #direction = Vec3(1, 2, 3).normalized()
-        #dlnp.lookAt(direction)
-        dlnp.setHpr(45, -45, 0)
+        direction = -Vec3(1, 2, 3).normalized()
+        dlight.setDirection(direction)
         render.setLight(dlnp)
         self.dlnp = dlnp
         alight = AmbientLight('alight')
-        alight.setColor((0.5, 0.5, 0.5, 1))
+        alight.setColor((0.65, 0.65, 0.65, 1))
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
 
@@ -444,6 +445,8 @@ class LevelEditor(BSPBase):
         self.selectionMgr = SelectionManager()
         self.actionMgr = ActionManager()
         self.brushMgr = BrushManager()
+        self.modelBrowser = ModelBrowser(None)
+        self.materialBrowser = MaterialBrowser(None)
         BSPBase.initialize(self)
 
         # Open a blank document

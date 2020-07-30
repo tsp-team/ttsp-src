@@ -30,6 +30,7 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.ui.textureShiftYSpin.valueChanged.connect(self.__yShiftChanged)
         self.ui.rotationSpin.valueChanged.connect(self.__rotationChanged)
         self.ui.materialFileEdit.returnPressed.connect(self.__materialFileEdited)
+        self.ui.btnBrowse.clicked.connect(self.__browseForMaterial)
         self.ui.btnAlignFace.clicked.connect(self.__alignFace)
         self.ui.btnAlignWorld.clicked.connect(self.__alignWorld)
         self.ui.btnFit.clicked.connect(self.__fitTexture)
@@ -43,6 +44,15 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         base.qtWindow.addDockWindow(self)
 
         self.hide()
+
+    def __browseForMaterial(self):
+        base.materialBrowser.show(self, self.__materialBrowserDone)
+
+    def __materialBrowserDone(self, status, asset):
+        if status:
+            path = asset.getFullpath()
+            self.ui.materialFileEdit.setText(path)
+            self.__changeMaterial(path)
 
     def __getPointCloud(self, faces):
         points = []
@@ -102,10 +112,13 @@ class FaceEditSheet(QtWidgets.QDockWidget):
     def updateMaterialIcon(self):
         if self.face:
             self.ui.materialIcon.setPixmap(self.face.material.material.pixmap.scaled(128, 128,
-                QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.FastTransformation))
+                QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
 
     def __materialFileEdited(self):
         filename = self.ui.materialFileEdit.text()
+        self.__changeMaterial(filename)
+
+    def __changeMaterial(self, filename):
         mat = MaterialPool.getMaterial(filename)
         self.faceMode.activeMaterial = mat
         for face in self.faces:

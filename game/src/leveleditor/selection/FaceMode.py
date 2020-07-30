@@ -36,6 +36,10 @@ class FaceMode(SelectionMode):
         # Right click on face to apply active material
         self.accept('mouse3', self.applyActiveMaterial)
 
+    def disable(self):
+        self.faceEditSheet.hide()
+        SelectionMode.disable(self)
+
     def applyActiveMaterial(self):
         vp = base.viewportMgr.activeViewport
         if not vp or not vp.is3D():

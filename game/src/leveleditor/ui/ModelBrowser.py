@@ -8,27 +8,6 @@ from src.coginvasion.globals import CIGlobals
 import math
 from collections import deque
 
-class ModelFolder:
-
-    def __init__(self, filename, parent = None):
-        self.filename = filename
-        self.absFilename = core.Filename(self.filename)
-        self.absFilename.makeAbsolute()
-        self.parent = parent
-        self.modelFiles = []
-        self.children = []
-        self.item = None
-
-        if parent:
-            self.parentRelativeFilename = core.Filename(self.absFilename)
-            self.parentRelativeFilename.makeRelativeTo(parent.absFilename)
-        else:
-            self.parentRelativeFilename = None
-
-class ModelFolderWidgetItem(QtWidgets.QTreeWidgetItem):
-    pass
-
-
 class ModelBrowser(AssetBrowser):
 
     FileExtensions = ["bam", "egg", "egg.pz"]
@@ -39,18 +18,7 @@ class ModelBrowser(AssetBrowser):
     def __init__(self, parent):
         AssetBrowser.__init__(self, parent)
 
-        self.ui.folderView.itemSelectionChanged.connect(self.__handleFolderSelectionChanged)
-        self.ui.folderView.setHeaderLabel("Folder Tree")
-        self.ui.fileView.itemDoubleClicked.connect(self.__confirmModel)
-        self.ui.fileView.itemSelectionChanged.connect(self.__selectModel)
-        self.ui.leFileFilter.textChanged.connect(self.__filterList)
-
-        self.currentFolder = None
         self.currentLoadContext = None
-        self.selectedModel = None
-
-        self.queuedUpItems = []
-        self.maxQueued = 10
 
         # Set up an offscreen buffer to render the thumbnails of our models.
 
@@ -83,189 +51,29 @@ class ModelBrowser(AssetBrowser):
 
         base.graphicsEngine.openWindows()
 
-        # Find all of the models in the tree
-        self.generateModelTree()
-        # Then create a widget for each folder that contains models
-        self.generateFolderWidgetTree()
-
-        self.ui.folderView.setCurrentItem(self.rootFolder.item)
-
-    def done(self, ret):
+    def generateAssets(self):
         if self.currentLoadContext:
             self.currentLoadContext.cancel()
-            self.currentLoadContext = None
-        self.camera.removeNode()
-        self.camera = None
-        self.lens = None
-        self.displayRegion = None
-        self.render.removeNode()
-        self.render = None
-        base.graphicsEngine.removeWindow(self.buffer)
-        self.buffer = None
-        self.queuedUpItems = None
-        self.maxQueued = None
-        self.currentFolder = None
-        self.rootFolder = None
-        self.rootFilename = None
-        self.rootFilenameAbs = None
-        self.files = None
-        AssetBrowser.done(self, ret)
+        AssetBrowser.generateAssets(self)
 
-    def __selectModel(self):
-        item = self.ui.fileView.selectedItems()[0]
-        self.selectedModel = item.filename
-
-    def __confirmModel(self, item):
-        # User double clicked a model, confirm selection and close dialog
-        self.selectedModel = item.filename
-        self.finished.emit(1)
-        self.close()
-
-    def __filterList(self, text):
-        text = text.lower()
-
-        for i in range(self.ui.fileView.count()):
-            self.ui.fileView.setRowHidden(i, False)
-
-        if len(text) == 0:
-            return
-
-        for i in range(self.ui.fileView.count()):
-            if text not in self.ui.fileView.item(i).text().lower():
-                self.ui.fileView.setRowHidden(i, True)
-
-    def filterFileList(self):
-        self.__filterList(self.ui.leFileFilter.text())
-
-    def __handleFolderSelectionChanged(self):
-        item = self.ui.folderView.selectedItems()[0]
-        self.currentFolder = item.modelFolder
-        self.generateModels()
-
-    def generateFolderWidgetTree(self):
-        self.ui.folderView.clear()
-
-        self.r_generateFolderWidgetTree(self.rootFolder, None)
-
-        self.ui.folderView.expandToDepth(0)
-
-    def r_generateFolderWidgetTree(self, folder, parent):
-        item = ModelFolderWidgetItem()
-        item.modelFolder = folder
-        folder.item = item
-        if folder.parentRelativeFilename:
-            item.setText(0, folder.parentRelativeFilename.getFullpath())
-        else:
-            item.setText(0, folder.filename.getFullpath())
-        item.setToolTip(0, item.text(0))
-        if parent:
-            parent.addChild(item)
-        else:
-            self.ui.folderView.addTopLevelItem(item)
-
-        for child in folder.children:
-            self.r_generateFolderWidgetTree(child, item)
-
-    def r_generateModels(self, dirFilename, parentModelFolder):
-        vfs = core.VirtualFileSystem.getGlobalPtr()
-        contents = vfs.scanDirectory(dirFilename)
-        gotHit = False
-        subfolders = []
-        modelFiles = []
-        for virtualFile in contents.getFiles():
-            filename = virtualFile.getFilename()
-            if virtualFile.isDirectory():
-                subfolders.append(filename)
-            elif filename.getExtension() in self.FileExtensions:
-                filename.makeRelativeTo(self.rootFilenameAbs)
-                modelFiles.append(filename)
-                gotHit = True
-
-        thisFolder = ModelFolder(dirFilename, parentModelFolder)
-        thisFolder.modelFiles = modelFiles
-
-        gotChildHits = False
-        for sub in subfolders:
-            _, ret = self.r_generateModels(sub, thisFolder)
-            if not gotChildHits:
-                gotChildHits = ret
-
-        if parentModelFolder and (gotChildHits or gotHit):
-            parentModelFolder.children.append(thisFolder)
-
-        return [thisFolder, gotHit or gotChildHits]
-
-    def addQueuedItems(self):
-        text = self.ui.leFileFilter.text().lower()
-
-        for item in self.queuedUpItems:
-            self.ui.fileView.addItem(item)
-            if len(text) > 0 and text not in item.text().lower():
-                self.ui.fileView.setRowHidden(self.ui.fileView.row(item), True)
-        self.queuedUpItems = []
-
-    def createNextModel(self):
-        if len(self.files) > 0:
-            filename = self.files.pop(0)
-            self.createModelItem(filename)
-        else:
-            self.addQueuedItems()
-
-    def r_createFilesList(self, folder):
-        self.files += folder.modelFiles
-        for child in folder.children:
-            self.r_createFilesList(child)
-
-    def generateModels(self):
-        if self.currentLoadContext:
-            self.currentLoadContext.cancel()
-        self.ui.fileView.clear()
-        self.queuedUpItems = []
-        self.files = []
-        self.r_createFilesList(self.currentFolder)
-        self.files.sort()
-        self.createNextModel()
-
-    def generateModelTree(self):
-        self.rootFilename = core.Filename("resources")
-        self.rootFilenameAbs = core.Filename(self.rootFilename)
-        self.rootFilenameAbs.makeAbsolute()
-        self.rootFolder = self.r_generateModels(self.rootFilename, None)[0]
-
-    def createModelItem(self, filename):
-        thumbnail = self.getThumbnail(filename)
-        if thumbnail:
-            self.addModelItem(thumbnail, filename)
-            self.createNextModel()
-
-    def addModelItem(self, thumbnail, filename):
-        text = filename.getBasename()
-        item = QtWidgets.QListWidgetItem(thumbnail, text)
-        item.setToolTip(text)
-        item.filename = filename
-
-        self.queuedUpItems.append(item)
-        if len(self.queuedUpItems) >= self.maxQueued:
-            self.addQueuedItems()
-
-    def getThumbnail(self, filename):
+    def getThumbnail(self, filename, context):
         pixmap = self.modelThumbnails.get(filename)
         if not pixmap:
-            return self.generateThumbnail(filename)
+            return self.generateThumbnail(filename, context)
         else:
             return pixmap
 
-    def gotModel(self, mdl, filename):
+    def gotModel(self, mdl, filename, context):
         self.currentLoadContext = None
 
         if not mdl or mdl.isEmpty():
-            self.createNextModel()
+            context.createNextAsset()
             return
 
         mdl.reparentTo(self.render)
         # If there's no geomnode, there is no model!
         if mdl.find("**/+GeomNode").isEmpty():
-            self.createNextModel()
+            context.createNextAsset()
             return
 
         # Determine a good offset point to take the thumbnail snapshot
@@ -315,11 +123,12 @@ class ModelBrowser(AssetBrowser):
         icon = QtGui.QIcon(pixmap)
         self.modelThumbnails[filename] = icon
 
-        self.addModelItem(icon, filename)
+        context.addAssetItem(icon, filename)
 
-        self.createNextModel()
+        context.createNextAsset()
 
-    def generateThumbnail(self, filename):
+    def generateThumbnail(self, filename, context):
         # Load the model up and place it into the scene
-        self.currentLoadContext = base.loader.loadModel(filename, callback = self.gotModel, extraArgs = [filename])
+        self.currentLoadContext = base.loader.loadModel(filename, callback = self.gotModel,
+            extraArgs = [filename, context])
         return None
