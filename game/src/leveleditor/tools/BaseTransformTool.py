@@ -1,12 +1,16 @@
 from panda3d.core import Point3, Vec3, NodePath, LineSegs, Vec4, \
     CollisionTraverser, CollisionHandlerQueue, CollisionBox, CollisionNode, \
-    BitMask32
+    BitMask32, KeyboardButton
 
 from .BoxTool import BoxAction, ResizeHandle
 from src.leveleditor.selection.SelectionType import SelectionModeTransform
 from src.leveleditor.math.Ray import Ray
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
 from src.leveleditor import LEUtils, LEGlobals
+from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
+from src.leveleditor.actions.ActionGroup import ActionGroup
+from src.leveleditor.actions.Create import Create
+from src.leveleditor.actions.Select import Select
 from .SelectTool import SelectTool
 from src.coginvasion.globals import CIGlobals
 
@@ -394,13 +398,47 @@ class BaseTransformTool(SelectTool):
             self.widget.activeAxis.setState(Rollover)
 
         if self.isTransforming:
-            self.onFinishTransforming()
+            vp = base.viewportMgr.activeViewport
+            if vp.mouseWatcher.isButtonDown(KeyboardButton.shift()):
+                # Clone when shift is held
+                self.onFinishTransformingClone()
+            else:
+                self.onFinishTransforming()
+            self.onTransformDone()
             self.destroyMoveVis()
             base.selectionMgr.updateSelectionBounds()
         self.isTransforming = False
 
-    def onFinishTransforming(self):
+    def onTransformDone(self):
         pass
+
+    def onFinishTransformingClone(self):
+        # Clone the selections and set them to the transform the user
+        # has chosen.
+        copies = []
+        actions = []
+        for obj, _, inst in self.xformObjects:
+            copy = obj.copy(base.document.idGenerator)
+            copy.updateProperties(self.getUpdatedProperties(obj, inst))
+            actions.append(Create(obj.parent.id, copy))
+            copies.append(copy)
+        actions.append(Select(copies, True))
+        base.actionMgr.performAction("Duplicate %i object(s)" % len(copies),
+            ActionGroup(actions))
+
+    def onFinishTransforming(self):
+        actions = []
+        for obj, _, inst in self.xformObjects:
+            action = EditObjectProperties(obj, self.getUpdatedProperties(obj, inst))
+            actions.append(action)
+        base.actionMgr.performAction("%s %i object(s)" % (self.getActionName(), len(self.xformObjects)),
+            ActionGroup(actions))
+
+    def getActionName(self):
+        return "Transform"
+
+    def getUpdatedProperties(self, obj, inst):
+        return {}
 
     def update(self):
         SelectTool.update(self)

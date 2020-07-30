@@ -49,22 +49,17 @@ class ScaleTool(BaseTransformTool):
     def createWidget(self):
         self.widget = ScaleWidget(self)
 
-    def onFinishTransforming(self):
-        actions = []
-        for obj, _, inst in self.xformObjects:
-            transform = inst.getTransform(obj.np.getParent())
-            # Jeez, scaling has the possibility of changing everything.
-            # The scale definitely changes. If we use the 2D resize,
-            # the origin will also change. And if our object has non-zero
-            # angles, the angles will be changed, as well as shear.
-            action = EditObjectProperties(obj,
-                {"origin": Point3(transform.getPos()),
-                 "scale": Vec3(transform.getScale()),
-                 "shear": Vec3(transform.getShear()),
-                 "angles": Vec3(transform.getHpr())})
-            actions.append(action)
-        base.actionMgr.performAction("Scale %i object(s)" % len(self.xformObjects), ActionGroup(actions))
+    def getActionName(self):
+        return "Scale"
 
+    def getUpdatedProperties(self, obj, inst):
+        transform = inst.getTransform(obj.np.getParent())
+        return {"origin": Point3(transform.getPos()),
+                "scale": Vec3(transform.getScale()),
+                "shear": Vec3(transform.getShear()),
+                "angles": Vec3(transform.getHpr())}
+
+    def onTransformDone(self):
         # Reset the scaling on the vis root
         self.toolVisRoot.setScale(1)
         self.setBoxToSelection()

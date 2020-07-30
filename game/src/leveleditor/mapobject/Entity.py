@@ -17,7 +17,8 @@ class Entity(MapObject):
         self.helpers = []
 
     def copy(self, generator):
-        e = base.document.createObject(Entity, id = generator.getNextID())
+        e = Entity(generator.getNextID())
+        e.generate()
         self.copyBase(e, generator)
         return e
 
@@ -25,7 +26,8 @@ class Entity(MapObject):
         self.pasteBase(o, generator)
 
     def clone(self):
-        e = base.document.createObject(Entity, id = self.id)
+        e = Entity(self.id)
+        e.generate()
         self.copyBase(e, None, True)
         return e
 

@@ -192,12 +192,11 @@ class SolidFace(MapWritable):
         f = SolidFace(generator.getNextID(), Plane(self.plane), self.solid)
         f.isSelected = self.isSelected
         f.setColor(Vec4(self.color))
-        f.setMaterial(self.material.clone())
+        f.setFaceMaterial(self.material.clone())
         for i in range(len(self.vertices)):
             newVert = self.vertices[i].clone()
             newVert.face = f
             f.vertices.append(newVert)
-        f.generate()
         return f
 
     def clone(self):

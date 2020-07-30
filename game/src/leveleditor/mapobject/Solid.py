@@ -41,6 +41,17 @@ class Solid(MapObject):
         self.faces = []
         self.addProperty(VisOccluder(self))
 
+    def copy(self, generator):
+        s = Solid(generator.getNextID())
+        s.generate()
+        self.copyBase(s, generator)
+        for face in self.faces:
+            f = face.copy(generator)
+            f.solid = s
+            s.faces.append(f)
+        s.generateFaces()
+        return s
+
     def generateFaces(self):
         for face in self.faces:
             face.generate()

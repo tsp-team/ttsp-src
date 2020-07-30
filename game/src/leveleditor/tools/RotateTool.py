@@ -46,15 +46,15 @@ class RotateTool(BaseTransformTool):
     def createWidget(self):
         self.widget = RotateWidget(self)
 
-    def onFinishTransforming(self):
-        actions = []
-        for obj, _, inst in self.xformObjects:
-            transform = inst.getTransform(obj.np.getParent())
-            action = EditObjectProperties(obj,
-                {"origin": Point3(transform.getPos()),
-                 "angles": Vec3(transform.getHpr())})
-            actions.append(action)
-        base.actionMgr.performAction("Rotate %i object(s)" % len(self.xformObjects), ActionGroup(actions))
+    def getActionName(self):
+        return "Rotate"
+
+    def getUpdatedProperties(self, obj, inst):
+        transform = inst.getTransform(obj.np.getParent())
+        return {"origin": Point3(transform.getPos()),
+                "angles": Vec3(transform.getHpr())}
+
+    def onTransformDone(self):
         self.toolVisRoot.setHpr(Vec3(0))
         self.setBoxToSelection()
 
