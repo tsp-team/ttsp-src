@@ -216,7 +216,7 @@ class MapObject(MapWritable):
             else:
                 # A property object was given, simply add it to the dict of properties.
                 prop = value
-                oldValue = prop.getValue()
+                oldValue = None
                 val = prop.getValue()
                 self.properties[prop.name] = prop
 

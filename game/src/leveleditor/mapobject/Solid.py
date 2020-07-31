@@ -130,10 +130,10 @@ class Solid(MapObject):
         return "Convex solid geometry."
 
     def delete(self):
+        MapObject.delete(self)
         for face in self.faces:
             face.delete()
         self.faces = None
-        MapObject.delete(self)
 
     # Splits this solid into two solids by intersecting against a plane.
     def split(self, plane, generator, temp = False):
