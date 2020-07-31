@@ -335,6 +335,8 @@ class BoxTool(BaseTool):
             return
 
         vp = base.viewportMgr.activeViewport
+        if not vp:
+            return
         if vp.is3D():
             self.mouseDown3D()
             return
@@ -374,6 +376,9 @@ class BoxTool(BaseTool):
 
     def mouseUp(self):
         vp = base.viewportMgr.activeViewport
+        if not vp:
+            return
+
         if vp.is3D():
             self.mouseUp3D()
             return
