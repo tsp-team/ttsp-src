@@ -87,15 +87,16 @@ class AssetCreationContext:
 
             tempThumb = QtGui.QIcon(getNotFoundImage())
             for filename in self.files:
-                itemText = filename.getBasename()
+                fn = core.Filename(filename)
+                itemText = fn.getBasename()
                 item = QtWidgets.QListWidgetItem(tempThumb, itemText)
                 item.setSizeHint(QtCore.QSize(128, 128))
                 item.setToolTip(itemText)
-                item.filename = filename
+                item.filename = fn
                 self.listView.addItem(item)
                 if self.canFilter and len(text) > 0 and text not in item.text().lower():
                     self.listView.setRowHidden(self.listView.row(item), True)
-                self.items[filename] = item
+                self.items[fn] = item
 
         # Now load actual thumbnails
         self.createNextAsset()
@@ -123,6 +124,7 @@ class AssetCreationContext:
         else:
             text = filename.getBasename()
             item = QtWidgets.QListWidgetItem(thumbnail, text)
+            item.setSizeHint(QtCore.QSize(128, 128))
             item.setToolTip(text)
             item.filename = filename
             self.queuedUpItems.append(item)
@@ -356,6 +358,11 @@ class AssetBrowser(QtWidgets.QDialog):
             fullpath = self.selectedAsset.getFullpath()
             if not fullpath in self.recentlyUsed:
                 self.recentlyUsed.insert(0, fullpath)
+            else:
+                # If the asset is already in the recently-used list,
+                # bring it to the front.
+                self.recentlyUsed.insert(0, self.recentlyUsed.pop(
+                    self.recentlyUsed.index(fullpath)))
         if self.callback:
             self.callback(ret, self.selectedAsset)
             self.callback = None

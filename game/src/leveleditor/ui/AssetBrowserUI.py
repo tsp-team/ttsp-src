@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_AssetBrowser(object):
     def setupUi(self, AssetBrowser):
         AssetBrowser.setObjectName("AssetBrowser")
-        AssetBrowser.resize(902, 670)
+        AssetBrowser.resize(928, 670)
         self.gridLayout = QtWidgets.QGridLayout(AssetBrowser)
         self.gridLayout.setObjectName("gridLayout")
         self.buttonBox = QtWidgets.QDialogButtonBox(AssetBrowser)
@@ -120,6 +120,7 @@ class Ui_AssetBrowser(object):
         self.recentView.setIconSize(QtCore.QSize(96, 96))
         self.recentView.setTextElideMode(QtCore.Qt.ElideLeft)
         self.recentView.setMovement(QtWidgets.QListView.Static)
+        self.recentView.setFlow(QtWidgets.QListView.TopToBottom)
         self.recentView.setResizeMode(QtWidgets.QListView.Adjust)
         self.recentView.setLayoutMode(QtWidgets.QListView.Batched)
         self.recentView.setGridSize(QtCore.QSize(128, 128))
