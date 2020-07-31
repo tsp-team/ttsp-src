@@ -139,7 +139,7 @@ class AssetCreationContext:
             filename = core.Filename(self.files.pop(0))
             self.createAssetItem(filename)
         else:
-            if self.dlg.PreloadItems:
+            if not self.dlg.PreloadItems:
                 self.addQueuedItems()
             self.done = True
             if self.callback:
