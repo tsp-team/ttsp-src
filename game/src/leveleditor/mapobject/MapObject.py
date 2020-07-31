@@ -394,7 +394,7 @@ class MapObject(MapWritable):
 
     def delete(self):
         # Take the children with us
-        for child in self.children.values():
+        for child in list(self.children.values()):
             child.delete()
         self.children = None
 

@@ -4,6 +4,24 @@ from .AssetBrowserUI import Ui_AssetBrowser
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
+NotFoundImage = None
+
+def getNotFoundImage():
+    global NotFoundImage
+    if not NotFoundImage:
+        from PyQt5 import QtGui, QtCore
+        image = QtGui.QImage(96, 96, QtGui.QImage.Format_RGB888)
+        for x in range(96):
+            for y in range(96):
+                if ((x//8) + (y//8)) % 2 == 0:
+                    color = QtGui.QColor(255, 0, 128)
+                else:
+                    color = QtGui.QColor(0, 0, 0)
+                image.setPixelColor(QtCore.QPoint(x, y), color)
+        pixmap = QtGui.QPixmap.fromImage(image)
+        NotFoundImage = pixmap
+    return NotFoundImage
+
 class AssetFolder:
 
     def __init__(self, filename, parent = None):
@@ -31,12 +49,14 @@ class AssetCreationContext:
         self.files = files
         self.listView = listView
         self.canFilter = canFilter
-        self.queuedUpItems = []
-        self.maxQueued = 10
         self.createAssetTask = None
         self.callback = callback
         self.isPaused = False
         self.done = False
+        self.queuedUpItems = []
+        self.maxQueued = 10
+
+        self.items = {}
 
     def cleanup(self):
         if self.createAssetTask:
@@ -48,6 +68,7 @@ class AssetCreationContext:
         self.queuedUpItems = None
         self.maxQueued = None
         self.callback = None
+        self.items = None
 
     def pause(self):
         self.isPaused = True
@@ -56,6 +77,34 @@ class AssetCreationContext:
         self.isPaused = False
         if not self.done:
             self.createNextAsset()
+
+    def createAssets(self):
+        # First, create all of the items up front with temporary icons.
+        # This is so all of the assets are available for selecting even before
+        # we create the thumbnails.
+        if self.dlg.PreloadItems:
+            text = self.dlg.ui.leFileFilter.text().lower()
+
+            tempThumb = QtGui.QIcon(getNotFoundImage())
+            for filename in self.files:
+                itemText = filename.getBasename()
+                item = QtWidgets.QListWidgetItem(tempThumb, itemText)
+                item.setSizeHint(QtCore.QSize(128, 128))
+                item.setToolTip(itemText)
+                item.filename = filename
+                self.listView.addItem(item)
+                if self.canFilter and len(text) > 0 and text not in item.text().lower():
+                    self.listView.setRowHidden(self.listView.row(item), True)
+                self.items[filename] = item
+
+        # Now load actual thumbnails
+        self.createNextAsset()
+
+    def removeItem(self, filename):
+        item = self.items.get(filename, None)
+        if item:
+            self.listView.takeItem(self.listView.row(item))
+        del self.items[filename]
 
     def addQueuedItems(self):
         text = self.dlg.ui.leFileFilter.text().lower()
@@ -67,14 +116,18 @@ class AssetCreationContext:
         self.queuedUpItems = []
 
     def addAssetItem(self, thumbnail, filename):
-        text = filename.getBasename()
-        item = QtWidgets.QListWidgetItem(thumbnail, text)
-        item.setToolTip(text)
-        item.filename = filename
-
-        self.queuedUpItems.append(item)
-        if len(self.queuedUpItems) >= self.maxQueued:
-            self.addQueuedItems()
+        if self.dlg.PreloadItems:
+            item = self.items.get(filename, None)
+            if item:
+                item.setIcon(thumbnail)
+        else:
+            text = filename.getBasename()
+            item = QtWidgets.QListWidgetItem(thumbnail, text)
+            item.setToolTip(text)
+            item.filename = filename
+            self.queuedUpItems.append(item)
+            if len(self.queuedUpItems) >= self.maxQueued:
+                self.addQueuedItems()
 
     def createNextAsset(self):
         if self.isPaused:
@@ -84,7 +137,8 @@ class AssetCreationContext:
             filename = core.Filename(self.files.pop(0))
             self.createAssetItem(filename)
         else:
-            self.addQueuedItems()
+            if self.dlg.PreloadItems:
+                self.addQueuedItems()
             self.done = True
             if self.callback:
                 self.callback()
@@ -105,6 +159,7 @@ class AssetCreationContext:
 class AssetBrowser(QtWidgets.QDialog):
 
     FileExtensions = []
+    PreloadItems = True
 
     def __init__(self, parent):
         QtWidgets.QDialog.__init__(self, parent)
@@ -165,7 +220,7 @@ class AssetBrowser(QtWidgets.QDialog):
         self.ui.recentView.clear()
 
         ctx = AssetCreationContext(self, list(self.recentlyUsed), self.ui.recentView, False)
-        ctx.createNextAsset()
+        ctx.createAssets()
         self.recentlyUsedContext = ctx
 
     def __selectAsset(self):
@@ -283,7 +338,7 @@ class AssetBrowser(QtWidgets.QDialog):
 
         # Generate the assets thumbnails in the selected folder
         ctx = AssetCreationContext(self, self.files, self.ui.fileView, True)
-        ctx.createNextAsset()
+        ctx.createAssets()
         self.folderContext = ctx
 
     def hide(self, ret):

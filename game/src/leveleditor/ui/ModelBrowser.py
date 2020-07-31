@@ -12,6 +12,10 @@ class ModelBrowser(AssetBrowser):
 
     FileExtensions = ["bam", "egg", "egg.pz"]
 
+    # Can't preload items because we need to load the model
+    # up to make sure it's a valid model first.
+    PreloadItems = False
+
     # Filename -> QIcon
     modelThumbnails = {}
 
@@ -70,11 +74,12 @@ class ModelBrowser(AssetBrowser):
             context.createNextAsset()
             return
 
-        mdl.reparentTo(self.render)
         # If there's no geomnode, there is no model!
         if mdl.find("**/+GeomNode").isEmpty():
             context.createNextAsset()
             return
+
+        mdl.reparentTo(self.render)
 
         # Determine a good offset point to take the thumbnail snapshot
         mins = core.Point3()
