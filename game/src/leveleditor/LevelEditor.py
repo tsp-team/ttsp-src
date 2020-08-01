@@ -361,12 +361,6 @@ class LevelEditor(BSPBase):
 
         BSPBase.__init__(self)
 
-        #self.setFrameRateMeter(True)
-
-        #toon.setY(10)
-
-        #base.enableMouse()
-
         TextNode.setDefaultFont(loader.loadFont("resources/models/fonts/consolas.ttf"))
 
         from panda3d.core import DirectionalLight, AmbientLight
@@ -382,19 +376,7 @@ class LevelEditor(BSPBase):
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
 
-        # Timer to run the panda mainloop
-        #self.mainloopTimer = QtCore.QTimer()
-        #self.mainloopTimer.timeout.connect(self.taskMgr.step)
-        #self.mainloopTimer.setSingleShot(False)
-
-        #from src.leveleditor.mapobject.MapObject import MapObject
-        #mo = MapObject()
-        #mo.setClassname("prop_static")
-        #toon.setX(4)
-
         self.entityEdit = None
-
-        #render.setScale(1 / 16.0)
 
         base.setBackgroundColor(0, 0, 0)
 
@@ -433,6 +415,7 @@ class LevelEditor(BSPBase):
         self.viewportMgr = ViewportManager()
         self.toolMgr = ToolManager()
         self.qtApp = LevelEditorApp()
+        self.qtWindow = self.qtApp.window
         self.qtApp.window.gameViewWind.addViewports()
         self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)
         self.qtApp.window.ui.actionToggleGrid.toggled.connect(self.__toggleGrid)
@@ -441,7 +424,6 @@ class LevelEditor(BSPBase):
         self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
         self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
         self.adjustGridText()
-        self.qtWindow = self.qtApp.window
         self.selectionMgr = SelectionManager()
         self.actionMgr = ActionManager()
         self.brushMgr = BrushManager()
@@ -475,14 +457,10 @@ class LevelEditor(BSPBase):
         text = "Snap: %s Grid: %i" % ("On" if GridSettings.GridSnap else "Off", GridSettings.DefaultStep)
         self.qtApp.window.gridSnapLabel.setText(text)
 
-    def editEntity(self, ent):
-        self.entityEdit = EntityEdit(ent)
-
     def initStuff(self):
         BSPBase.initStuff(self)
         self.camLens.setFov(90.0)
         self.camLens.setNearFar(0.1, 10000)
-        #self.shaderGenerator.setSunLight(self.dlnp)
 
         self.brushMgr.addBrushes()
         self.toolMgr.addTools()
