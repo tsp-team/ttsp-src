@@ -41,6 +41,14 @@ class Solid(MapObject):
         self.faces = []
         self.addProperty(VisOccluder(self))
 
+    def alignTexturesToFaces(self):
+        for face in self.faces:
+            face.alignTextureToFace()
+
+    def alignTexturesToWorld(self):
+        for face in self.faces:
+            face.alignTextureToWorld()
+
     def copy(self, generator):
         s = Solid(generator.getNextID())
         s.generate()

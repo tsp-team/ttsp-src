@@ -3,6 +3,7 @@ from panda3d.core import GeomNode, GeomTriangles, GeomLinestrips, GeomVertexForm
 from panda3d.core import GeomVertexWriter, InternalName, Vec4, Geom
 from panda3d.core import ColorAttrib, Vec3, Vec2, deg2Rad, Quat, Point3
 from panda3d.core import CullFaceAttrib, AntialiasAttrib, CKeyValues
+from panda3d.bsp import PlaneCulledGeomNode
 
 from .MapWritable import MapWritable
 from .SolidVertex import SolidVertex
@@ -30,8 +31,9 @@ class FaceMaterial:
         # Need to start with the world alignment on the V axis so that we don't align backwards.
         # Then we can calculate U based on that, and the real V afterwards.
 
-        norm = face.plane.getNormal()
-        direction = face.plane.getClosestAxisToNormal()
+        plane = face.getWorldPlane()
+        norm = plane.getNormal()
+        direction = plane.getClosestAxisToNormal()
 
         tempV = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
         self.uAxis = norm.cross(tempV).normalized()
@@ -43,7 +45,8 @@ class FaceMaterial:
         # Set the U and V axes to match the X, Y, or Z axes.
         # How they are calculated depends on which direction the plane is facing.
 
-        direction = face.plane.getClosestAxisToNormal()
+        plane = face.getWorldPlane()
+        direction = plane.getClosestAxisToNormal()
 
         # VHE behavior:
         # U axis: If the closest axis to the normal is the X axis,
@@ -237,6 +240,9 @@ class SolidFace(MapWritable):
         return avg
 
     def getWorldPlane(self):
+        if not self.np:
+            return self.plane
+
         plane = Plane(self.plane)
         plane.xform(self.np.getMat(base.render))
         return plane
@@ -297,7 +303,7 @@ class SolidFace(MapWritable):
         self.np2D.hide(~VIEWPORT_2D_MASK)
         if self.color:
             self.setColor(self.color)
-        self.np3D = self.np.attachNewNode(GeomNode("3d"))
+        self.np3D = self.np.attachNewNode(PlaneCulledGeomNode("3d"))
         self.np3D.hide(~VIEWPORT_3D_MASK)
         self.np3DLines = self.np.attachNewNode(GeomNode("3dlines"))
         self.np3DLines.hide(~VIEWPORT_3D_MASK)
@@ -412,6 +418,7 @@ class SolidFace(MapWritable):
         self.np2D.node().removeAllGeoms()
         self.np3DLines.node().removeAllGeoms()
         self.np3D.node().removeAllGeoms()
+        self.np3D.node().setPlane(self.plane)
 
         #
         # Generate vertex data
