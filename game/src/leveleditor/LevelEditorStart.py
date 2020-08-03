@@ -12,6 +12,8 @@ except ImportError:
     print("ERROR: You need to pull in py_linq via pip to use the level editor")
     sys.exit(1)
 
+from PyQt5 import QtWidgets, QtGui
+
 import builtins
 from src.coginvasion.base.Metadata import Metadata
 metadata = Metadata()

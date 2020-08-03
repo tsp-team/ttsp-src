@@ -34,9 +34,18 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QMdiArea" name="gameViewArea">
-      <property name="viewMode">
-       <enum>QMdiArea::SubWindowView</enum>
+     <widget class="QTabWidget" name="documentTabs">
+      <property name="currentIndex">
+       <number>-1</number>
+      </property>
+      <property name="documentMode">
+       <bool>true</bool>
+      </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
+      <property name="movable">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -52,34 +61,6 @@
      <height>22</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuHello">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionNew_Map"/>
-    <addaction name="actionOpen"/>
-    <addaction name="actionSave"/>
-    <addaction name="actionSaveAs"/>
-    <addaction name="actionClose"/>
-    <addaction name="separator"/>
-    <addaction name="actionExit"/>
-   </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionAbout"/>
-   </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-    <addaction name="actionUndo"/>
-    <addaction name="actionRedo"/>
-   </widget>
-   <addaction name="menuHello"/>
-   <addaction name="menuEdit"/>
-   <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="topBar">
    <property name="windowTitle">
@@ -97,21 +78,6 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionSave"/>
-   <addaction name="actionClose"/>
-   <addaction name="separator"/>
-   <addaction name="actionUndo"/>
-   <addaction name="actionRedo"/>
-   <addaction name="separator"/>
-   <addaction name="actionGroups"/>
-   <addaction name="actionObjects"/>
-   <addaction name="actionFaces"/>
-   <addaction name="actionVertices"/>
-   <addaction name="separator"/>
-   <addaction name="actionToggleGrid"/>
-   <addaction name="actionGridSnap"/>
-   <addaction name="actionIncreaseGridSize"/>
-   <addaction name="actionDecreaseGridSize"/>
   </widget>
   <widget class="QToolBar" name="leftBar">
    <property name="windowTitle">
@@ -124,205 +90,6 @@
     <bool>false</bool>
    </attribute>
   </widget>
-  <action name="actionIncreaseGridSize">
-   <property name="text">
-    <string>Increase grid size</string>
-   </property>
-   <property name="toolTip">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Increase grid size ( ] )&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-   <property name="statusTip">
-    <string>Increase grid size ( ] )</string>
-   </property>
-   <property name="shortcut">
-    <string>]</string>
-   </property>
-  </action>
-  <action name="actionDecreaseGridSize">
-   <property name="text">
-    <string>Decrease grid size</string>
-   </property>
-   <property name="toolTip">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Decrease grid size ( [ )&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-   <property name="statusTip">
-    <string>Decrease grid size ( [ )</string>
-   </property>
-   <property name="shortcut">
-    <string>[</string>
-   </property>
-  </action>
-  <action name="actionSave">
-   <property name="text">
-    <string>Save</string>
-   </property>
-   <property name="toolTip">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Save the current map ( Ctrl + S )&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-   <property name="statusTip">
-    <string>Save the current map ( Ctrl + S )</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
-  </action>
-  <action name="actionToggleGrid">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show grid</string>
-   </property>
-   <property name="toolTip">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the grid&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-   <property name="statusTip">
-    <string>Show the grid</string>
-   </property>
-  </action>
-  <action name="actionClose">
-   <property name="text">
-    <string>Close</string>
-   </property>
-   <property name="toolTip">
-    <string>Close the current map</string>
-   </property>
-   <property name="statusTip">
-    <string>Close the current map</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+X</string>
-   </property>
-  </action>
-  <action name="actionNew_Map">
-   <property name="text">
-    <string>New</string>
-   </property>
-   <property name="toolTip">
-    <string>Create a new map</string>
-   </property>
-   <property name="statusTip">
-    <string>Create a new map</string>
-   </property>
-  </action>
-  <action name="actionSaveAs">
-   <property name="text">
-    <string>Save As...</string>
-   </property>
-   <property name="statusTip">
-    <string>Save As</string>
-   </property>
-  </action>
-  <action name="actionOpen">
-   <property name="text">
-    <string>Open...</string>
-   </property>
-   <property name="toolTip">
-    <string>Open an existing map</string>
-   </property>
-   <property name="statusTip">
-    <string>Open an existing map</string>
-   </property>
-  </action>
-  <action name="actionExit">
-   <property name="text">
-    <string>Exit</string>
-   </property>
-   <property name="toolTip">
-    <string>Exit the FABULOUS TTSP Editor</string>
-   </property>
-   <property name="statusTip">
-    <string>Exit the FABULOUS TTSP Editor</string>
-   </property>
-  </action>
-  <action name="actionAbout">
-   <property name="text">
-    <string>About</string>
-   </property>
-   <property name="toolTip">
-    <string>Information about the FABULOUS TTSP Editor</string>
-   </property>
-   <property name="statusTip">
-    <string>Information about the FABULOUS TTSP Editor</string>
-   </property>
-  </action>
-  <action name="actionGridSnap">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Grid snap</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle grid snap</string>
-   </property>
-   <property name="statusTip">
-    <string>Toggle grid snap</string>
-   </property>
-  </action>
-  <action name="actionUndo">
-   <property name="text">
-    <string>Undo</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Z</string>
-   </property>
-  </action>
-  <action name="actionRedo">
-   <property name="text">
-    <string>Redo</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+Z</string>
-   </property>
-  </action>
-  <action name="actionGroups">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Groups</string>
-   </property>
-   <property name="toolTip">
-    <string>Select object groups</string>
-   </property>
-  </action>
-  <action name="actionObjects">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Objects</string>
-   </property>
-   <property name="toolTip">
-    <string>Select individual objects</string>
-   </property>
-  </action>
-  <action name="actionFaces">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Faces</string>
-   </property>
-   <property name="toolTip">
-    <string>Select solid faces</string>
-   </property>
-  </action>
-  <action name="actionVertices">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Vertices</string>
-   </property>
-   <property name="toolTip">
-    <string>Select solid vertices</string>
-   </property>
-   <property name="visible">
-    <bool>true</bool>
-   </property>
-  </action>
  </widget>
  <resources/>
  <connections/>

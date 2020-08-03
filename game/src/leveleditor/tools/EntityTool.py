@@ -237,7 +237,6 @@ class EntityTool(BaseTool):
 
 
         ent = Entity(base.document.getNextID())
-        ent.generate()
         ent.setClassname(self.classname)
         ent.np.setPos(self.pos)
         # Select the entity right away so we can conveniently move it around and

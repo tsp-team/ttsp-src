@@ -18,7 +18,6 @@ class Entity(MapObject):
 
     def copy(self, generator):
         e = Entity(generator.getNextID())
-        e.generate()
         self.copyBase(e, generator)
         return e
 
@@ -27,7 +26,6 @@ class Entity(MapObject):
 
     def clone(self):
         e = Entity(self.id)
-        e.generate()
         self.copyBase(e, None, True)
         return e
 

@@ -10,3 +10,5 @@ VertexMask = BitMask32.bit(3)
 SelectedSort = 1
 BoxSort = 2
 WidgetSort = 3
+
+AppName = "Foundry"

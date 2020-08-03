@@ -29,13 +29,11 @@ class MapObject(MapWritable):
 
     def __init__(self, id):
         MapWritable.__init__(self)
-        self.isGenerated = False
         self.id = id
         self.selected = False
         self.classname = ""
         self.parent = None
         self.children = {}
-        self.np = None
         self.boundingBox = BoundingBox(Vec3(-0.5, -0.5, -0.5), Vec3(0.5, 0.5, 0.5))
         self.boundsBox = Box()
         self.boundsBox.addView(GeomView.Lines, VIEWPORT_3D_MASK, state = BoundsBox3DState)
@@ -50,6 +48,9 @@ class MapObject(MapWritable):
         self.addProperty(AnglesProperty(self))
         self.addProperty(ScaleProperty(self))
         self.addProperty(ShearProperty(self))
+
+        self.np = NodePath(ModelNode(self.ObjectName + ".%i" % self.id))
+        self.np.setPythonTag("mapobject", self)
 
     def findChildByID(self, id):
         if id == self.id:
@@ -90,6 +91,7 @@ class MapObject(MapWritable):
         newProps = {}
         for key, prop in props.items():
             newProp = prop.clone(self)
+            newProp.setValue(prop.getValue())
             newProps[key] = newProp
         self.updateProperties(newProps)
 
@@ -385,13 +387,6 @@ class MapObject(MapWritable):
             self.collNp.removeNode()
             self.collNp = None
 
-    # Called when the object first comes into existence, before the
-    # keyvalues are read
-    def generate(self):
-        self.np = NodePath(ModelNode(self.ObjectName + ".%i" % self.id))
-        self.np.setPythonTag("mapobject", self)
-        self.isGenerated = True
-
     def delete(self):
         # Take the children with us
         for child in list(self.children.values()):
@@ -412,7 +407,6 @@ class MapObject(MapWritable):
         self.np = None
         self.properties = None
         self.metaData = None
-        self.isGenerated = None
 
     def __clearParent(self):
         if self.parent:

@@ -19,7 +19,7 @@ class BSPBase(ShowBase):
         self.loader = CogInvasionLoader(self)
         builtins.loader = self.loader
         self.graphicsEngine.setDefaultLoader(self.loader.loader)
-        
+
         self.makeAllPipes()
 
         from panda3d.core import RenderAttribRegistry
@@ -79,7 +79,7 @@ class BSPBase(ShowBase):
         self.shaderGenerator.addShader(dcm)
 
         self.shaderGenerator.setShaderQuality(CIGlobals.getSettingsMgr().getSetting("shaderquality").getValue())
-        
+
         self.filters = CIPostProcess()
         self.filters.startup(self.win)
         self.filters.addCamera(self.cam)

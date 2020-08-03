@@ -1,7 +1,8 @@
-from panda3d.core import Vec3, Point2, WindowProperties
+from panda3d.core import Vec3, Point2, WindowProperties, NodePath, SamplerState
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.InputStateGlobal import inputState
+from direct.gui.DirectGui import OnscreenImage
 
 import math
 
@@ -28,6 +29,18 @@ class FlyCam(DirectObject):
         self.lastSpeeds = Vec3(0)
         self.moving = False
 
+        self.cursor = QtGui.QCursor()
+        self.cursor.setShape(QtCore.Qt.BlankCursor)
+
+        tex = base.loader.loadTexture('resources/icons/editor-crosshair.png')
+        tex.setMinfilter(SamplerState.FTLinear)
+        tex.setMagfilter(SamplerState.FTLinear)
+        crosshair = OnscreenImage(tex)
+        crosshair.setTransparency(True)
+        crosshair.setScale(0.04)
+        crosshair.reparentTo(NodePath())
+        self.crosshair = crosshair
+
         inputState.watchWithModifiers("forward", "w")
         inputState.watchWithModifiers("reverse", "s")
         inputState.watchWithModifiers("slideLeft", "a")
@@ -50,19 +63,13 @@ class FlyCam(DirectObject):
     def setEnabled(self, flag):
         if flag:
             if not self.enabled:
-                props = WindowProperties()
-                props.setCursorHidden(True)
-                props.setMouseMode(WindowProperties.MConfined)
-                QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
-                self.viewport.win.requestProperties(props)
-                self.viewport.centerCursor()
+                self.viewport.setCursor(self.cursor)
+                self.viewport.centerCursor(self.cursor)
+                self.crosshair.reparentTo(self.viewport.aspect2d)
         else:
             if self.enabled:
-                QtWidgets.QApplication.restoreOverrideCursor()
-                props = WindowProperties()
-                props.setCursorHidden(False)
-                props.setMouseMode(WindowProperties.MAbsolute)
-                self.viewport.win.requestProperties(props)
+                self.crosshair.reparentTo(NodePath())
+                self.viewport.unsetCursor()
 
         self.enabled = flag
 
@@ -82,7 +89,7 @@ class FlyCam(DirectObject):
                 dy = center.getY() - md.getY()
                 camera.setH(camera.getH() + (dx * self.mouseSensitivity))
                 camera.setP(camera.getP() + (dy * self.mouseSensitivity))
-                win.movePointer(0, int(center[0]), int(center[1]))
+                self.viewport.centerCursor(self.cursor)
 
             # linear movement WASD+QE
             goalDir = Vec3(0)

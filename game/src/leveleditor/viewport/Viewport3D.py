@@ -8,8 +8,8 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 
 class Viewport3D(Viewport):
 
-    def __init__(self, vpType, window):
-        Viewport.__init__(self, vpType, window)
+    def __init__(self, vpType, window, doc):
+        Viewport.__init__(self, vpType, window, doc)
         self.flyCam = None
 
     def mouseMove(self):

@@ -13,8 +13,8 @@ import math
 
 class Viewport2D(Viewport):
 
-    def __init__(self, vpType, window):
-        Viewport.__init__(self, vpType, window)
+    def __init__(self, vpType, window, doc):
+        Viewport.__init__(self, vpType, window, doc)
         self.zoom = 0.25
         self.dragging = False
         self.dragCamStart = Point3()

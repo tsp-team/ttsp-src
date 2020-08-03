@@ -20,11 +20,10 @@ class BlockBrush(BaseBrush):
             face.setMaterial(material)
             for vert in faceVerts:
                 face.vertices.append(SolidVertex(LEUtils.roundVector(vert, roundDecimals), face))
-            face.alignTextureToFace()
             solid.faces.append(face)
 
-        solid.generate()
         solid.setToSolidOrigin()
+        solid.alignTexturesToFaces()
         solid.generateFaces()
         solid.recalcBoundingBox()
 

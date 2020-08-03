@@ -65,7 +65,7 @@ def keyboardButtonFromQtKey(keycode):
     # First try the ascii value
     asciiValue = keycode
     if asciiValue < 256:
-        button = reg.findAsciiButton(chr(asciiValue))
+        button = reg.findAsciiButton(chr(asciiValue).lower())
     else:
         # Don't have a valid ascii value for this key.
         # Look up the KeyboardButton name by the key code.

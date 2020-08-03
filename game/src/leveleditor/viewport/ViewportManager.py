@@ -76,14 +76,9 @@ class ViewportManager(DirectObject):
         if active and (not self.activeViewport or self.activeViewport != active):
             active.mouseEnter()
             messenger.send('mouseEnter', [active])
-            base.setEditorWindowTitle(active.getViewportName())
-            props = WindowProperties()
-            props.setForeground(True)
-            active.win.requestProperties(props)
         elif not active and self.activeViewport:
             self.activeViewport.mouseExit()
             messenger.send('mouseExit', [self.activeViewport])
-            base.setEditorWindowTitle("")
 
         if active and active == self.activeViewport:
             mouse = active.mouseWatcher.getMouse()

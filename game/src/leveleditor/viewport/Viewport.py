@@ -5,28 +5,33 @@ from panda3d.core import Camera, BitMask32, WindowProperties, GraphicsPipe, Fram
 from panda3d.core import MouseAndKeyboard, ButtonThrower, MouseWatcher, KeyboardButton, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, Mat4
 from panda3d.core import Vec4, ModifierButtons, Point2, Vec3, Point3, Vec2, ModelNode, LVector2i, LPoint2i
-from panda3d.core import OmniBoundingVolume, OrthographicLens
+from panda3d.core import OmniBoundingVolume, OrthographicLens, MouseButton
 
 from src.coginvasion.globals import CIGlobals
 
 from .ViewportType import *
 from .ViewportGizmo import ViewportGizmo
 from src.leveleditor.math.Ray import Ray
+from src.leveleditor import LEUtils
 
 from direct.showbase.DirectObject import DirectObject
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 # Base viewport class
-class Viewport(DirectObject, QtWidgets.QWidget):
+class Viewport(QtWidgets.QWidget, DirectObject):
 
     ClearColor = CIGlobals.vec3GammaToLinear(Vec4(0.361, 0.361, 0.361, 1.0))
 
-    def __init__(self, vpType, window):
+    def __init__(self, vpType, window, doc):
         DirectObject.__init__(self)
         QtWidgets.QWidget.__init__(self, window)
+        self.doc = doc
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setMouseTracking(True)
 
         self.qtWindow = None
+        self.qtWidget = None
 
         self.window = window
         self.type = vpType
@@ -48,6 +53,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.tickTask = None
         self.zoom = 1.0
         self.gizmo = None
+        self.inputDevice = None
 
         # 2D stuff copied from ShowBase :(
         self.camera2d = None
@@ -75,7 +81,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         self.a2dBottomRightNs = None
         self.__oldAspectRatio = None
 
-        self.gridRoot = base.render.attachNewNode("gridRoot")
+        self.gridRoot = self.doc.render.attachNewNode("gridRoot")
         self.gridRoot.setLightOff(1)
         self.gridRoot.setBSPMaterial("resources/phase_14/materials/unlit.mat")
         #self.gridRoot.setDepthWrite(False)
@@ -126,18 +132,15 @@ class Viewport(DirectObject, QtWidgets.QWidget):
 
     def initialize(self):
         self.lens = self.makeLens()
-        self.camera = base.render.attachNewNode(ModelNode("viewportCameraParent"))
+        self.camera = self.doc.render.attachNewNode(ModelNode("viewportCameraParent"))
         self.camNode = Camera("viewportCamera")
         self.camNode.setLens(self.lens)
         self.camNode.setCameraMask(self.getViewportMask())
         self.cam = self.camera.attachNewNode(self.camNode)
 
         winprops = WindowProperties.getDefault()
-        winprops.setOrigin(0, 0)
         winprops.setParentWindow(int(self.winId()))
-        winprops.setOpen(True)
         winprops.setForeground(False)
-        winprops.setUndecorated(True)
 
         output = base.graphicsEngine.makeOutput(
             base.pipe, "viewportOutput", 0,
@@ -146,9 +149,15 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             base.gsg
         )
 
-        assert output is not None, "Unable to create viewport output!"
-
         self.qtWindow = QtGui.QWindow.fromWinId(output.getWindowHandle().getIntHandle())
+        self.qtWidget = QtWidgets.QWidget.createWindowContainer(self.qtWindow, self,
+            (QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowDoesNotAcceptFocus
+            | QtCore.Qt.WindowTransparentForInput
+            | QtCore.Qt.SubWindow | QtCore.Qt.BypassWindowManagerHint))
+
+        self.inputDevice = output.getInputDevice(0)
+
+        assert output is not None, "Unable to create viewport output!"
 
         output.setClearColorActive(False)
         output.setClearDepthActive(False)
@@ -196,6 +205,61 @@ class Viewport(DirectObject, QtWidgets.QWidget):
         base.viewportMgr.addViewport(self)
 
         self.makeGrid()
+
+    def keyPressEvent(self, event):
+        button = LEUtils.keyboardButtonFromQtKey(event.key())
+        if button:
+            self.inputDevice.buttonDown(button)
+
+    def keyReleaseEvent(self, event):
+        button = LEUtils.keyboardButtonFromQtKey(event.key())
+        if button:
+            self.inputDevice.buttonUp(button)
+
+    def enterEvent(self, event):
+        # Give ourselves focus.
+        self.setFocus()
+        QtWidgets.QWidget.enterEvent(self, event)
+
+    def mouseMoveEvent(self, event):
+        self.inputDevice.setPointerInWindow(event.pos().x(), event.pos().y())
+        QtWidgets.QWidget.mouseMoveEvent(self, event)
+
+    def leaveEvent(self, event):
+        self.clearFocus()
+        self.inputDevice.setPointerOutOfWindow()
+        self.inputDevice.focusLost()
+        QtWidgets.QWidget.leaveEvent(self, event)
+
+    def mousePressEvent(self, event):
+        btn = event.button()
+        if btn == QtCore.Qt.LeftButton:
+            self.inputDevice.buttonDown(MouseButton.one())
+        elif btn == QtCore.Qt.MiddleButton:
+            self.inputDevice.buttonDown(MouseButton.two())
+        elif btn == QtCore.Qt.RightButton:
+            self.inputDevice.buttonDown(MouseButton.three())
+        QtWidgets.QWidget.mousePressEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+        btn = event.button()
+        if btn == QtCore.Qt.LeftButton:
+            self.inputDevice.buttonUp(MouseButton.one())
+        elif btn == QtCore.Qt.MiddleButton:
+            self.inputDevice.buttonUp(MouseButton.two())
+        elif btn == QtCore.Qt.RightButton:
+            self.inputDevice.buttonUp(MouseButton.three())
+        QtWidgets.QWidget.mouseReleaseEvent(self, event)
+
+    def wheelEvent(self, event):
+        ang = event.angleDelta().y()
+        if ang > 0:
+            self.inputDevice.buttonDown(MouseButton.wheelUp())
+            self.inputDevice.buttonUp(MouseButton.wheelUp())
+        else:
+            self.inputDevice.buttonDown(MouseButton.wheelDown())
+            self.inputDevice.buttonUp(MouseButton.wheelDown())
+        QtWidgets.QWidget.wheelEvent(self, event)
 
     def getAspectRatio(self):
         return self.win.getXSize() / self.win.getYSize()
@@ -351,9 +415,10 @@ class Viewport(DirectObject, QtWidgets.QWidget):
     def getViewportCenterPixels(self):
         return LPoint2i(self.win.getXSize() // 2, self.win.getYSize() // 2)
 
-    def centerCursor(self):
+    def centerCursor(self, cursor):
         center = self.getViewportCenterPixels()
-        self.win.movePointer(0, center[0], center[1])
+        cursor.setPos(self.mapToGlobal(QtCore.QPoint(self.width() / 2, self.height() / 2)))
+        self.inputDevice.setPointerInWindow(center.x, center.y)
 
     def viewportToWorld(self, viewport, vec = False):
         front = Point3()
@@ -400,7 +465,7 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             base.clickTraverse(self.clickNp, queue)
         else:
             if not root:
-                root = base.render
+                root = self.doc.render
             traverser.addCollider(self.clickNp, queue)
             traverser.traverse(root)
             traverser.removeCollider(self.clickNp)
@@ -464,12 +529,13 @@ class Viewport(DirectObject, QtWidgets.QWidget):
             return
 
         newsize = LVector2i(event.size().width(), event.size().height())
+        self.qtWidget.resize(newsize[0], newsize[1])
+        self.qtWidget.move(0, 0)
 
-        props = WindowProperties()
-        props.setSize(newsize)
-        props.setOrigin(0, 0)
-
-        self.win.requestProperties(props)
+        #props = WindowProperties()
+        #props.setSize(newsize)
+        #props.setOrigin(0, 0)
+        #self.win.requestProperties(props)
 
         self.fixRatio(newsize)
 

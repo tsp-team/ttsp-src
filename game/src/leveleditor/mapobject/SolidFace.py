@@ -16,6 +16,44 @@ from src.leveleditor.Align import Align
 from src.leveleditor.IDGenerator import IDGenerator
 from src.leveleditor import MaterialPool
 
+from enum import IntEnum
+
+class FaceOrientation(IntEnum):
+    Floor = 0
+    Ceiling = 1
+    NorthWall = 2
+    SouthWall = 3
+    EastWall = 4
+    WestWall = 5
+    Invalid = 6
+
+FaceNormals = [
+    Vec3(0, 0, 1),  # floor
+    Vec3(0, 0, -1), # ceiling
+    Vec3(0, -1, 0), # north wall
+    Vec3(0, 1, 0),  # south wall
+    Vec3(-1, 0, 0), # east wall
+    Vec3(1, 0, 0)   # west wall
+]
+
+DownVectors = [
+    Vec3(0, -1, 0), # floor
+    Vec3(0, -1, 0), # ceiling
+    Vec3(0, 0, -1), # north wall
+    Vec3(0, 0, -1), # south wall
+    Vec3(0, 0, -1), # east wall
+    Vec3(0, 0, -1)  # west wall
+]
+
+RightVectors = [
+    Vec3(1, 0, 0),  # floor
+    Vec3(1, 0, 0),  # ceiling
+    Vec3(1, 0, 0),  # north wall
+    Vec3(1, 0, 0),  # south wall
+    Vec3(0, 1, 0),  # east wall
+    Vec3(0, 1, 0)   # west wall
+]
+
 class FaceMaterial:
 
     def __init__(self):
@@ -26,18 +64,49 @@ class FaceMaterial:
         self.vAxis = Vec3(0)
         self.rotation = 0.0
 
+    def cleanup(self):
+        self.material = None
+        self.scale = None
+        self.shift = None
+        self.uAxis = None
+        self.vAxis = None
+        self.rotation = None
+
+    def setVAxisFromOrientation(self, face):
+        self.uAxis = Vec3(0)
+        self.vAxis = Vec3(0)
+
+        # Determine the general orientation of this face (floor, ceiling, n wall, etc.)
+        orientation = face.getOrientation()
+        if orientation == FaceOrientation.Invalid:
+            return orientation
+
+        # Pick a world axis aligned V axis based on the face orientation.
+        self.vAxis = DownVectors[orientation]
+
+        return orientation
+
     def alignTextureToFace(self, face):
         # Set the U and V axes to match the plane's normal
         # Need to start with the world alignment on the V axis so that we don't align backwards.
         # Then we can calculate U based on that, and the real V afterwards.
 
-        plane = face.getWorldPlane()
-        norm = plane.getNormal()
-        direction = plane.getClosestAxisToNormal()
+        orientation = self.setVAxisFromOrientation(face)
+        if orientation == FaceOrientation.Invalid:
+            return
 
-        tempV = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
-        self.uAxis = norm.cross(tempV).normalized()
-        self.vAxis = self.uAxis.cross(norm).normalized()
+        plane = face.getWorldPlane()
+        normal = plane.getNormal()
+
+        #
+        # Calculate the texture axes.
+        #
+
+        # Using the axis-aligned V axis, calculate the true U axis
+        self.uAxis = normal.cross(self.vAxis).normalized()
+
+        # Now use the true U axis to calculate the true V axis.
+        self.vAxis = self.uAxis.cross(normal).normalized()
 
         self.rotation = 0.0
 
@@ -45,17 +114,11 @@ class FaceMaterial:
         # Set the U and V axes to match the X, Y, or Z axes.
         # How they are calculated depends on which direction the plane is facing.
 
-        plane = face.getWorldPlane()
-        direction = plane.getClosestAxisToNormal()
+        orientation = self.setVAxisFromOrientation(face)
+        if orientation == FaceOrientation.Invalid:
+            return
 
-        # VHE behavior:
-        # U axis: If the closest axis to the normal is the X axis,
-        #         the U axis is unit Y. Otherwise, the U axis is unit X.
-        # V axis: If the closest axis to the normal is the Z axis,
-        #         the V axis is -unit Y. Otherwise, the V axis is -unit z.
-
-        self.uAxis = Vec3.unitY() if direction == Vec3.unitX() else Vec3.unitX()
-        self.vAxis = -Vec3.unitY() if direction == Vec3.unitZ() else -Vec3.unitZ()
+        self.uAxis = RightVectors[orientation]
         self.rotation = 0
 
     def setTextureRotation(self, angle):
@@ -161,15 +224,39 @@ class SolidFace(MapWritable):
         self.isSelected = False
         self.plane = plane
         self.color = Vec4(0.5, 0.5, 1, 1)
-        self.np = None
-        # 2D renders this
-        self.np2D = None
-        # 3D renders this
-        self.np3D = None
-        self.np3DLines = None
         self.solid = solid
         self.hasGeometry = False
         self.vdata = None
+
+        self.generateNodes()
+
+    def setSolid(self, solid):
+        self.solid = solid
+        self.np.reparentTo(self.solid.np)
+
+    def getOrientation(self):
+        plane = self.getWorldPlane()
+
+        # The normal must have a nonzero length!
+        if plane[0] == 0 and plane[1] == 0 and plane[2] == 0:
+            return FaceOrientation.Invalid
+
+        #
+        # Find the axis that the surface normal has the greatest projection onto.
+        #
+
+        orientation = FaceOrientation.Invalid
+        normal = plane.getNormal()
+
+        maxDot = 0
+        for i in range(6):
+            dot = normal.dot(FaceNormals[i])
+
+            if (dot >= maxDot):
+                maxDot = dot
+                orientation = FaceOrientation(i)
+
+        return orientation
 
     def showClipVisRemove(self):
         if not self.np3D.isStashed():
@@ -240,11 +327,8 @@ class SolidFace(MapWritable):
         return avg
 
     def getWorldPlane(self):
-        if not self.np:
-            return self.plane
-
         plane = Plane(self.plane)
-        plane.xform(self.np.getMat(base.render))
+        plane.xform(self.np.getMat(NodePath()))
         return plane
 
     def getName(self):
@@ -293,7 +377,7 @@ class SolidFace(MapWritable):
             vertKv = CKeyValues("vertex", kv)
             vert.writeKeyValues(vertKv)
 
-    def generate(self):
+    def generateNodes(self):
         self.np = NodePath("solidface.%i" % self.id)
         # This is selectable in object/group mode and face mode
         self.np.setPythonTag("solidface", self)
@@ -301,8 +385,8 @@ class SolidFace(MapWritable):
             self.np.reparentTo(self.solid.np)
         self.np2D = self.np.attachNewNode(GeomNode("2d"))
         self.np2D.hide(~VIEWPORT_2D_MASK)
-        if self.color:
-            self.setColor(self.color)
+        # PlaneCulledGeomNode doesn't render the face if the camera is behind
+        # the plane.
         self.np3D = self.np.attachNewNode(PlaneCulledGeomNode("3d"))
         self.np3D.hide(~VIEWPORT_3D_MASK)
         self.np3DLines = self.np.attachNewNode(GeomNode("3dlines"))
@@ -310,16 +394,19 @@ class SolidFace(MapWritable):
         self.np3DLines.setColor(1, 1, 0, 1)
         self.np3DLines.setAntialias(AntialiasAttrib.MLine)
         self.hide3DLines()
+        self.np.setCollideMask(GeomNode.getDefaultCollideMask() | LEGlobals.FaceMask)
+
+    def generate(self):
+        if self.color:
+            self.setColor(self.color)
         if self.material.material:
             self.setMaterial(self.material.material)
-        self.np.setCollideMask(GeomNode.getDefaultCollideMask() | LEGlobals.FaceMask)
         self.regenerateGeometry()
 
     def setMaterial(self, mat):
         self.material.material = mat
         if self.np3D and mat:
             self.np3D.setBSPMaterial(mat.material)
-        self.calcTextureCoordinates(True)
 
     def setColor(self, color):
         if self.np2D:
@@ -329,6 +416,7 @@ class SolidFace(MapWritable):
     def setFaceMaterial(self, faceMat):
         self.material = faceMat
         self.setMaterial(self.material.material)
+        self.calcTextureCoordinates(True)
         messenger.send('faceMaterialChanged', [self])
 
     def alignTextureToFace(self):
@@ -360,8 +448,8 @@ class SolidFace(MapWritable):
 
         for vert in self.vertices:
             vertPos = vert.getWorldPos()
-            vert.uv.x = (vertPos.dot(self.material.uAxis) / udiv) + uadd
-            vert.uv.y = (vertPos.dot(self.material.vAxis) / vdiv) + vadd
+            vert.uv.x = vertPos.dot(self.material.uAxis) / udiv + uadd
+            vert.uv.y = vertPos.dot(self.material.vAxis) / vdiv + vadd
 
         if self.hasGeometry:
             self.modifyGeometryUVs()
@@ -482,6 +570,7 @@ class SolidFace(MapWritable):
             vert.delete()
         self.vertices = None
         self.id = None
+        self.material.cleanup()
         self.material = None
         self.color = None
         self.np3DLines.removeNode()

@@ -1,4 +1,6 @@
-from panda3d.core import UniqueIdAllocator, CKeyValues
+from panda3d.core import UniqueIdAllocator, CKeyValues, NodePath
+
+import builtins
 
 from direct.showbase.DirectObject import DirectObject
 
@@ -6,6 +8,12 @@ from src.leveleditor.mapobject.World import World
 from src.leveleditor.mapobject.Entity import Entity
 from src.leveleditor.mapobject import MapObjectFactory
 from src.leveleditor.IDGenerator import IDGenerator
+from src.leveleditor.viewport.QuadSplitter import QuadSplitter
+from src.leveleditor.viewport.Viewport2D import Viewport2D
+from src.leveleditor.viewport.Viewport3D import Viewport3D
+from src.leveleditor.viewport.ViewportType import VIEWPORT_3D, VIEWPORT_2D_FRONT, VIEWPORT_2D_SIDE, VIEWPORT_2D_TOP
+
+from PyQt5 import QtWidgets
 
 models = [
     "models/cogB_robot/cogB_robot.bam",
@@ -15,6 +23,30 @@ models = [
     "phase_14/models/props/creampie.bam",
     "phase_14/models/props/gumballShooter.bam"
 ]
+
+class DocumentPage(QtWidgets.QWidget):
+
+    def __init__(self, doc):
+        self.doc = doc
+        QtWidgets.QWidget.__init__(self)
+        base.docTabs.addTab(self, "document")
+        self.setLayout(QtWidgets.QGridLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        self.viewports = {}
+        self.splitter = QuadSplitter(self)
+
+        self.addViewport(Viewport3D(VIEWPORT_3D, self.splitter, self.doc), 0, 0)
+        self.addViewport(Viewport2D(VIEWPORT_2D_FRONT, self.splitter, self.doc), 1, 0)
+        self.addViewport(Viewport2D(VIEWPORT_2D_SIDE, self.splitter, self.doc), 1, 1)
+        self.addViewport(Viewport2D(VIEWPORT_2D_TOP, self.splitter, self.doc), 0, 1)
+
+        self.layout().addWidget(self.splitter)
+
+    def addViewport(self, vp, row, col):
+        vp.initialize()
+        self.splitter.addWidget(vp, row, col)
+        self.viewports[vp.type] = vp
 
 # Represents the current map that we are working on.
 class Document(DirectObject):
@@ -26,6 +58,16 @@ class Document(DirectObject):
         self.idGenerator = IDGenerator()
         self.world = None
         self.isOpen = False
+        self.page = None
+
+    # Called when the document's tab has been switched into.
+    def activated(self):
+        base.render = self.render
+        builtins.render = self.render
+
+    # Called when the document's tab has been switched out of.
+    def deactivated(self):
+        pass
 
     def getNextID(self):
         return self.idGenerator.getNextID()
@@ -51,7 +93,6 @@ class Document(DirectObject):
         self.filename = filename
         self.unsaved = False
         base.actionMgr.documentSaved()
-        base.setEditorWindowTitle()
 
     def close(self):
         if not self.isOpen:
@@ -59,22 +100,28 @@ class Document(DirectObject):
 
         self.world.delete()
         self.world = None
-        self.idGenerator.reset()
+        self.idGenerator.cleanup()
+        self.idGenerator = None
         self.filename = None
-        self.unsaved = False
-        self.isOpen = False
+        self.unsaved = None
+        self.isOpen = None
 
     def __newMap(self):
         self.unsaved = False
         self.idGenerator.reset()
         self.world = World(self.getNextID())
-        self.world.generate()
-        self.world.reparentTo(base.render)
+        self.world.reparentTo(self.render)
         self.isOpen = True
         if base.toolMgr.selectTool:
             # Open with the select tool by default
             base.toolMgr.selectTool.toggle()
-        base.setEditorWindowTitle()
+        self.updateTabText()
+
+    def updateTabText(self):
+        name = self.getMapName()
+        if self.unsaved:
+            name = "* " + name
+        base.docTabs.setTabText(base.docTabs.indexOf(self.page), name)
 
     def r_open(self, kv, parent = None):
         classDef = MapObjectFactory.MapObjectsByName.get(kv.getName())
@@ -84,7 +131,6 @@ class Document(DirectObject):
         id = int(kv.getValue("id"))
         self.reserveID(id)
         obj = classDef(id)
-        obj.generate()
         obj.readKeyValues(kv)
         obj.reparentTo(parent)
 
@@ -95,6 +141,10 @@ class Document(DirectObject):
             self.r_open(kv.getChild(i), obj)
 
     def open(self, filename = None):
+        self.render = NodePath("docRender")
+        # Create the page that the document is viewed in.
+        self.page = DocumentPage(self)
+
         # if filename is none, this is a new document/map
         if not filename:
             self.__newMap()
@@ -111,15 +161,15 @@ class Document(DirectObject):
         self.isOpen = True
         # Open with the select tool by default
         base.toolMgr.selectTool.toggle()
-        base.setEditorWindowTitle()
+        self.updateTabText()
 
     def markSaved(self):
         self.unsaved = False
-        base.setEditorWindowTitle()
+        self.updateTabText()
 
     def markUnsaved(self):
         self.unsaved = True
-        base.setEditorWindowTitle()
+        self.updateTabText()
 
     def isUnsaved(self):
         return self.unsaved

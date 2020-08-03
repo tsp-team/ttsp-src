@@ -21,7 +21,6 @@ from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.Document import Document
 from src.leveleditor.ui import About
 from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
-from .EntityEdit import EntityEdit
 from src.leveleditor.ui.ModelBrowser import ModelBrowser
 from src.leveleditor.ui.MaterialBrowser import MaterialBrowser
 
@@ -30,43 +29,7 @@ from PyQt5.QtWidgets import QMessageBox
 from src.leveleditor.fgdtools import FgdParse, FgdWrite
 
 import builtins
-
-class LevelEditorSubWind(QtWidgets.QWidget):
-
-    def __init__(self, area):
-        QtWidgets.QWidget.__init__(self, area)
-        area.addSubWindow(self)
-        self.layout = QtWidgets.QGridLayout(self)
-        self.setWindowTitle("")
-
-        self.splitter = QuadSplitter(self)
-
-        self.layout.addWidget(self.splitter)
-
-        self.setLayout(self.layout)
-
-        self.showMaximized()
-
-    def closeEvent(self, event):
-        # We don't want to let the user close the viewport subwindow,
-        # but we can't remove the X button from the title bar. Just
-        # ignore the close event.
-        event.ignore()
-
-    def addViewports(self):
-        vp3d = Viewport3D(VIEWPORT_3D, self.splitter)
-        vp3d.initialize()
-        vp2df = Viewport2D(VIEWPORT_2D_FRONT, self.splitter)
-        vp2df.initialize()
-        vp2ds = Viewport2D(VIEWPORT_2D_SIDE, self.splitter)
-        vp2ds.initialize()
-        vp2dt = Viewport2D(VIEWPORT_2D_TOP, self.splitter)
-        vp2dt.initialize()
-
-        self.splitter.addWidget(vp3d, 0, 0)
-        self.splitter.addWidget(vp2df, 1, 0)
-        self.splitter.addWidget(vp2ds, 1, 1)
-        self.splitter.addWidget(vp2dt, 0, 1)
+import time
 
 class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
 
@@ -85,6 +48,8 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.ui = Ui_LevelEditor()
         self.ui.setupUi(self)
 
+        self.setWindowTitle(LEGlobals.AppName)
+
         base.topBar = self.ui.topBar
         base.leftBar = self.ui.leftBar
         base.statusBar = self.ui.statusbar
@@ -98,9 +63,14 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.toolBar.setIconSize(QtCore.QSize(48, 48))
         base.toolBar = self.toolBar
 
-        self.gameViewWind = LevelEditorSubWind(self.ui.gameViewArea)
-        base.gameViewWind = self.gameViewWind
+        base.menuBar = self.ui.menubar
 
+        self.docTabs = self.ui.documentTabs
+        base.docTabs = self.docTabs
+
+        self.docTabs.currentChanged.connect(self.__docTabChanged)
+
+        """
         self.ui.actionAbout.triggered.connect(self.__showAbout)
         self.ui.actionSave.triggered.connect(self.__save)
         self.ui.actionSaveAs.triggered.connect(self.__saveAs)
@@ -121,18 +91,15 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         for mode, action in selectionModeActions.items():
             selectionModeGroup.addAction(action)
             action.toggled.connect(lambda checked, mode=mode: self.__maybeSetSelelectionMode(checked, mode))
+        """
 
+    def __docTabChanged(self, index):
+        if base.document:
+            base.document.deactivated()
 
-        # Since the viewports are separate windows from the Qt application,
-        # they consume the keyboard events. This is bad when we want to save (ctrl-s) while
-        # the mouse is inside a viewport. Or press enter to place an entity when the mouse is outside
-        # of a viewport. The extrmely ugly solution is to relay all keyboard events from Qt to Panda,
-        # and all keyboard events from Panda to Qt.
-
-        # Listen for all possible keyboard events from Panda
-        # We add these generic events onto the viewports for when any key is pressed.
-        self.accept('btndown', self.__pandaButtonDown)
-        self.accept('btnup', self.__pandaButtonUp)
+        page = self.docTabs.widget(index)
+        page.doc.activated()
+        base.document = page.doc
 
     def __maybeSetSelelectionMode(self, checked, mode):
         if checked:
@@ -143,80 +110,6 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
 
     def __redo(self):
         base.actionMgr.redo()
-
-    def getQtModifier(self, name):
-        if name == "control":
-            return QtCore.Qt.ControlModifier
-        elif name == "shift":
-            return QtCore.Qt.ShiftModifier
-        elif name == "alt":
-            return QtCore.Qt.AltModifier
-        return QtCore.Qt.NoModifier
-
-    def __pandaButtonDown(self, name):
-        keys = name.split('-')
-
-        mainkey = keys[len(keys) - 1]
-        btn = LEUtils.qtKeyFromKeyboardButton(mainkey)
-        if not btn:
-            return
-
-        mod = 0
-        for i in range(len(keys) - 1):
-            mod |= self.getQtModifier(keys[i])
-
-        event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
-            btn, QtCore.Qt.KeyboardModifiers(mod))
-
-        QtWidgets.QApplication.sendEvent(QtWidgets.QWidget(), event)
-
-    def __pandaButtonUp(self, name):
-        keys = name.split('-')
-
-        mainkey = keys[len(keys) - 1]
-        btn = LEUtils.qtKeyFromKeyboardButton(mainkey)
-        if not btn:
-            return
-
-        mod = 0
-        for i in range(len(keys) - 1):
-            mod |= self.getQtModifier(keys[i])
-
-        event = QtGui.QKeyEvent(QtCore.QEvent.KeyRelease,
-            btn, QtCore.Qt.KeyboardModifiers(mod))
-
-        QtWidgets.QApplication.sendEvent(QtWidgets.QWidget(), event)
-
-    def buildKeyEvent(self, event):
-        eventStr = ""
-
-        button = LEUtils.keyboardButtonFromQtKey(event.key())
-        modifiers = event.modifiers()
-
-        if modifiers & QtCore.Qt.ControlModifier:
-            eventStr += "control-"
-        if modifiers & QtCore.Qt.ShiftModifier:
-            eventStr += "shift-"
-        if modifiers & QtCore.Qt.AltModifier:
-            eventStr += "alt-"
-
-        eventStr += button.getName()
-
-        return eventStr.lower()
-
-    def keyPressEvent(self, event):
-        # Pass this up to the viewports
-
-        eventStr = self.buildKeyEvent(event)
-
-        messenger.send(eventStr)
-
-        QtWidgets.QMainWindow.keyPressEvent(self, event)
-
-    def keyReleaseEvent(self, event):
-        eventStr = self.buildKeyEvent(event) + "-up"
-        messenger.send(eventStr)
-        QtWidgets.QMainWindow.keyReleaseEvent(self, event)
 
     def addDockWindow(self, dockWidget, location = "right"):
         location = self.dockLocations[location]
@@ -238,7 +131,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
     def askSaveIfUnsaved(self):
         if base.document.unsaved:
             msg = QMessageBox(parent = self, icon = QMessageBox.Warning)
-            msg.setWindowTitle("TTSP Editor")
+            msg.setWindowTitle(LEGlobals.AppName)
             msg.setModal(True)
             msg.setText("Do you want to save changes to '%s' before closing?" % base.document.getMapName())
             msg.setInformativeText("Your changes will be lost if you don't save them.")
@@ -326,9 +219,16 @@ class LevelEditorApp(QtWidgets.QApplication):
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
 
-        self.setWindowIcon(QtGui.QIcon("resources/icons/ttsp-editor.ico"))
+        pixmap = QtGui.QPixmap("resources/icons/foundry-splash.png")
+        splash = QtWidgets.QSplashScreen(self.primaryScreen(), pixmap, QtCore.Qt.WindowStaysOnTopHint)
+        splash.show()
+        self.processEvents()
 
-        self.setStyle("fusion")
+        self.setWindowIcon(QtGui.QIcon("resources/icons/foundry.ico"))
+
+        style = QtWidgets.QStyleFactory.create("fusion")
+        self.setStyle(style)
+        accent = QtGui.QColor(255, 134, 59)
         dark_palette = QtGui.QPalette()
         dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(68, 68, 68))
         dark_palette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
@@ -339,13 +239,14 @@ class LevelEditorApp(QtWidgets.QApplication):
         dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(68, 68, 68))
         dark_palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
         dark_palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
-        dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(82, 175, 185))
-        dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(82, 175, 185))
-        dark_palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.white)
+        dark_palette.setColor(QtGui.QPalette.Link, accent)
+        dark_palette.setColor(QtGui.QPalette.Highlight, accent)
+        dark_palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
         dark_palette.setColor(QtGui.QPalette.Shadow, QtCore.Qt.black)
         self.setPalette(dark_palette)
 
         self.window = LevelEditorWindow()
+        splash.finish(self.window)
         self.window.show()
 
 class LevelEditor(BSPBase):
@@ -354,10 +255,12 @@ class LevelEditor(BSPBase):
 
         self.gsg = None
 
-        self.viewportTitle = ""
-        self.mapNameTitle = ""
-
         self.clickTrav = CollisionTraverser()
+
+        # All open documents.
+        self.documents = []
+        # The focused document.
+        self.document = None
 
         BSPBase.__init__(self)
 
@@ -376,9 +279,13 @@ class LevelEditor(BSPBase):
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
 
-        self.entityEdit = None
-
         base.setBackgroundColor(0, 0, 0)
+
+    def openDocument(self, filename):
+        doc = Document()
+        doc.open(filename)
+        self.documents.append(doc)
+        base.docTabs.setCurrentWidget(doc.page)
 
     def clickTraverse(self, np, handler, travRoot = None):
         self.clickTrav.addCollider(np, handler)
@@ -386,21 +293,6 @@ class LevelEditor(BSPBase):
             travRoot = self.render
         self.clickTrav.traverse(travRoot)
         self.clickTrav.removeCollider(np)
-
-    def setEditorWindowTitle(self, viewportTitle = None):
-        if viewportTitle is None:
-            viewportTitle = self.viewportTitle
-
-        mapName = self.document.getMapName()
-        if self.document.unsaved:
-            mapName += " *"
-
-        if len(viewportTitle):
-    	    self.qtApp.window.gameViewWind.setWindowTitle(mapName + " - " + viewportTitle)
-        else:
-            self.qtApp.window.gameViewWind.setWindowTitle(mapName)
-
-        self.viewportTitle = viewportTitle
 
     def snapToGrid(self, point):
         if GridSettings.GridSnap:
@@ -416,13 +308,14 @@ class LevelEditor(BSPBase):
         self.toolMgr = ToolManager()
         self.qtApp = LevelEditorApp()
         self.qtWindow = self.qtApp.window
-        self.qtApp.window.gameViewWind.addViewports()
-        self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)
-        self.qtApp.window.ui.actionToggleGrid.toggled.connect(self.__toggleGrid)
-        self.qtApp.window.ui.actionGridSnap.setChecked(GridSettings.GridSnap)
-        self.qtApp.window.ui.actionGridSnap.toggled.connect(self.__gridSnap)
-        self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
-        self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
+        # Open a blank document
+        self.openDocument(None)
+        #self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)
+        #self.qtApp.window.ui.actionToggleGrid.toggled.connect(self.__toggleGrid)
+        ##self.qtApp.window.ui.actionGridSnap.setChecked(GridSettings.GridSnap)
+        #self.qtApp.window.ui.actionGridSnap.toggled.connect(self.__gridSnap)
+        #self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
+        #self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
         self.adjustGridText()
         self.selectionMgr = SelectionManager()
         self.actionMgr = ActionManager()
@@ -430,10 +323,6 @@ class LevelEditor(BSPBase):
         self.modelBrowser = ModelBrowser(None)
         self.materialBrowser = MaterialBrowser(None)
         BSPBase.initialize(self)
-
-        # Open a blank document
-        self.document = Document()
-        self.document.open()
 
     def __gridSnap(self):
         GridSettings.GridSnap = not GridSettings.GridSnap

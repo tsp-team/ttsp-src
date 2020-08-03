@@ -51,11 +51,10 @@ class Solid(MapObject):
 
     def copy(self, generator):
         s = Solid(generator.getNextID())
-        s.generate()
         self.copyBase(s, generator)
         for face in self.faces:
             f = face.copy(generator)
-            f.solid = s
+            f.setSolid(s)
             s.faces.append(f)
         s.generateFaces()
         return s
@@ -172,10 +171,17 @@ class Solid(MapObject):
             if classify != PlaneClassification.Front:
                 backPlanes.append(face.getWorldPlane())
 
-        back = Solid.createFromIntersectingPlanes(backPlanes, generator)
-        front = Solid.createFromIntersectingPlanes(frontPlanes, generator)
+        back = Solid.createFromIntersectingPlanes(backPlanes, generator, False)
+        front = Solid.createFromIntersectingPlanes(frontPlanes, generator, False)
+        # copyBase() will set the transform to what we're copying from, but we already
+        # figured out a transform for the solids. Store the current transform so we can
+        # set it back.
+        bTrans = back.np.getTransform()
+        fTrans = front.np.getTransform()
         self.copyBase(back, generator)
         self.copyBase(front, generator)
+        back.np.setTransform(bTrans)
+        front.np.setTransform(fTrans)
 
         unionOfFaces = front.faces + back.faces
         for face in unionOfFaces:
@@ -191,6 +197,7 @@ class Solid(MapObject):
                     continue
                 face.material = orig.material.clone()
                 face.setMaterial(face.material.material)
+                face.alignTextureToFace()
                 break
             for face in front.faces:
                 classify = face.classifyAgainstPlane(orig.getWorldPlane())
@@ -198,15 +205,18 @@ class Solid(MapObject):
                     continue
                 face.material = orig.material.clone()
                 face.setMaterial(face.material.material)
+                face.alignTextureToFace()
                 break
 
-        for face in unionOfFaces:
-            face.calcTextureCoordinates(True)
+        back.generateFaces()
+        back.recalcBoundingBox()
+        front.generateFaces()
+        front.recalcBoundingBox()
 
         return [True, back, front]
 
     @staticmethod
-    def createFromIntersectingPlanes(planes, generator):
+    def createFromIntersectingPlanes(planes, generator, generateFaces = True):
         solid = Solid(generator.getNextID())
         for i in range(len(planes)):
             # Split the polygon by all the other planes
@@ -216,16 +226,13 @@ class Solid(MapObject):
                     poly.splitInPlace(planes[j])
 
             # The final polygon is the face
-            face = SolidFace(generator.getNextFaceID(), planes[i], solid)
+            face = SolidFace(generator.getNextFaceID(), Plane(planes[i]), solid)
             for i in range(len(poly.vertices)):
                 # Round vertices a bit for sanity
                 face.vertices.append(SolidVertex(LEUtils.roundVector(poly.vertices[i], 2), face))
-            face.alignTextureToWorld()
             solid.faces.append(face)
 
-        solid.generate()
         solid.setToSolidOrigin()
-        solid.generateFaces()
 
         # Ensure all faces point outwards
         origin = Point3(0)
@@ -235,6 +242,9 @@ class Solid(MapObject):
             if face.plane.distToPlane(origin) > 0:
                 face.flip()
 
-        solid.recalcBoundingBox()
+        if generateFaces:
+            solid.alignTexturesToFaces()
+            solid.generateFaces()
+            solid.recalcBoundingBox()
 
         return solid
