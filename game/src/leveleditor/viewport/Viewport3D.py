@@ -1,4 +1,5 @@
 from panda3d.core import WindowProperties, PerspectiveLens, NodePath, Fog, Vec4, Point3, LineSegs, TextNode, AntialiasAttrib
+from panda3d.core import Vec3
 
 from .Viewport import Viewport
 from .FlyCam import FlyCam
@@ -27,17 +28,25 @@ class Viewport3D(Viewport):
         Viewport.initialize(self)
         self.flyCam = FlyCam(self)
 
-        # Ugh
-        base.camera = self.camera
-        base.cam = self.cam
-        base.camNode = self.camNode
-        base.camLens = self.lens
-        base.win = self.win
-        base.gsg = self.win.getGsg()
+        self.lens.setFov(90)
+        self.lens.setNearFar(0.1, 10000)
 
         # Set a default camera position + angle
         self.camera.setPos(193, 247, 124)
         self.camera.setHpr(143, -18, 0)
+
+        from panda3d.core import DirectionalLight, AmbientLight
+        dlight = DirectionalLight('dlight')
+        dlight.setColor((0.35, 0.35, 0.35, 1))
+        dlnp = self.doc.render.attachNewNode(dlight)
+        direction = -Vec3(1, 2, 3).normalized()
+        dlight.setDirection(direction)
+        self.doc.render.setLight(dlnp)
+        self.dlnp = dlnp
+        alight = AmbientLight('alight')
+        alight.setColor((0.65, 0.65, 0.65, 1))
+        alnp = self.doc.render.attachNewNode(alight)
+        self.doc.render.setLight(alnp)
 
     def makeLens(self):
         return PerspectiveLens()

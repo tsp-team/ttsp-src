@@ -1,11 +1,21 @@
 from panda3d.core import WindowProperties, NativeWindowHandle, NodePath
 from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, CollisionTraverser
 from panda3d.core import TextNode, Filename, KeyboardButton, ButtonRegistry
-from panda3d.core import CullBinManager
+from panda3d.core import CullBinManager, GraphicsEngine, GraphicsPipeSelection
+from panda3d.core import TransformState, RenderState, DataGraphTraverser
+from panda3d.core import ClockObject, TrueClock
+from panda3d.direct import throwNewFrame
+
+import builtins
 
 from direct.showbase.DirectObject import DirectObject
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.task.TaskManagerGlobal import taskMgr
+from direct.showbase.MessengerGlobal import messenger
+from direct.showbase.EventManagerGlobal import eventMgr
 
-from src.coginvasion.base.BSPBase import BSPBase
+from src.coginvasion.base.CogInvasionLoader import CogInvasionLoader
+
 from src.leveleditor.viewport.QuadSplitter import QuadSplitter
 from src.leveleditor.viewport.Viewport2D import Viewport2D
 from src.leveleditor.viewport.Viewport3D import Viewport3D
@@ -249,11 +259,63 @@ class LevelEditorApp(QtWidgets.QApplication):
         splash.finish(self.window)
         self.window.show()
 
-class LevelEditor(BSPBase):
+class LevelEditor(DirectObject):
+    notify = directNotify.newCategory("Foundry")
 
     def __init__(self):
+        DirectObject.__init__(self)
 
-        self.gsg = None
+        ###################################################################
+        # Minimal emulation of ShowBase glue code. Note we're not using
+        # ShowBase because there's too much going on in there that assumes
+        # too much (one camera, one lens, one aspect2d, lots of bloat).
+
+        self.graphicsEngine = GraphicsEngine.getGlobalPtr()
+        self.pipe = GraphicsPipeSelection.getGlobalPtr().makeDefaultPipe()
+        if not self.pipe:
+            self.notify.error("No graphics pipe is available!")
+            return
+
+        self.taskMgr = taskMgr
+        self.eventMgr = eventMgr
+        builtins.eventMgr = self.eventMgr
+
+        self.globalClock = ClockObject.getGlobalClock()
+        # Since we have already started up a TaskManager, and probably
+        # a number of tasks; and since the TaskManager had to use the
+        # TrueClock to tell time until this moment, make sure the
+        # globalClock object is exactly in sync with the TrueClock.
+        trueClock = TrueClock.getGlobalPtr()
+        self.globalClock.setRealTime(trueClock.getShortTime())
+        self.globalClock.tick()
+        builtins.globalClock = self.globalClock
+
+        self.loader = CogInvasionLoader(self)
+        self.graphicsEngine.setDefaultLoader(self.loader.loader)
+        builtins.loader = self.loader
+
+        self.dgTrav = DataGraphTraverser()
+
+        self.taskMgr.add(self.__gbcLoop, "garbageCollectStates", sort = 46)
+        self.taskMgr.add(self.__dataLoop, "dataLoop", sort = -50)
+        self.taskMgr.add(self.__igLoop, "igLoop", sort = 50)
+
+        self.dataRoot = NodePath("data")
+        self.hidden = NodePath("hidden")
+
+        self.aspect2d = NodePath("aspect2d")
+        builtins.aspect2d = self.aspect2d
+
+        self.messenger = messenger
+        builtins.messenger = self.messenger
+
+        builtins.base = self
+        builtins.taskMgr = self.taskMgr
+        builtins.hidden = self.hidden
+
+        self.eventMgr.restart()
+
+        ###################################################################
 
         self.clickTrav = CollisionTraverser()
 
@@ -262,24 +324,23 @@ class LevelEditor(BSPBase):
         # The focused document.
         self.document = None
 
-        BSPBase.__init__(self)
-
         TextNode.setDefaultFont(loader.loadFont("resources/models/fonts/consolas.ttf"))
 
-        from panda3d.core import DirectionalLight, AmbientLight
-        dlight = DirectionalLight('dlight')
-        dlight.setColor((0.35, 0.35, 0.35, 1))
-        dlnp = render.attachNewNode(dlight)
-        direction = -Vec3(1, 2, 3).normalized()
-        dlight.setDirection(direction)
-        render.setLight(dlnp)
-        self.dlnp = dlnp
-        alight = AmbientLight('alight')
-        alight.setColor((0.65, 0.65, 0.65, 1))
-        alnp = render.attachNewNode(alight)
-        render.setLight(alnp)
+        self.initialize()
 
-        base.setBackgroundColor(0, 0, 0)
+    def __gbcLoop(self, task):
+        TransformState.garbageCollect()
+        RenderState.garbageCollect()
+        return task.cont
+
+    def __dataLoop(self, task):
+        self.dgTrav.traverse(self.dataRoot.node())
+        return task.cont
+
+    def __igLoop(self, task):
+        self.graphicsEngine.renderFrame()
+        throwNewFrame()
+        return task.cont
 
     def openDocument(self, filename):
         doc = Document()
@@ -304,8 +365,6 @@ class LevelEditor(BSPBase):
         self.loader.mountMultifile("resources/mod.mf")
 
         self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
-        self.viewportMgr = ViewportManager()
-        self.toolMgr = ToolManager()
         self.qtApp = LevelEditorApp()
         self.qtWindow = self.qtApp.window
         # Open a blank document
@@ -317,12 +376,11 @@ class LevelEditor(BSPBase):
         #self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
         #self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
         self.adjustGridText()
-        self.selectionMgr = SelectionManager()
-        self.actionMgr = ActionManager()
         self.brushMgr = BrushManager()
         self.modelBrowser = ModelBrowser(None)
         self.materialBrowser = MaterialBrowser(None)
-        BSPBase.initialize(self)
+
+        self.brushMgr.addBrushes()
 
     def __gridSnap(self):
         GridSettings.GridSnap = not GridSettings.GridSnap
@@ -345,14 +403,6 @@ class LevelEditor(BSPBase):
     def adjustGridText(self):
         text = "Snap: %s Grid: %i" % ("On" if GridSettings.GridSnap else "Off", GridSettings.DefaultStep)
         self.qtApp.window.gridSnapLabel.setText(text)
-
-    def initStuff(self):
-        BSPBase.initStuff(self)
-        self.camLens.setFov(90.0)
-        self.camLens.setNearFar(0.1, 10000)
-
-        self.brushMgr.addBrushes()
-        self.toolMgr.addTools()
 
     def run(self):
         self.running = True

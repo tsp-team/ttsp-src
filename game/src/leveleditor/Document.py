@@ -1,8 +1,11 @@
-from panda3d.core import UniqueIdAllocator, CKeyValues, NodePath
+from panda3d.core import UniqueIdAllocator, CKeyValues, NodePath, LightRampAttrib
+from panda3d.bsp import BSPShaderGenerator
 
 import builtins
 
 from direct.showbase.DirectObject import DirectObject
+
+from src.coginvasion.globals import ShaderGlobals
 
 from src.leveleditor.mapobject.World import World
 from src.leveleditor.mapobject.Entity import Entity
@@ -12,6 +15,10 @@ from src.leveleditor.viewport.QuadSplitter import QuadSplitter
 from src.leveleditor.viewport.Viewport2D import Viewport2D
 from src.leveleditor.viewport.Viewport3D import Viewport3D
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D, VIEWPORT_2D_FRONT, VIEWPORT_2D_SIDE, VIEWPORT_2D_TOP
+from src.leveleditor.selection.SelectionManager import SelectionManager
+from src.leveleditor.viewport.ViewportManager import ViewportManager
+from src.leveleditor.actions.ActionManager import ActionManager
+from src.leveleditor.tools.ToolManager import ToolManager
 
 from PyQt5 import QtWidgets
 
@@ -36,7 +43,9 @@ class DocumentPage(QtWidgets.QWidget):
         self.viewports = {}
         self.splitter = QuadSplitter(self)
 
-        self.addViewport(Viewport3D(VIEWPORT_3D, self.splitter, self.doc), 0, 0)
+        vp3d = Viewport3D(VIEWPORT_3D, self.splitter, self.doc)
+        self.addViewport(vp3d, 0, 0)
+        self.doc.gsg = vp3d.win.getGsg()
         self.addViewport(Viewport2D(VIEWPORT_2D_FRONT, self.splitter, self.doc), 1, 0)
         self.addViewport(Viewport2D(VIEWPORT_2D_SIDE, self.splitter, self.doc), 1, 1)
         self.addViewport(Viewport2D(VIEWPORT_2D_TOP, self.splitter, self.doc), 0, 1)
@@ -59,10 +68,21 @@ class Document(DirectObject):
         self.world = None
         self.isOpen = False
         self.page = None
+        self.gsg = None
+        self.shaderGenerator = None
+
+        self.actionMgr = None
+        self.selectionMgr = None
+        self.viewportMgr = None
+        self.toolMgr = None
 
     # Called when the document's tab has been switched into.
     def activated(self):
         base.render = self.render
+        base.viewportMgr = self.viewportMgr
+        base.toolMgr = self.toolMgr
+        base.selectionMgr = self.selectionMgr
+        base.actionMgr = self.actionMgr
         builtins.render = self.render
 
     # Called when the document's tab has been switched out of.
@@ -112,9 +132,9 @@ class Document(DirectObject):
         self.world = World(self.getNextID())
         self.world.reparentTo(self.render)
         self.isOpen = True
-        if base.toolMgr.selectTool:
-            # Open with the select tool by default
-            base.toolMgr.selectTool.toggle()
+        #if base.toolMgr.selectTool:
+        #    # Open with the select tool by default
+        #    base.toolMgr.selectTool.toggle()
         self.updateTabText()
 
     def updateTabText(self):
@@ -140,10 +160,29 @@ class Document(DirectObject):
         for i in range(kv.getNumChildren()):
             self.r_open(kv.getChild(i), obj)
 
+    def createShaderGenerator(self):
+        vp = self.page.viewports[VIEWPORT_3D]
+        shgen = BSPShaderGenerator(vp.win, self.gsg, vp.camera, self.render)
+        self.gsg.setShaderGenerator(shgen)
+        for shader in ShaderGlobals.getShaders():
+            shgen.addShader(shader)
+        self.shaderGenerator = shgen
+
     def open(self, filename = None):
         self.render = NodePath("docRender")
+        self.render.setAttrib(LightRampAttrib.makeIdentity())
+        self.render.setShaderAuto()
+
+        self.viewportMgr = ViewportManager()
+        self.toolMgr = ToolManager()
+        self.selectionMgr = SelectionManager()
+        self.actionMgr = ActionManager()
+
         # Create the page that the document is viewed in.
         self.page = DocumentPage(self)
+        self.createShaderGenerator()
+
+        self.toolMgr.addTools()
 
         # if filename is none, this is a new document/map
         if not filename:
@@ -160,7 +199,7 @@ class Document(DirectObject):
         self.filename = filename
         self.isOpen = True
         # Open with the select tool by default
-        base.toolMgr.selectTool.toggle()
+        #base.toolMgr.selectTool.toggle()
         self.updateTabText()
 
     def markSaved(self):

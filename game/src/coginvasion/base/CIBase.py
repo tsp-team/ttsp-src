@@ -58,6 +58,8 @@ class CIBase(BSPBase):
 
         BSPBase.__init__(self)
 
+        self.taskMgr.add(self.updateShadersAndPostProcess, 'CIBase.updateShadersAndPostProcess', 47)
+
         from direct.distributed.ClockDelta import globalClockDelta
         builtins.globalClockDelta = globalClockDelta
 
@@ -185,7 +187,7 @@ class CIBase(BSPBase):
         #self.accept('o', self.oobeCull)
         #self.accept('c', self.reportCam)
 
-        
+
         self.taskMgr.add(self.__update3DAudio, 'CIBase.update3DAudio', 48)
 
     def initialize(self):

@@ -1,11 +1,11 @@
 from panda3d.core import CullBinManager, NodePath, OmniBoundingVolume, WindowProperties, LightRampAttrib
-from panda3d.bsp import BSPShaderGenerator, VertexLitGenericSpec, LightmappedGenericSpec, UnlitGenericSpec, UnlitNoMatSpec, CSMRenderSpec, SkyBoxSpec, DecalModulateSpec
+from panda3d.bsp import BSPShaderGenerator
 
 from direct.showbase.ShowBase import ShowBase
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from src.coginvasion.base.CogInvasionLoader import CogInvasionLoader
-from src.coginvasion.globals import CIGlobals
+from src.coginvasion.globals import CIGlobals, ShaderGlobals
 from src.coginvasion.base.CIPostProcess import CIPostProcess
 
 import builtins
@@ -29,8 +29,6 @@ class BSPBase(ShowBase):
         attribRegistry.setSlotSort(BSPMaterialAttrib.getClassSlot(), 0)
         attribRegistry.setSlotSort(ShaderAttrib.getClassSlot(), 1)
         attribRegistry.setSlotSort(TransparencyAttrib.getClassSlot(), 2)
-
-        self.taskMgr.add(self.updateShadersAndPostProcess, 'CIBase.updateShadersAndPostProcess', 47)
 
         self.bloomToggle = False
         self.hdrToggle = False
@@ -63,20 +61,8 @@ class BSPBase(ShowBase):
     def initStuff(self):
         self.shaderGenerator = BSPShaderGenerator(self.win, self.win.getGsg(), self.camera, self.render)
         self.win.getGsg().setShaderGenerator(self.shaderGenerator)
-        vlg = VertexLitGenericSpec()    # models
-        ulg = UnlitGenericSpec()        # ui elements, particles, etc
-        lmg = LightmappedGenericSpec()  # brushes, displacements
-        unm = UnlitNoMatSpec()          # when there's no material
-        csm = CSMRenderSpec()           # renders the shadow scene for CSM
-        skb = SkyBoxSpec()              # renders the skybox onto faces
-        dcm = DecalModulateSpec()       # blends decals
-        self.shaderGenerator.addShader(vlg)
-        self.shaderGenerator.addShader(ulg)
-        self.shaderGenerator.addShader(unm)
-        self.shaderGenerator.addShader(lmg)
-        self.shaderGenerator.addShader(csm)
-        self.shaderGenerator.addShader(skb)
-        self.shaderGenerator.addShader(dcm)
+        for shader in ShaderGlobals.getShaders():
+            self.shaderGenerator.addShader(shader)
 
         self.shaderGenerator.setShaderQuality(CIGlobals.getSettingsMgr().getSetting("shaderquality").getValue())
 

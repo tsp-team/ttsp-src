@@ -33,7 +33,7 @@ class ModelBrowser(AssetBrowser):
         fbprops.setRgbaBits(8, 8, 8, 0)
         flags = (core.GraphicsPipe.BFRefuseWindow | core.GraphicsPipe.BFSizeSquare)
         self.buffer = base.graphicsEngine.makeOutput(base.pipe, "modelBrowserBuffer", 0,
-            fbprops, props, flags, base.gsg, None)
+            fbprops, props, flags, None, None)
         self.buffer.setClearColor(CIGlobals.vec3GammaToLinear(core.Vec4(82 / 255.0, 82 / 255.0, 82 / 255.0, 1.0)))
         self.buffer.setActive(False)
 

@@ -146,7 +146,7 @@ class Viewport(QtWidgets.QWidget, DirectObject):
             base.pipe, "viewportOutput", 0,
             FrameBufferProperties.getDefault(),
             winprops, (GraphicsPipe.BFFbPropsOptional | GraphicsPipe.BFRequireWindow),
-            base.gsg
+            self.doc.gsg
         )
 
         self.qtWindow = QtGui.QWindow.fromWinId(output.getWindowHandle().getIntHandle())
@@ -202,7 +202,7 @@ class Viewport(QtWidgets.QWidget, DirectObject):
 
         self.gizmo = ViewportGizmo(self)
 
-        base.viewportMgr.addViewport(self)
+        self.doc.viewportMgr.addViewport(self)
 
         self.makeGrid()
 
@@ -486,6 +486,8 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         if self.is2D():
             zoomFactor = (1.0 / self.zoom) * 100.0
             self.lens.setFilmSize(zoomFactor * aspectRatio, zoomFactor)
+        else:
+            self.lens.setAspectRatio(aspectRatio)
 
         if aspectRatio != self.__oldAspectRatio:
             self.__oldAspectRatio = aspectRatio
