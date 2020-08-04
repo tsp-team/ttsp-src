@@ -125,7 +125,7 @@ class TransformWidget(NodePath):
         self.hide(~VIEWPORT_3D_MASK)
 
         self.vp = None
-        for vp in base.viewportMgr.viewports:
+        for vp in self.tool.doc.viewportMgr.viewports:
             if vp.is3D():
                 self.vp = vp
                 break
@@ -155,7 +155,7 @@ class TransformWidget(NodePath):
         for _, axis in self.axes.items():
             axis.update()
 
-        if self.tool.mouseIsDown or base.viewportMgr.activeViewport != self.vp:
+        if self.tool.mouseIsDown or self.tool.doc.viewportMgr.activeViewport != self.vp:
             return
 
         self.setActiveAxis(None)
@@ -176,11 +176,11 @@ class TransformWidget(NodePath):
 # Inherted by MoveTool, RotateTool, and ScaleTool
 class BaseTransformTool(SelectTool):
 
-    def __init__(self):
-        SelectTool.__init__(self)
+    def __init__(self, mgr):
+        SelectTool.__init__(self, mgr)
         self.hasWidgets = False
         self.widget = None
-        self.toolRoot = base.render.attachNewNode("xformToolRoot")
+        self.toolRoot = self.doc.render.attachNewNode("xformToolRoot")
         self.toolVisRoot = self.toolRoot.attachNewNode("xformVisRoot")
         self.toolVisRoot.setTransparency(True)
         self.toolVisRoot.setColorScale(1, 1, 1, 0.5, 1)
@@ -233,7 +233,7 @@ class BaseTransformTool(SelectTool):
         self.showText()
 
     def setBoxToVisRoot(self):
-        self.toolVisRoot.calcTightBounds(self.state.boxStart, self.state.boxEnd, base.render)
+        self.toolVisRoot.calcTightBounds(self.state.boxStart, self.state.boxEnd, self.doc.render)
         self.state.action = BoxAction.Drawn
         self.resizeBoxDone()
         self.showBox()
@@ -460,13 +460,16 @@ class BaseTransformTool(SelectTool):
         self.widget.disable()
         self.hasWidgets = False
 
-    def enable(self):
-        SelectTool.enable(self)
+    def activate(self):
+        SelectTool.activate(self)
         # The transform may have been changed using the object properties panel.
         # Intercept this event to update our gizmo and stuff.
         self.accept('selectedObjectTransformChanged', self.handleSelectedObjectTransformChanged)
         # Same with bounds
         self.accept('selectedObjectBoundsChanged', self.handleSelectedObjectTransformChanged)
+
+    def enable(self):
+        SelectTool.enable(self)
         if base.selectionMgr.hasSelectedObjects() \
             and base.selectionMgr.isTransformAllowed(self.transformType):
             self.enableWidget()

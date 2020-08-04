@@ -7,18 +7,19 @@ from src.leveleditor.actions.ActionGroup import ActionGroup
 from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
 from src.leveleditor.selection.SelectionType import SelectionType
 from src.leveleditor.grid.GridSettings import GridSettings
+from src.leveleditor.menu.KeyBind import KeyBind
 
 from src.leveleditor import MaterialPool
 
 class BlockTool(BoxTool):
 
     Name = "Block"
-    ToolTip = "Block Tool [SHIFT+S]"
-    Shortcut = "shift+s"
+    KeyBind = KeyBind.BlockTool
+    ToolTip = "Block tool"
     Icon = "resources/icons/editor-block.png"
 
-    def __init__(self):
-        BoxTool.__init__(self)
+    def __init__(self, mgr):
+        BoxTool.__init__(self, mgr)
         self.lastBox = None
 
     def leftMouseDownToDraw(self):

@@ -9,6 +9,7 @@ from src.leveleditor.math.Ray import Ray
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 from src.leveleditor.actions.ActionGroup import ActionGroup
 from src.leveleditor.selection.SelectionType import SelectionModeTransform
+from src.leveleditor.menu.KeyBind import KeyBind
 
 from .BaseTransformTool import BaseTransformTool, Rollover, Ready, Down, Global, \
     Local, TransformWidget, TransformWidgetAxis
@@ -46,12 +47,12 @@ class MoveWidget(TransformWidget):
 class MoveTool(BaseTransformTool):
 
     Name = "Move"
-    ToolTip = "Move Tool [SHIFT+W]"
-    Shortcut = "shift+w"
+    ToolTip = "Move Tool"
+    KeyBind = KeyBind.MoveTool
     Icon = "resources/icons/editor-move.png"
 
-    def __init__(self):
-        BaseTransformTool.__init__(self)
+    def __init__(self, mgr):
+        BaseTransformTool.__init__(self, mgr)
         self.transformType = SelectionModeTransform.Translate
 
     def createWidget(self):

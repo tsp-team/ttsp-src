@@ -11,6 +11,8 @@ from src.leveleditor.actions.Clip import Clip
 from src.leveleditor.math.Plane import Plane
 from src.leveleditor import LEGlobals
 from src.leveleditor.IDGenerator import IDGenerator
+from src.leveleditor.menu.KeyBind import KeyBind
+from src.leveleditor.menu import KeyBinds
 
 from enum import IntEnum
 
@@ -53,9 +55,9 @@ class ClipToolViewport2D:
         self.hPoint3 = self.makeHandle()
 
     def enable(self):
-        self.hPoint1.reparentTo(base.render)
-        self.hPoint2.reparentTo(base.render)
-        self.hPoint3.reparentTo(base.render)
+        self.hPoint1.reparentTo(self.tool.doc.render)
+        self.hPoint2.reparentTo(self.tool.doc.render)
+        self.hPoint3.reparentTo(self.tool.doc.render)
 
     def disable(self):
         self.hPoint1.reparentTo(NodePath())
@@ -91,20 +93,22 @@ class ClipTool(BaseTool):
 
     Name = "Clip"
     Icon = "resources/icons/editor-slice.png"
-    Shortcut = "shift+x"
-    ToolTip = "Clip Tool [SHIFT+X]"
+    KeyBind = KeyBind.ClipTool
+    ToolTip = "Clip Tool"
 
-    def __init__(self):
+    def __init__(self, mgr):
         # For this node, we will instance the objects we are slicing to this node
         # then apply a ClipPlaneAttrib to the node with the plane that the user
         # defined
+
+        BaseTool.__init__(self, mgr)
 
         # (Original solid, front, back)
         self.tempSolids = []
         self.lines2D = None
 
         self.vp2Ds = []
-        for vp in base.viewportMgr.viewports:
+        for vp in self.doc.viewportMgr.viewports:
             if vp.is2D():
                 self.vp2Ds.append(ClipToolViewport2D(self, vp))
 
@@ -137,7 +141,7 @@ class ClipTool(BaseTool):
         segs.drawTo(self.point3)
         segs.moveTo(self.point3)
         segs.drawTo(self.point1)
-        self.lines2D = base.render.attachNewNode(segs.create())
+        self.lines2D = self.doc.render.attachNewNode(segs.create())
         self.lines2D.setBin("fixed", LEGlobals.BoxSort)
         self.lines2D.setDepthWrite(False)
         self.lines2D.setDepthTest(False)
@@ -156,15 +160,17 @@ class ClipTool(BaseTool):
         self.disable2DPoints()
         self.disable2DLines()
 
-    def enable(self):
-        BaseTool.enable(self)
+    def activate(self):
+        BaseTool.activate(self)
         self.accept('mouse1', self.mouseDown)
         self.accept('mouse1-up', self.mouseUp)
         self.accept('mouseMoved', self.mouseMoved)
         self.accept('control', self.controlDown)
-        self.accept('enter', self.confirmClip)
-        self.accept('escape', self.doResetKeepSide)
-        self.accept('shift-x', self.cycleClipSide)
+        self.accept(KeyBinds.getPandaShortcut(KeyBind.Confirm), self.confirmClip)
+        self.accept(KeyBinds.getPandaShortcut(KeyBind.Cancel), self.doResetKeepSide)
+
+    def toolTriggered(self):
+        self.cycleClipSide()
 
     def doResetKeepSide(self):
         side = ClipSide(self.side)
@@ -305,8 +311,8 @@ class ClipTool(BaseTool):
                 continue
             ret, back, front = obj.split(plane, tempGen, True)
             if ret:
-                front.reparentTo(base.render)
-                back.reparentTo(base.render)
+                front.reparentTo(self.doc.render)
+                back.reparentTo(self.doc.render)
                 self.tempSolids.append((obj, front, back))
                 # Hide the original solid
                 obj.np.stash()

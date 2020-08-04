@@ -33,6 +33,8 @@ from src.leveleditor.ui import About
 from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
 from src.leveleditor.ui.ModelBrowser import ModelBrowser
 from src.leveleditor.ui.MaterialBrowser import MaterialBrowser
+from src.leveleditor.menu.MenuManager import MenuManager
+from src.leveleditor.menu.KeyBind import KeyBind
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtWidgets import QMessageBox
@@ -60,7 +62,6 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
 
         self.setWindowTitle(LEGlobals.AppName)
 
-        base.topBar = self.ui.topBar
         base.leftBar = self.ui.leftBar
         base.statusBar = self.ui.statusbar
 
@@ -102,6 +103,14 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
             selectionModeGroup.addAction(action)
             action.toggled.connect(lambda checked, mode=mode: self.__maybeSetSelelectionMode(checked, mode))
         """
+
+        self.accept('actionTriggered', self.__onActionTriggered)
+
+    def __onActionTriggered(self, keybind, checked):
+        if keybind == KeyBind.Undo:
+            self.__undo()
+        elif keybind == KeyBind.Redo:
+            self.__redo()
 
     def __docTabChanged(self, index):
         if base.document:
@@ -196,13 +205,10 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         if len(selectedFilename[0]) == 0:
             # Save as was cancelled
             return False
-        # Close the current document
-        if not self.__close(False):
-            return False
         # Convert to a panda filename
         filename = Filename.fromOsSpecific(selectedFilename[0])
         # Open it!
-        base.document.open(filename)
+        base.openDocument(filename)
         return True
 
     def __showAbout(self):
@@ -346,6 +352,8 @@ class LevelEditor(DirectObject):
         doc = Document()
         doc.open(filename)
         self.documents.append(doc)
+        base.docTabs.addTab(doc.page, "")
+        doc.updateTabText()
         base.docTabs.setCurrentWidget(doc.page)
 
     def clickTraverse(self, np, handler, travRoot = None):
@@ -367,6 +375,9 @@ class LevelEditor(DirectObject):
         self.fgd = FgdParse('resources/phase_14/etc/cio.fgd')
         self.qtApp = LevelEditorApp()
         self.qtWindow = self.qtApp.window
+        self.menuMgr = MenuManager()
+        self.menuMgr.addMenuItems()
+        ToolManager.addToolActions()
         # Open a blank document
         self.openDocument(None)
         #self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)

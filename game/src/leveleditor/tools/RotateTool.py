@@ -3,6 +3,7 @@ from src.leveleditor.selection.SelectionType import SelectionModeTransform
 from src.leveleditor import LEUtils
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 from src.leveleditor.actions.ActionGroup import ActionGroup
+from src.leveleditor.menu.KeyBind import KeyBind
 
 from panda3d.core import LineSegs, Vec3, AntialiasAttrib, LPlane, Point3
 
@@ -35,12 +36,12 @@ class RotateWidget(TransformWidget):
 class RotateTool(BaseTransformTool):
 
     Name = "Rotate"
-    ToolTip = "Rotate Tool [SHIFT+E]"
-    Shortcut = "shift+e"
+    ToolTip = "Rotate Tool"
+    KeyBind = KeyBind.RotateTool
     Icon = "resources/icons/editor-rotate.png"
 
-    def __init__(self):
-        BaseTransformTool.__init__(self)
+    def __init__(self, mgr):
+        BaseTransformTool.__init__(self, mgr)
         self.transformType = SelectionModeTransform.Rotate
 
     def createWidget(self):
@@ -72,7 +73,7 @@ class RotateTool(BaseTransformTool):
         worldMouse = vp.viewportToWorld(vp.getMouse())
 
         intersection = Point3()
-        ret = plane.intersectsLine(intersection, vp.cam.getPos(base.render), worldMouse)
+        ret = plane.intersectsLine(intersection, vp.cam.getPos(self.doc.render), worldMouse)
         if ret:
             # Project intersection point onto circle's circumference.
             point = self.getGizmoOrigin() + (intersection - self.getGizmoOrigin()).normalized()

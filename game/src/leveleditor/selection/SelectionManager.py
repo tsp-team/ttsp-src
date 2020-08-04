@@ -22,8 +22,9 @@ Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
 
 class SelectionManager(DirectObject):
 
-    def __init__(self):
+    def __init__(self, doc):
         DirectObject.__init__(self)
+        self.doc = doc
         self.selectedObjects = []
         self.selectionMins = Point3()
         self.selectionMaxs = Point3()

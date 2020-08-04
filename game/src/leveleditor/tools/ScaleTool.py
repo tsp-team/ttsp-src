@@ -5,6 +5,7 @@ from .BaseTransformTool import BaseTransformTool, TransformWidget, TransformWidg
 from src.leveleditor.selection.SelectionType import SelectionModeTransform
 from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 from src.leveleditor.actions.ActionGroup import ActionGroup
+from src.leveleditor.menu.KeyBind import KeyBind
 
 class ScaleWidgetAxis(TransformWidgetAxis):
 
@@ -34,12 +35,12 @@ class ScaleWidget(TransformWidget):
 class ScaleTool(BaseTransformTool):
 
     Name = "Scale"
-    ToolTip = "Scale Tool [SHIFT+R]"
-    Shortcut = "shift+r"
+    ToolTip = "Scale Tool"
+    KeyBind = KeyBind.ScaleTool
     Icon = "resources/icons/editor-scale.png"
 
-    def __init__(self):
-        BaseTransformTool.__init__(self)
+    def __init__(self, mgr):
+        BaseTransformTool.__init__(self, mgr)
         self.transformType = SelectionModeTransform.Scale
         self.startBoxSize = Vec3(0)
         self.initialBoxStart = Vec3(0)

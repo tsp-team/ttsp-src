@@ -22,8 +22,9 @@ class ActionEntry:
 
 class ActionManager(DirectObject):
 
-    def __init__(self):
+    def __init__(self, doc):
         DirectObject.__init__(self)
+        self.doc = doc
         self.historyIndex = -1
         self.savedIndex = -1
         self.stateChangeIndex = -1
@@ -47,9 +48,9 @@ class ActionManager(DirectObject):
 
     def updateSaveStatus(self):
         if self.stateChangeIndex != self.savedIndex:
-            base.document.markUnsaved()
+            self.doc.markUnsaved()
         else:
-            base.document.markSaved()
+            self.doc.markSaved()
 
     def undo(self):
         # Anything to undo?

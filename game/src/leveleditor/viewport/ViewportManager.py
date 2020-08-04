@@ -6,14 +6,21 @@ from src.coginvasion.base import ScreenshotHandler
 
 class ViewportManager(DirectObject):
 
-    def __init__(self):
+    def __init__(self, doc):
         DirectObject.__init__(self)
+        self.doc = doc
         self.viewports = []
         self.activeViewport = None
         self.lastMouse = None
-        base.taskMgr.add(self.__update, 'updateViewports')
 
-        base.taskMgr.add(self.__draw, 'drawViewports', sort = 30)
+        self.accept('documentActivated', self.__onDocActivated)
+        self.accept('documentDeactivated', self.__onDocDeactivated)
+
+    def __onDocActivated(self, doc):
+        if doc != self.doc:
+            return
+
+        self.tickTask = base.taskMgr.add(self.__update, 'updateViewports')
 
         self.accept('mouse1', self.m1Down)
         self.accept('mouse1-up', self.m1Up)
@@ -24,6 +31,28 @@ class ViewportManager(DirectObject):
         self.accept('wheel_down', self.wheelDown)
         self.accept('wheel_up', self.wheelUp)
         self.accept('f9', self.screenshot)
+
+        for vp in self.viewports:
+            vp.enable()
+
+    def __onDocDeactivated(self, doc):
+        if doc != self.doc:
+            return
+
+        self.tickTask.remove()
+
+        self.ignore('mouse1')
+        self.ignore('mouse1-up')
+        self.ignore('mouse2')
+        self.ignore('mouse2-up')
+        self.ignore('mouse3')
+        self.ignore('mouse3-up')
+        self.ignore('wheel_down')
+        self.ignore('wheel_up')
+        self.ignore('f9')
+
+        for vp in self.viewports:
+            vp.disable()
 
     def screenshot(self):
         if self.activeViewport:
@@ -60,11 +89,6 @@ class ViewportManager(DirectObject):
     def wheelUp(self):
         if self.activeViewport:
             self.activeViewport.wheelUp()
-
-    def __draw(self, task):
-        for vp in self.viewports:
-            vp.draw()
-        return task.cont
 
     def __update(self, task):
         active = None

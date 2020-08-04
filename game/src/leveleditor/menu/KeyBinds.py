@@ -36,8 +36,8 @@ KeyBinds = [
     KeyBindDef("Select mode - objects", KeyBind.SelectObjects, "ctrl+shift+o"),
     KeyBindDef("Select mode - vertices", KeyBind.SelectVertices, "ctrl+shift+v"),
 
-    KeyBindDef("Confirm action", KeyBind.ConfirmAction, "enter"),
-    KeyBindDef("Cancel action", KeyBind.CancelAction, "escape"),
+    KeyBindDef("Confirm action", KeyBind.Confirm, "enter"),
+    KeyBindDef("Cancel action", KeyBind.Cancel, "escape"),
 
     KeyBindDef("Toggle 3D mouse look", KeyBind.FlyCam, "z"),
 
@@ -57,10 +57,18 @@ KeyBinds = [
     KeyBindDef("3D view - look right", KeyBind.LookRight3DView, "arrow_right"),
 
     KeyBindDef("Switch to next document", KeyBind.NextDocument, "tab"),
-    KeyBindDef("Switch to previous document", KeyBind.PrevDocument, "shift+tab")
+    KeyBindDef("Switch to previous document", KeyBind.PrevDocument, "shift+tab"),
+
+    KeyBindDef("Exit the application", KeyBind.Exit, "alt+f4")
 ]
 
 KeyBindsByID = {x.id: x for x in KeyBinds}
 
 def getShortcut(id):
     return KeyBindsByID[id].shortcut
+
+def getPandaShortcut(id):
+    return KeyBindsByID[id].asPandaShortcut()
+
+def getQtShortcut(id):
+    return KeyBindsByID[id].asQtShortcut()

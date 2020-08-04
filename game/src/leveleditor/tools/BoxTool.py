@@ -12,6 +12,8 @@ from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.Rect import Rect
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor import LEGlobals
+from src.leveleditor.menu import KeyBinds
+from src.leveleditor.menu.KeyBind import KeyBind
 
 from enum import IntEnum
 import py_linq
@@ -153,15 +155,15 @@ class BoxToolViewport:
         self.leftText.node().setText("%.1f" % height)
 
     def showText(self):
-        self.topText.reparentTo(base.render)
-        self.leftText.reparentTo(base.render)
+        self.topText.reparentTo(self.tool.doc.render)
+        self.leftText.reparentTo(self.tool.doc.render)
 
     def hideText(self):
         self.topText.reparentTo(NodePath())
         self.leftText.reparentTo(NodePath())
 
     def showHandles(self):
-        self.handles.np.reparentTo(base.render)
+        self.handles.np.reparentTo(self.tool.doc.render)
 
     def hideHandles(self):
         self.handles.np.reparentTo(NodePath())
@@ -252,8 +254,8 @@ class BoxTool(BaseTool):
 
         return None
 
-    def __init__(self):
-        BaseTool.__init__(self)
+    def __init__(self, mgr):
+        BaseTool.__init__(self, mgr)
         self.handleWidth = 0.9
         self.handleOffset = 1.6
         self.handleType = HandleType.Square
@@ -261,7 +263,7 @@ class BoxTool(BaseTool):
         self.suppressBox = False
 
         self.vps = []
-        for vp in base.viewportMgr.viewports:
+        for vp in self.doc.viewportMgr.viewports:
             if vp.is2D():
                 self.vps.append(BoxToolViewport(self, vp))
 
@@ -291,7 +293,7 @@ class BoxTool(BaseTool):
             vp.showText()
 
     def showBox(self):
-        self.box.np.reparentTo(base.render)
+        self.box.np.reparentTo(self.doc.render)
 
     def hideBox(self):
         self.box.np.reparentTo(NodePath())
@@ -314,17 +316,15 @@ class BoxTool(BaseTool):
 
         # TODO: mediator.selectionBoxChanged
 
-    def enable(self):
-        BaseTool.enable(self)
+    def activate(self):
+        BaseTool.activate(self)
         self.accept('mouse1', self.mouseDown)
         self.accept('mouse1-up', self.mouseUp)
-        self.accept('control-mouse1', self.mouseDown)
-        self.accept('control-mouse1-up', self.mouseUp)
         self.accept('mouseMoved', self.mouseMove)
         self.accept('mouseEnter', self.mouseEnter)
         self.accept('mouseExit', self.mouseExit)
-        self.accept('enter', self.enterDown)
-        self.accept('escape', self.escapeDown)
+        self.accept(KeyBinds.getPandaShortcut(KeyBind.Confirm), self.enterDown)
+        self.accept(KeyBinds.getPandaShortcut(KeyBind.Cancel), self.escapeDown)
 
     def disable(self):
         BaseTool.disable(self)

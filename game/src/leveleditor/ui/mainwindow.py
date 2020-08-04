@@ -38,11 +38,6 @@ class Ui_LevelEditor(object):
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1083, 22))
         self.menubar.setObjectName("menubar")
         LevelEditor.setMenuBar(self.menubar)
-        self.topBar = QtWidgets.QToolBar(LevelEditor)
-        self.topBar.setMovable(True)
-        self.topBar.setFloatable(True)
-        self.topBar.setObjectName("topBar")
-        LevelEditor.addToolBar(QtCore.Qt.TopToolBarArea, self.topBar)
         self.leftBar = QtWidgets.QToolBar(LevelEditor)
         self.leftBar.setObjectName("leftBar")
         LevelEditor.addToolBar(QtCore.Qt.LeftToolBarArea, self.leftBar)
@@ -54,5 +49,4 @@ class Ui_LevelEditor(object):
     def retranslateUi(self, LevelEditor):
         _translate = QtCore.QCoreApplication.translate
         LevelEditor.setWindowTitle(_translate("LevelEditor", "TTSP Editor"))
-        self.topBar.setWindowTitle(_translate("LevelEditor", "toolBar"))
         self.leftBar.setWindowTitle(_translate("LevelEditor", "toolBar_2"))

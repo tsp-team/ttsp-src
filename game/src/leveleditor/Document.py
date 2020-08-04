@@ -36,7 +36,6 @@ class DocumentPage(QtWidgets.QWidget):
     def __init__(self, doc):
         self.doc = doc
         QtWidgets.QWidget.__init__(self)
-        base.docTabs.addTab(self, "document")
         self.setLayout(QtWidgets.QGridLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
 
@@ -57,7 +56,7 @@ class DocumentPage(QtWidgets.QWidget):
         self.splitter.addWidget(vp, row, col)
         self.viewports[vp.type] = vp
 
-# Represents the current map that we are working on.
+# Represents a single map document we have open.
 class Document(DirectObject):
 
     def __init__(self):
@@ -78,16 +77,18 @@ class Document(DirectObject):
 
     # Called when the document's tab has been switched into.
     def activated(self):
+        print("ACTIVATED")
         base.render = self.render
         base.viewportMgr = self.viewportMgr
         base.toolMgr = self.toolMgr
         base.selectionMgr = self.selectionMgr
         base.actionMgr = self.actionMgr
         builtins.render = self.render
+        messenger.send('documentActivated', [self])
 
     # Called when the document's tab has been switched out of.
     def deactivated(self):
-        pass
+        messenger.send('documentDeactivated', [self])
 
     def getNextID(self):
         return self.idGenerator.getNextID()
@@ -173,10 +174,10 @@ class Document(DirectObject):
         self.render.setAttrib(LightRampAttrib.makeIdentity())
         self.render.setShaderAuto()
 
-        self.viewportMgr = ViewportManager()
-        self.toolMgr = ToolManager()
-        self.selectionMgr = SelectionManager()
-        self.actionMgr = ActionManager()
+        self.viewportMgr = ViewportManager(self)
+        self.toolMgr = ToolManager(self)
+        self.selectionMgr = SelectionManager(self)
+        self.actionMgr = ActionManager(self)
 
         # Create the page that the document is viewed in.
         self.page = DocumentPage(self)

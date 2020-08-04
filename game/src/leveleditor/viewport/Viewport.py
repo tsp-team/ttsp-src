@@ -161,6 +161,7 @@ class Viewport(QtWidgets.QWidget, DirectObject):
 
         output.setClearColorActive(False)
         output.setClearDepthActive(False)
+        output.setActive(False)
 
         dr = output.makeDisplayRegion()
         dr.setClearColor(self.ClearColor)
@@ -543,3 +544,11 @@ class Viewport(QtWidgets.QWidget, DirectObject):
 
     def draw(self):
         pass
+
+    def enable(self):
+        # Render to the viewport
+        self.win.setActive(True)
+
+    def disable(self):
+        # Don't render to the viewport
+        self.win.setActive(False)

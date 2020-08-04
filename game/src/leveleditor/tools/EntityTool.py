@@ -15,6 +15,7 @@ from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
 from src.leveleditor.selection.SelectionType import SelectionType
 from src.leveleditor.actions.Select import Select
 from src.leveleditor.actions.ActionGroup import ActionGroup
+from src.leveleditor.menu.KeyBind import KeyBind
 
 VisState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(0, 1, 0, 1)),
@@ -74,12 +75,12 @@ class EntityToolOptions(QtWidgets.QDockWidget):
 class EntityTool(BaseTool):
 
     Name = "Entity"
-    ToolTip = "Entity Tool [SHIFT+A]"
-    Shortcut = "shift+a"
+    ToolTip = "Entity Tool"
+    KeyBind = KeyBind.EntityTool
     Icon = "resources/icons/editor-entity.png"
 
-    def __init__(self):
-        BaseTool.__init__(self)
+    def __init__(self, mgr):
+        BaseTool.__init__(self, mgr)
         self.classname = "prop_static"
         self.pos = Point3(0, 0, 0)
 
@@ -102,7 +103,7 @@ class EntityTool(BaseTool):
         self.visRoot.setLightOff(1)
         self.visRoot.setFogOff(1)
         self.box = Box()
-        for vp in base.viewportMgr.viewports:
+        for vp in self.doc.viewportMgr.viewports:
             view = self.box.addView(GeomView.Lines, vp.getViewportMask())
             if vp.is2D():
                 view.np.setBin("fixed", LEGlobals.BoxSort)
@@ -125,6 +126,12 @@ class EntityTool(BaseTool):
 
     def enable(self):
         BaseTool.enable(self)
+        self.reset()
+        self.options.updateEntityClasses()
+        self.options.show()
+
+    def activate(self):
+        BaseTool.activate(self)
         self.accept('mouse1', self.mouseDown)
         self.accept('mouse1-up', self.mouseUp)
         self.accept('mouseMoved', self.mouseMoved)
@@ -134,9 +141,6 @@ class EntityTool(BaseTool):
         self.accept('arrow_down', self.moveDown)
         self.accept('arrow_left', self.moveLeft)
         self.accept('arrow_right', self.moveRight)
-        self.reset()
-        self.options.updateEntityClasses()
-        self.options.show()
 
     def disable(self):
         BaseTool.disable(self)
@@ -166,7 +170,7 @@ class EntityTool(BaseTool):
         self.visRoot.reparentTo(NodePath())
 
     def showVis(self):
-        self.visRoot.reparentTo(base.render)
+        self.visRoot.reparentTo(self.doc.render)
 
     def mouseDown(self):
         vp = base.viewportMgr.activeViewport
@@ -190,7 +194,7 @@ class EntityTool(BaseTool):
                             continue
                     # We clicked on an object, use the contact point as the
                     # location of our new entity.
-                    self.pos = entry.getSurfacePoint(base.render)
+                    self.pos = entry.getSurfacePoint(self.doc.render)
                     self.hasPlaced = True
                     # Create it!
                     self.confirm()

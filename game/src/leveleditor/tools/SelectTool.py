@@ -6,6 +6,7 @@ from src.leveleditor import LEGlobals
 from src.leveleditor import LEUtils
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 from src.leveleditor.actions.Select import Select, Deselect
+from src.leveleditor.menu.KeyBind import KeyBind
 
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
@@ -13,18 +14,18 @@ from src.leveleditor.geometry.GeomView import GeomView
 class SelectTool(BoxTool):
 
     Name = "Select"
-    ToolTip = "Select Tool [SHIFT+Q]"
-    Shortcut = "shift+q"
+    ToolTip = "Select Tool"
+    KeyBind = KeyBind.SelectTool
     Icon = "resources/icons/editor-select.png"
     Draw3DBox = False
 
-    def __init__(self):
-        BoxTool.__init__(self)
+    def __init__(self, mgr):
+        BoxTool.__init__(self, mgr)
         self.box.setColor(Vec4(1, 1, 0, 1))
         self.suppressSelect = False
 
-    def enable(self):
-        BoxTool.enable(self)
+    def activate(self):
+        BoxTool.activate(self)
         self.accept('shift-mouse1', self.mouseDown)
         self.accept('shift-mouse1-up', self.mouseUp)
         self.accept('wheel_up', self.wheelUp)
@@ -33,6 +34,9 @@ class SelectTool(BoxTool):
         self.accept('shift-up', self.shiftUp)
         self.accept('escape', self.deselectAll)
         self.accept('selectionsChanged', self.selectionChanged)
+
+    def enable(self):
+        BoxTool.enable(self)
         self.lastEntries = None
         self.entryIdx = 0
 
@@ -47,7 +51,8 @@ class SelectTool(BoxTool):
 
     def __toggleSelect(self, obj):
         if not self.multiSelect:
-            base.actionMgr.performAction("Select %s" % obj.getName(), Select([obj], True))
+            if not base.selectionMgr.isSelected(obj):
+                base.actionMgr.performAction("Select %s" % obj.getName(), Select([obj], True))
         else:
             # In multi-select (shift held), if the object we clicked on has
             # already been selected, deselect it.
@@ -73,7 +78,7 @@ class SelectTool(BoxTool):
 
         entries = vp.click(base.selectionMgr.getSelectionMask())
         if not entries:
-            if not self.multiSelect and self.state.action != BoxAction.ReadyToResize:
+            if (not self.multiSelect) and (self.state.action != BoxAction.ReadyToResize):
                 # Deselect all if not doing multi-select and no hits
                 self.deselectAll()
             return
@@ -120,7 +125,7 @@ class SelectTool(BoxTool):
         node.addSolid(box)
         node.setFromCollideMask(base.selectionMgr.getSelectionMask())
         node.setIntoCollideMask(BitMask32.allOff())
-        boxNp = base.render.attachNewNode(node)
+        boxNp = self.doc.render.attachNewNode(node)
         queue = CollisionHandlerQueue()
         base.clickTraverse(boxNp, queue)
         queue.sortEntries()
@@ -135,7 +140,8 @@ class SelectTool(BoxTool):
                     selection.append(obj)
         boxNp.removeNode()
 
-        base.actionMgr.performAction("Select %i objects" % len(selection), Select(selection, True))
+        if len(selection) > 0:
+            base.actionMgr.performAction("Select %i objects" % len(selection), Select(selection, True))
 
     def wheelUp(self):
         if not self.mouseIsDown:

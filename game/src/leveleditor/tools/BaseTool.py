@@ -13,55 +13,30 @@ class ToolUsage(IntEnum):
 class BaseTool(DirectObject):
 
     Name = "Tool"
-    Shortcut = None
+    KeyBind = None
     WantButton = True
     ToolTip = "Base tool"
     StatusTip = None
     Icon = None
     Usage = ToolUsage.Both
 
-    def __init__(self):
+    def __init__(self, mgr):
         DirectObject.__init__(self)
         self.enabled = False
-        self.button = None
+        self.activated = False
+        self.mgr = mgr
+        self.doc = mgr.doc
 
-    def toggle(self):
-        if self.button:
-            self.button.toggle()
-
-    def draw2D(self, vp):
+    def toolTriggered(self):
         pass
-
-    def draw3D(self, vp):
-        pass
-
-    def createButton(self):
-        if self.WantButton:
-            self.button = QtWidgets.QAction(base.toolBar)
-            self.button.setText(self.Name)
-            self.button.setToolTip(self.ToolTip)
-            if not self.StatusTip:
-                self.button.setStatusTip(self.ToolTip)
-            else:
-                self.button.setStatusTip(self.StatusTip)
-            self.button.setCheckable(True)
-            if self.Shortcut:
-                self.button.setShortcut(QtGui.QKeySequence.fromString(self.Shortcut))
-            if self.Icon:
-                self.button.setIcon(QtGui.QIcon(self.Icon))
-            self.button.toggled.connect(self.__handleToggle)
-            base.toolBar.addAction(self.button)
-
-    def __handleToggle(self, toggled):
-        if toggled:
-            self.enable()
-        else:
-            self.disable()
 
     def enable(self):
         print("Enable", self.Name)
         self.enabled = True
-        base.toolMgr.currentTool = self
+        self.activate()
+
+    def activate(self):
+        self.activated = True
         base.taskMgr.add(self.__updateTask, self.Name + "-UpdateTool")
 
     def __updateTask(self, task):
@@ -73,7 +48,10 @@ class BaseTool(DirectObject):
 
     def disable(self):
         print("Disable", self.Name)
+        self.deactivate()
+        self.enabled = False
+
+    def deactivate(self):
+        self.activated = False
         base.taskMgr.remove(self.Name + "-UpdateTool")
         self.ignoreAll()
-        self.enabled = False
-        base.toolMgr.currentTool = None
