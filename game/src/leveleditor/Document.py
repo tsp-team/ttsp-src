@@ -1,9 +1,12 @@
-from panda3d.core import UniqueIdAllocator, CKeyValues, NodePath, LightRampAttrib
+from panda3d.core import UniqueIdAllocator, CKeyValues, NodePath, LightRampAttrib, AsyncTaskManager
 from panda3d.bsp import BSPShaderGenerator
 
 import builtins
 
 from direct.showbase.DirectObject import DirectObject
+from direct.showbase.Messenger import Messenger
+from direct.task.Task import TaskManager
+from direct.showbase.EventManager import EventManager
 
 from src.coginvasion.globals import ShaderGlobals
 
@@ -33,6 +36,13 @@ models = [
 
 class DocumentPage(QtWidgets.QWidget):
 
+    QuadArrangement = {
+        VIEWPORT_3D: (0, 0),
+        VIEWPORT_2D_FRONT: (1, 0),
+        VIEWPORT_2D_SIDE: (1, 1),
+        VIEWPORT_2D_TOP: (0, 1)
+    }
+
     def __init__(self, doc):
         self.doc = doc
         QtWidgets.QWidget.__init__(self)
@@ -43,17 +53,48 @@ class DocumentPage(QtWidgets.QWidget):
         self.splitter = QuadSplitter(self)
 
         vp3d = Viewport3D(VIEWPORT_3D, self.splitter, self.doc)
-        self.addViewport(vp3d, 0, 0)
+        self.addViewport(vp3d)
         self.doc.gsg = vp3d.win.getGsg()
-        self.addViewport(Viewport2D(VIEWPORT_2D_FRONT, self.splitter, self.doc), 1, 0)
-        self.addViewport(Viewport2D(VIEWPORT_2D_SIDE, self.splitter, self.doc), 1, 1)
-        self.addViewport(Viewport2D(VIEWPORT_2D_TOP, self.splitter, self.doc), 0, 1)
+        self.addViewport(Viewport2D(VIEWPORT_2D_FRONT, self.splitter, self.doc))
+        self.addViewport(Viewport2D(VIEWPORT_2D_SIDE, self.splitter, self.doc))
+        self.addViewport(Viewport2D(VIEWPORT_2D_TOP, self.splitter, self.doc))
+
+        self.arrangeInQuadLayout()
+
+    def arrangeInQuadLayout(self):
+        for vpType, xy in self.QuadArrangement.items():
+            vp = self.viewports[vpType]
+            vp.enable()
+            self.layout().removeWidget(vp)
+            self.splitter.addWidget(vp, *xy)
 
         self.layout().addWidget(self.splitter)
+        self.splitter.setParent(self)
 
-    def addViewport(self, vp, row, col):
+    def focusOnViewport(self, type):
+        for vp in self.viewports.values():
+            vp.disable()
+            self.layout().removeWidget(vp)
+            vp.setParent(None)
+
+        vp = self.viewports[type]
+        vp.enable()
+        vp.setParent(self)
+        self.layout().addWidget(vp)
+
+        self.layout().removeWidget(self.splitter)
+        self.splitter.setParent(None)
+
+    def cleanup(self):
+        self.doc = None
+        self.viewports = None
+        self.splitter.cleanup()
+        self.splitter = None
+        self.viewports = None
+        self.deleteLater()
+
+    def addViewport(self, vp):
         vp.initialize()
-        self.splitter.addWidget(vp, row, col)
         self.viewports[vp.type] = vp
 
 # Represents a single map document we have open.
@@ -66,24 +107,47 @@ class Document(DirectObject):
         self.idGenerator = IDGenerator()
         self.world = None
         self.isOpen = False
-        self.page = None
         self.gsg = None
-        self.shaderGenerator = None
 
-        self.actionMgr = None
-        self.selectionMgr = None
-        self.viewportMgr = None
-        self.toolMgr = None
+        # Each document has its own message bus, task manager, and event manager.
+        self.taskMgr = TaskManager()
+        self.taskMgr.mgr = AsyncTaskManager("documentTaskMgr")
+        self.messenger = Messenger(self.taskMgr)
+        self.eventMgr = EventManager(messenger = self.messenger, taskMgr = self.taskMgr)
+        self.messenger.setEventMgr(self.eventMgr)
+
+        self.render = NodePath("docRender")
+        self.render.setAttrib(LightRampAttrib.makeIdentity())
+        self.render.setShaderAuto()
+
+        self.viewportMgr = ViewportManager(self)
+        self.toolMgr = ToolManager(self)
+        self.selectionMgr = SelectionManager(self)
+        self.actionMgr = ActionManager(self)
+
+        # Create the page that the document is viewed in.
+        self.page = DocumentPage(self)
+        self.createShaderGenerator()
+
+        self.toolMgr.addTools()
+
+        self.eventMgr.restart()
+
+    def step(self):
+        #print("Stepping", self)
+        self.taskMgr.step()
 
     # Called when the document's tab has been switched into.
     def activated(self):
-        print("ACTIVATED")
+        # Move document constructs into global space so we don't have to directly
+        # reference the document for them.
         base.render = self.render
         base.viewportMgr = self.viewportMgr
         base.toolMgr = self.toolMgr
         base.selectionMgr = self.selectionMgr
         base.actionMgr = self.actionMgr
         builtins.render = self.render
+
         messenger.send('documentActivated', [self])
 
     # Called when the document's tab has been switched out of.
@@ -114,10 +178,14 @@ class Document(DirectObject):
         self.filename = filename
         self.unsaved = False
         base.actionMgr.documentSaved()
+        self.updateTabText()
 
     def close(self):
         if not self.isOpen:
             return
+
+        self.toolMgr.cleanup()
+        self.toolMgr = None
 
         self.world.delete()
         self.world = None
@@ -126,6 +194,26 @@ class Document(DirectObject):
         self.filename = None
         self.unsaved = None
         self.isOpen = None
+        self.gsg = None
+
+        self.viewportMgr.cleanup()
+        self.viewportMgr = None
+        self.actionMgr.cleanup()
+        self.actionMgr = None
+        self.selectionMgr.cleanup()
+        self.selectionMgr = None
+
+        self.eventMgr.shutdown()
+        self.eventMgr = None
+        self.messenger = None
+        self.taskMgr.destroy()
+        self.taskMgr = None
+
+        self.render.removeNode()
+        self.render = None
+
+        self.page.cleanup()
+        self.page = None
 
     def __newMap(self):
         self.unsaved = False
@@ -170,21 +258,6 @@ class Document(DirectObject):
         self.shaderGenerator = shgen
 
     def open(self, filename = None):
-        self.render = NodePath("docRender")
-        self.render.setAttrib(LightRampAttrib.makeIdentity())
-        self.render.setShaderAuto()
-
-        self.viewportMgr = ViewportManager(self)
-        self.toolMgr = ToolManager(self)
-        self.selectionMgr = SelectionManager(self)
-        self.actionMgr = ActionManager(self)
-
-        # Create the page that the document is viewed in.
-        self.page = DocumentPage(self)
-        self.createShaderGenerator()
-
-        self.toolMgr.addTools()
-
         # if filename is none, this is a new document/map
         if not filename:
             self.__newMap()

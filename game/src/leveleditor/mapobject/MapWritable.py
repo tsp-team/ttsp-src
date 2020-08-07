@@ -1,12 +1,12 @@
-from direct.showbase.DirectObject import DirectObject
+from src.leveleditor.DocObject import DocObject
 
 # Base class for serializable map data
-class MapWritable(DirectObject):
+class MapWritable(DocObject):
 
     ObjectName = "writable"
 
-    def __init__(self):
-        DirectObject.__init__(self)
+    def __init__(self, doc):
+        DocObject.__init__(self, doc)
 
     def writeKeyValues(self, keyvalues):
         raise NotImplementedError

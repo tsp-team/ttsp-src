@@ -217,7 +217,7 @@ class SolidFace(MapWritable):
     ObjectName = "side"
 
     def __init__(self, id = 0, plane = Plane(0, 0, 1, 0), solid = None):
-        MapWritable.__init__(self)
+        MapWritable.__init__(self, base.document)
         self.id = id
         self.material = FaceMaterial()
         self.vertices = []
@@ -417,7 +417,7 @@ class SolidFace(MapWritable):
         self.material = faceMat
         self.setMaterial(self.material.material)
         self.calcTextureCoordinates(True)
-        messenger.send('faceMaterialChanged', [self])
+        self.send('faceMaterialChanged', [self])
 
     def alignTextureToFace(self):
         self.material.alignTextureToFace(self)

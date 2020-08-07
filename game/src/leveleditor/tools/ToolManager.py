@@ -1,4 +1,4 @@
-from direct.showbase.DirectObject import DirectObject
+from src.leveleditor.DocObject import DocObject
 
 from PyQt5 import QtWidgets
 
@@ -14,7 +14,7 @@ from functools import partial
 
 Separator = -1
 
-class ToolManager(DirectObject):
+class ToolManager(DocObject):
 
     Tools = [
         SelectTool,
@@ -30,17 +30,33 @@ class ToolManager(DirectObject):
     ]
 
     def __init__(self, doc):
-        DirectObject.__init__(self)
+        DocObject.__init__(self, doc)
 
-        self.doc = doc
         self.tools = []
+        self.funcs = {}
         self.currentTool = None
         self.selectTool = None
+        self.connected = False
 
         self.toolGroup = None
 
-        self.accept('documentActivated', self.__onDocActivated)
-        self.accept('documentDeactivated', self.__onDocDeactivated)
+        self.acceptGlobal('documentActivated', self.__onDocActivated)
+        self.acceptGlobal('documentDeactivated', self.__onDocDeactivated)
+
+    def cleanup(self):
+        if self.currentTool:
+            self.currentTool.disable()
+        self.currentTool = None
+        self.disconnectTools()
+        self.connected = None
+        for tool in self.tools:
+            tool.cleanup()
+        self.tools = None
+        self.selectTool = None
+        self.toolGroup = None
+        self.funcs = None
+
+        DocObject.cleanup(self)
 
     def __onDocActivated(self, doc):
         if doc != self.doc:
@@ -49,9 +65,7 @@ class ToolManager(DirectObject):
         if self.currentTool and not self.currentTool.activated:
             self.currentTool.activate()
 
-        for tool in self.tools:
-            base.menuMgr.enableAction(tool.KeyBind)
-            base.menuMgr.connect(tool.KeyBind, partial(self.switchToTool, tool))
+        self.connectTools()
 
     def __onDocDeactivated(self, doc):
         if doc != self.doc:
@@ -60,9 +74,29 @@ class ToolManager(DirectObject):
         if self.currentTool and self.currentTool.activated:
             self.currentTool.deactivate()
 
+        self.disconnectTools()
+
+    def connectTools(self):
+        if self.connected:
+            return
+
         for tool in self.tools:
-            base.menuMgr.disableAction(tool.KeyBind)
-            base.menuMgr.disconnect(tool.KeyBind, partial(self.switchToTool, tool))
+            action = base.menuMgr.action(tool.KeyBind)
+            action.setEnabled(True)
+            action.setChecked(tool.enabled)
+            action.connect(self.funcs[tool])
+        self.connected = True
+
+    def disconnectTools(self):
+        if not self.connected:
+            return
+
+        for tool in self.tools:
+            action = base.menuMgr.action(tool.KeyBind)
+            action.setEnabled(False)
+            action.setChecked(False)
+            action.disconnect(self.funcs[tool])
+        self.connected = False
 
     def switchToTool(self, tool):
         if tool == self.currentTool:
@@ -94,6 +128,7 @@ class ToolManager(DirectObject):
     def addTool(self, tool):
         if not tool in self.tools:
             self.tools.append(tool)
+            self.funcs[tool] = partial(self.switchToTool, tool)
 
     def addTools(self):
         for tool in self.Tools:

@@ -22,6 +22,10 @@ class BlockTool(BoxTool):
         BoxTool.__init__(self, mgr)
         self.lastBox = None
 
+    def cleanup(self):
+        self.lastBox = None
+        BoxTool.cleanup(self)
+
     def leftMouseDownToDraw(self):
         BoxTool.leftMouseDownToDraw(self)
 

@@ -48,6 +48,10 @@ class TransformToolOptions(QtWidgets.QDockWidget):
         self.hide()
         base.qtWindow.addDockWindow(self)
 
+    def cleanup(self):
+        self.tool = None
+        self.deleteLater()
+
     def __toggleGlobal(self):
         self.tool.setWrtMode(Global)
 
@@ -84,6 +88,18 @@ class TransformWidgetAxis(NodePath):
         self.pickNp.setPythonTag("widgetAxis", self)
 
         self.setState(Ready)
+
+    def cleanup(self):
+        self.widget = None
+        self.direction = None
+        self.defaultColor = None
+        self.rolloverColor = None
+        self.downColor = None
+        self.axisIdx = None
+        self.pickNp.removeNode()
+        self.pickNp = None
+        self.state = None
+        self.removeNode()
 
     def update(self):
         if self.DotFade:
@@ -135,6 +151,17 @@ class TransformWidget(NodePath):
         self.axes = {}
         for axis in (0, 1, 2):
             self.axes[axis] = self.createAxis(axis)
+
+    def cleanup(self):
+        self.tool = None
+        self.widgetQueue = None
+        self.widgetTrav = None
+        self.vp = None
+        self.activeAxis = None
+        for axis in self.axes.values():
+            axis.cleanup()
+        self.axes = None
+        self.removeNode()
 
     def createAxis(self, axis):
         return None
@@ -196,6 +223,27 @@ class BaseTransformTool(SelectTool):
         self.transformType = SelectionModeTransform.Off
         self.options = TransformToolOptions(self)
         self.createWidget()
+
+    def cleanup(self):
+        self.hasWidgets = None
+        self.widget.cleanup()
+        self.widget = None
+        self.toolRoot.removeNode()
+        self.toolRoot = None
+        self.toolVisRoot = None
+        if self.axis3DLines:
+            self.axis3DLines.removeNode()
+        self.axis3DLines = None
+        self.isTransforming = None
+        self.xformObjects = None
+        self.boxOriginOffset = None
+        self.wrtMode = None
+        self.transformStart = None
+        self.preTransformStart = None
+        self.transformType = None
+        self.options.cleanup()
+        self.options = None
+        SelectTool.cleanup(self)
 
     def filterHandle(self, handle):
         if self.isTransforming:

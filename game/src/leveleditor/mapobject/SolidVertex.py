@@ -6,7 +6,7 @@ from .MapWritable import MapWritable
 class SolidVertex(MapWritable):
 
     def __init__(self, pos = Point3(0), face = None):
-        MapWritable.__init__(self)
+        MapWritable.__init__(self, base.document)
         self.uv = LTexCoord(0, 0)
         self.pos = pos
         self.face = face

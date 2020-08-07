@@ -45,6 +45,11 @@ class EntityToolOptions(QtWidgets.QDockWidget):
 
         base.qtWindow.addDockWindow(self)
 
+    def cleanup(self):
+        self.tool = None
+        self.combo = None
+        self.deleteLater()
+
     def __handleClassChanged(self, classname):
         self.tool.classname = classname
 
@@ -124,11 +129,28 @@ class EntityTool(BaseTool):
         lines.drawTo(Point3(0, 0, 10000))
         self.lines = self.visRoot.attachNewNode(lines.create())
 
+    def cleanup(self):
+        self.classname = None
+        self.pos = None
+        self.mouseIsDown = None
+        self.hasPlaced = None
+        self.size2D = None
+        self.size3D = None
+        self.boxSize = None
+        self.box.cleanup()
+        self.box = None
+        self.lines.removeNode()
+        self.lines = None
+        self.visRoot.removeNode()
+        self.visRoot = None
+        self.options.cleanup()
+        self.options = None
+        BaseTool.cleanup(self)
+
     def enable(self):
         BaseTool.enable(self)
-        self.reset()
         self.options.updateEntityClasses()
-        self.options.show()
+        self.reset()
 
     def activate(self):
         BaseTool.activate(self)
@@ -141,11 +163,15 @@ class EntityTool(BaseTool):
         self.accept('arrow_down', self.moveDown)
         self.accept('arrow_left', self.moveLeft)
         self.accept('arrow_right', self.moveRight)
+        self.options.show()
+
+    def deactivate(self):
+        self.options.hide()
+        BaseTool.deactivate(self)
 
     def disable(self):
         BaseTool.disable(self)
         self.reset()
-        self.options.hide()
 
     def reset(self):
         self.hideVis()

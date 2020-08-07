@@ -1,6 +1,5 @@
-from direct.showbase.DirectObject import DirectObject
-
 from src.leveleditor.ui.ObjectProperties import Ui_ObjectProperties
+from src.leveleditor.DocObject import DocObject
 from .ObjectPropertiesDelegate import ObjectPropertiesDelegate
 from .ObjectPropertiesItems import ObjectPropertiesItem, ObjectPropertiesNullItem, ObjectPropertiesSpawnflagsItem
 from src.leveleditor.mapobject.Entity import Entity
@@ -15,12 +14,12 @@ class ObjectPropertiesModel(QtGui.QStandardItemModel):
         self.setHeaderData(0, QtCore.Qt.Horizontal, "Property")
         self.setHeaderData(1, QtCore.Qt.Horizontal, "Value")
 
-class ObjectPropertiesWindow(QtWidgets.QDockWidget, DirectObject):
+class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
 
-    def __init__(self, mgr):
+    def __init__(self):
         QtWidgets.QDockWidget.__init__(self)
-        DirectObject.__init__(self)
-        self.mgr = mgr
+        DocObject.__init__(self, None)
+        self.mgr = None
         self.setWindowTitle("Object Properties")
         w = QtWidgets.QWidget(self)
         self.ui = Ui_ObjectProperties()
@@ -44,10 +43,24 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DirectObject):
 
         self.updateAvailableClasses()
 
-        base.qtWindow.addDockWindow(self)
+        base.qtWindow.addDockWindow(self, "right")
         self.clearAll()
         self.setEnabled(False)
 
+        self.acceptGlobal('documentDeactivated', self.__onDocDeactivate)
+        self.acceptGlobal('documentActivated', self.__onDocActivate)
+
+    def __onDocDeactivate(self, doc):
+        if self.doc:
+            self.ignoreAll()
+        self.mgr = None
+        self.setDoc(None)
+
+    def __onDocActivate(self, doc):
+        if self.doc:
+            self.ignoreAll()
+        self.mgr = doc.selectionMgr
+        self.setDoc(doc)
         self.accept('objectPropertyChanged', self.__handleObjectPropertyChanged)
 
     def __handleObjectPropertyChanged(self, entity, prop, value):

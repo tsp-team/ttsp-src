@@ -6,7 +6,9 @@ KeyBinds = [
     KeyBindDef("Open a map", KeyBind.FileOpen, "ctrl+o"),
     KeyBindDef("Save the map", KeyBind.FileSave, "ctrl+s"),
     KeyBindDef("Save the map as", KeyBind.FileSaveAs, "ctrl+shift+s"),
+    KeyBindDef("Save all maps", KeyBind.FileSaveAll, "ctrl+alt+s"),
     KeyBindDef("Close the map", KeyBind.FileClose, "ctrl+x"),
+    KeyBindDef("Close all maps", KeyBind.FileCloseAll, "ctrl+alt+x"),
 
     KeyBindDef("Undo previous action", KeyBind.Undo, "ctrl+z"),
     KeyBindDef("Redo previous action", KeyBind.Redo, "ctrl+shift+z"),
@@ -59,7 +61,13 @@ KeyBinds = [
     KeyBindDef("Switch to next document", KeyBind.NextDocument, "tab"),
     KeyBindDef("Switch to previous document", KeyBind.PrevDocument, "shift+tab"),
 
-    KeyBindDef("Exit the application", KeyBind.Exit, "alt+f4")
+    KeyBindDef("Exit the application", KeyBind.Exit, "alt+f4"),
+
+    KeyBindDef("Arrange viewports in quad splitter", KeyBind.ViewQuads, "f1"),
+    KeyBindDef("Focus 3D view", KeyBind.View3D, "f2"),
+    KeyBindDef("Focus XY view", KeyBind.ViewXY, "f3"),
+    KeyBindDef("Focus YZ view", KeyBind.ViewYZ, "f4"),
+    KeyBindDef("Focus XZ view", KeyBind.ViewXZ, "f5")
 ]
 
 KeyBindsByID = {x.id: x for x in KeyBinds}

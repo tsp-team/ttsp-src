@@ -11,9 +11,8 @@ from PyQt5 import QtWidgets, QtCore
 
 class FaceEditSheet(QtWidgets.QDockWidget):
 
-    def __init__(self, faceMode):
+    def __init__(self):
         QtWidgets.QDockWidget.__init__(self)
-        self.faceMode = faceMode
         self.setFeatures(QtWidgets.QDockWidget.AllDockWidgetFeatures)
         self.setWindowTitle("Face Edit Sheet")
         sheet = QtWidgets.QWidget()
@@ -39,7 +38,7 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.ui.btnJustifyTop.clicked.connect(self.__justifyTop)
         self.ui.chkTreatAsOne.toggled.connect(self.__toggleTreatAsOne)
 
-        base.qtWindow.addDockWindow(self)
+        base.qtWindow.addDockWindow(self, "left")
 
         self.hide()
 
@@ -150,7 +149,7 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         actions = []
 
         mat = MaterialPool.getMaterial(filename)
-        self.faceMode.activeMaterial = mat
+        MaterialPool.ActiveMaterial = mat
         for face in self.faces:
             action = EditFaceMaterial(face)
             action.material.material = mat
@@ -243,6 +242,6 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.face = face
         self.faces = faces
 
-        self.faceMode.activeMaterial = self.face.material.material
+        MaterialPool.ActiveMaterial = self.face.material.material
 
         self.updateMaterialIcon()

@@ -26,6 +26,15 @@ class AdvSplitter(QtWidgets.QWidget):
         elif orientation == QtCore.Qt.Vertical:
             self.setCursor(QtCore.Qt.SplitVCursor)
 
+    def cleanup(self):
+        self._percent = None
+        self.orientation = None
+        self.mouse = None
+        self.center = None
+        self.splitter = None
+        self.mousePos = None
+        self.deleteLater()
+
     def percent(self):
         return self._percent
 
@@ -134,6 +143,19 @@ class QuadSplitter(QtWidgets.QFrame):
         self.verticalSplitter = AdvSplitter(self, self, QtCore.Qt.Vertical)
         self.splittersMovingPos = QtCore.QPoint(0, 0)
         self.arrange()
+
+    def cleanup(self):
+        self.grid = None
+        self.minimumWidgetSize = None
+        self.centerPart = None
+        self.spacing = None
+        self.splittersSpacing = None
+        self.horizontalSplitter.cleanup()
+        self.horizontalSplitter = None
+        self.verticalSplitter.cleanup()
+        self.verticalSplitter = None
+        self.splittersMovingPos = None
+        self.deleteLater()
 
     def resizeEvent(self, event):
         self.arrange()
@@ -254,7 +276,7 @@ class QuadSplitter(QtWidgets.QFrame):
                 self.realSpacing() + columnHeight + self.splittersSpacing, self.realWidth() - columnWidth,
                 self.realHeight() - columnHeight)
 
-        messenger.send('quadSplitterResized')
+        #messenger.send('quadSplitterResized')
 
     def splitterMoveStart(self, splitter, center):
         self.splittersMovingPos = QtCore.QPoint(self.horizontalSplitter.x(), self.verticalSplitter.y())

@@ -8,6 +8,7 @@ class Grid:
 
     def __init__(self, viewport):
         self.viewport = viewport
+        self.doc = viewport.doc
 
         # So we only have to generate a grid for a step once.
         self.gridsByStep = {}
@@ -16,7 +17,18 @@ class Grid:
 
         self.lastStep = 0
 
-        self.updateTask = base.taskMgr.add(self.update, 'gridUpdate')
+        self.updateTask = self.doc.taskMgr.add(self.update, 'gridUpdate')
+
+    def cleanup(self):
+        self.viewport = None
+        self.doc = None
+        self.gridsByStep = None
+        if self.gridNp:
+            self.gridNp.removeNode()
+        self.gridNp = None
+        self.lastStep = None
+        self.updateTask.remove()
+        self.updateTask = None
 
     def removeCurrentGrid(self):
         if self.gridNp and not self.gridNp.isEmpty():
@@ -27,7 +39,7 @@ class Grid:
         raise NotImplementedError
 
     def update(self, task):
-        if not GridSettings.EnableGrid:
+        if not self.shouldRender():
             self.removeCurrentGrid()
             return task.cont
 

@@ -55,6 +55,17 @@ class BoxState:
         self.preTransformBoxEnd = None
         self.clickStart = Point2(0, 0)
 
+    def cleanup(self):
+        self.activeViewport = None
+        self.action = None
+        self.handle = None
+        self.boxStart = None
+        self.boxEnd = None
+        self.moveStart = None
+        self.preTransformBoxEnd = None
+        self.preTransformBoxStart = None
+        self.clickStart = None
+
     def isValidAndApplicable(self, vp):
         return (self.action != BoxAction.DownToDraw and
                 self.action != BoxAction.Drawing and
@@ -130,6 +141,17 @@ class BoxToolViewport:
         self.leftText.setBin("fixed", LEGlobals.WidgetSort)
         self.leftText.setDepthWrite(False)
         self.leftText.setDepthTest(False)
+
+    def cleanup(self):
+        self.vp = None
+        self.tool = None
+        for handle in self.handlesList.values():
+            handle.cleanup()
+        self.handles = None
+        self.topText.removeNode()
+        self.topText = None
+        self.leftText.removeNode()
+        self.leftText = None
 
     def updateHandles(self, handles):
         self.handles.setHandles(handles)
@@ -275,6 +297,20 @@ class BoxTool(BaseTool):
         # Render as dashed lines in 2D viewports
         self.box.addView(GeomView.Lines, VIEWPORT_2D_MASK, state = RenderModes.DashedLineNoZ())
         self.box.generateGeometry()
+
+    def cleanup(self):
+        self.handleWidth = None
+        self.handleOffset = None
+        self.handleType = None
+        self.state.cleanup()
+        self.state = None
+        self.suppressBox = None
+        for vp in self.vps:
+            vp.cleanup()
+        self.vps = None
+        self.box.cleanup()
+        self.box = None
+        BaseTool.cleanup(self)
 
     def showHandles(self):
         for vp in self.vps:

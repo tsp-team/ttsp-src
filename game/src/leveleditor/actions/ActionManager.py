@@ -30,6 +30,15 @@ class ActionManager(DirectObject):
         self.stateChangeIndex = -1
         self.history = []
 
+    def cleanup(self):
+        self.doc = None
+        self.historyIndex = None
+        self.savedIndex = None
+        self.stateChangeIndex = None
+        for action in self.history:
+            action.cleanup()
+        self.history = None
+
     def getCurrentStateChangeIndex(self):
         if self.historyIndex == -1:
             return -1

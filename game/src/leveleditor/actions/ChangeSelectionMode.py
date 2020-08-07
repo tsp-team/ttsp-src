@@ -10,33 +10,24 @@ class ChangeSelectionMode(Action):
 
     def do(self):
         Action.do(self)
-        old = base.qtWindow.selectionModeActions[self.oldMode]
-        new = base.qtWindow.selectionModeActions[self.mode]
-        old.blockSignals(True)
-        new.blockSignals(True)
 
-        base.qtWindow.selectionModeActions[self.oldMode].setChecked(False)
-        base.qtWindow.selectionModeActions[self.mode].setChecked(True)
+        oldAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.oldMode].KeyBind)
+        oldAction.setChecked(False)
+        newAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.mode].KeyBind)
+        newAction.setChecked(True)
+
         base.selectionMgr.setSelectionMode(self.mode)
         base.selectionMgr.multiSelect(
             base.selectionMgr.selectionModes[self.mode].getTranslatedSelections(self.oldMode))
 
-        old.blockSignals(False)
-        new.blockSignals(False)
-
     def undo(self):
-        old = base.qtWindow.selectionModeActions[self.oldMode]
-        new = base.qtWindow.selectionModeActions[self.mode]
-        old.blockSignals(True)
-        new.blockSignals(True)
+        oldAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.oldMode].KeyBind)
+        oldAction.setChecked(True)
+        newAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.mode].KeyBind)
+        newAction.setChecked(False)
 
-        base.qtWindow.selectionModeActions[self.mode].setChecked(False)
-        base.qtWindow.selectionModeActions[self.oldMode].setChecked(True)
         base.selectionMgr.setSelectionMode(self.oldMode)
         base.selectionMgr.multiSelect(self.previousSelections)
-
-        old.blockSignals(False)
-        new.blockSignals(False)
 
         Action.undo(self)
 

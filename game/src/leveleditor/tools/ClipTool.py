@@ -54,6 +54,16 @@ class ClipToolViewport2D:
         self.hPoint2 = self.makeHandle()
         self.hPoint3 = self.makeHandle()
 
+    def cleanup(self):
+        self.tool  = None
+        self.vp = None
+        self.hPoint1.removeNode()
+        self.hPoint1 = None
+        self.hPoint2.removeNode()
+        self.hPoint2 = None
+        self.hPoint3.removeNode()
+        self.hPoint3 = None
+
     def enable(self):
         self.hPoint1.reparentTo(self.tool.doc.render)
         self.hPoint2.reparentTo(self.tool.doc.render)
@@ -113,6 +123,17 @@ class ClipTool(BaseTool):
                 self.vp2Ds.append(ClipToolViewport2D(self, vp))
 
         self.reset()
+
+    def cleanup(self):
+        self.clearClipPlane()
+        self.tempSolids = None
+        if self.lines2D:
+            self.lines2D.removeNode()
+            self.lines2D = None
+        for vp in self.vp2Ds:
+            vp.cleanup()
+        self.vp2Ds = None
+        BaseTool.cleanup(self)
 
     def enable2DPoints(self):
         for vp in self.vp2Ds:

@@ -20,6 +20,12 @@ class Viewport2D(Viewport):
         self.dragCamStart = Point3()
         self.dragCamMouseStart = Point3()
 
+    def cleanup(self):
+        self.dragging = None
+        self.dragCamStart = None
+        self.dragCamMouseStart = None
+        Viewport.cleanup(self)
+
     def adjustZoomText(self):
         base.qtWindow.zoomLabel.setText("Zoom: %.2f" % self.zoom)
 

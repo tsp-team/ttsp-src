@@ -24,6 +24,10 @@ class SelectTool(BoxTool):
         self.box.setColor(Vec4(1, 1, 0, 1))
         self.suppressSelect = False
 
+    def cleanup(self):
+        self.suppressSelect = None
+        BoxTool.cleanup(self)
+
     def activate(self):
         BoxTool.activate(self)
         self.accept('shift-mouse1', self.mouseDown)
@@ -51,7 +55,7 @@ class SelectTool(BoxTool):
 
     def __toggleSelect(self, obj):
         if not self.multiSelect:
-            if not base.selectionMgr.isSelected(obj):
+            if not base.selectionMgr.isSelected(obj) or base.selectionMgr.getNumSelectedObjects() > 1:
                 base.actionMgr.performAction("Select %s" % obj.getName(), Select([obj], True))
         else:
             # In multi-select (shift held), if the object we clicked on has

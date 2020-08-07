@@ -2,8 +2,11 @@ from .SelectionMode import SelectionMode
 from .SelectionType import SelectionType, SelectionModeTransform
 from src.leveleditor.ui.FaceEditSheet import FaceEditSheet
 from src.leveleditor import MaterialPool
+from src.leveleditor.menu.KeyBind import KeyBind
 
 from src.leveleditor import LEGlobals
+
+_FaceEditSheet = None
 
 class FaceMode(SelectionMode):
 
@@ -13,11 +16,17 @@ class FaceMode(SelectionMode):
     CanDuplicate = False
     Key = "solidface"
     Mask = LEGlobals.FaceMask
+    KeyBind = KeyBind.SelectFaces
+    Icon = "resources/icons/editor-select-faces.png"
+    Name = "Faces"
+    Desc = "Select solid faces"
 
-    def __init__(self, mgr):
-        SelectionMode.__init__(self, mgr)
-        self.faceEditSheet = FaceEditSheet(self)
-        self.activeMaterial = MaterialPool.getMaterial("materials/dev/dev_measuregeneric01b.mat")
+    @staticmethod
+    def getFaceEditSheet():
+        global _FaceEditSheet
+        if not _FaceEditSheet:
+            _FaceEditSheet = FaceEditSheet()
+        return _FaceEditSheet
 
     def getTranslatedSelections(self, mode):
         if mode in [SelectionType.Groups, SelectionType.Objects]:
@@ -30,16 +39,16 @@ class FaceMode(SelectionMode):
         else:
             return []
 
-    def enable(self):
-        SelectionMode.enable(self)
+    def activate(self):
+        SelectionMode.activate(self)
 
-        self.accept('faceMaterialChanged', self.faceEditSheet.faceMaterialChanged)
+        self.accept('faceMaterialChanged', FaceMode.getFaceEditSheet().faceMaterialChanged)
         # Right click on face to apply active material
         self.accept('mouse3', self.applyActiveMaterial)
 
-    def disable(self):
-        self.faceEditSheet.hide()
-        SelectionMode.disable(self)
+    def deactivate(self):
+        FaceMode.getFaceEditSheet().hide()
+        SelectionMode.deactivate(self)
 
     def applyActiveMaterial(self):
         vp = base.viewportMgr.activeViewport
@@ -55,12 +64,12 @@ class FaceMode(SelectionMode):
             faceNp = entry.getIntoNodePath().findNetPythonTag(self.Key)
             if not faceNp.isEmpty():
                 face = faceNp.getPythonTag(self.Key)
-                face.setMaterial(self.activeMaterial)
+                face.setMaterial(MaterialPool.ActiveMaterial)
                 break
 
     def onSelectionsChanged(self):
         if self.mgr.getNumSelectedObjects() == 0:
-            self.faceEditSheet.hide()
+            FaceMode.getFaceEditSheet().hide()
         else:
-            self.faceEditSheet.updateForSelection()
-            self.faceEditSheet.show()
+            FaceMode.getFaceEditSheet().updateForSelection()
+            FaceMode.getFaceEditSheet().show()

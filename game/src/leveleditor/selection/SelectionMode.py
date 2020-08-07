@@ -1,7 +1,7 @@
-from direct.showbase.DirectObject import DirectObject
+from src.leveleditor.DocObject import DocObject
 from .SelectionType import SelectionType, SelectionModeTransform
 
-class SelectionMode(DirectObject):
+class SelectionMode(DocObject):
 
     Type = SelectionType.Nothing
     # Collision mask used for the mouse click ray
@@ -16,13 +16,31 @@ class SelectionMode(DirectObject):
     TransformBits = SelectionModeTransform.All
 
     def __init__(self, mgr):
-        DirectObject.__init__(self)
+        DocObject.__init__(self, mgr.doc)
         self.mgr = mgr
+        self.enabled = False
+        self.activated = False
+
+    def cleanup(self):
+        self.mgr = None
+        self.enabled = None
+        self.activatated = None
+        DocObject.cleanup(self)
 
     def enable(self):
+        self.enabled = True
+        self.activate()
+
+    def activate(self):
+        self.activated = True
         self.accept('selectionsChanged', self.onSelectionsChanged)
 
     def disable(self):
+        self.enabled = False
+        self.deactivate()
+
+    def deactivate(self):
+        self.activated = False
         self.ignoreAll()
 
     def onSelectionsChanged(self):

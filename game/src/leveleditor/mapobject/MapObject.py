@@ -28,7 +28,7 @@ class MapObject(MapWritable):
     ObjectName = "object"
 
     def __init__(self, id):
-        MapWritable.__init__(self)
+        MapWritable.__init__(self, base.document)
         self.id = id
         self.selected = False
         self.classname = ""
@@ -226,7 +226,7 @@ class MapObject(MapWritable):
 
     def propertyChanged(self, prop, oldValue, newValue):
         if oldValue != newValue:
-            messenger.send('objectPropertyChanged', [self, prop, newValue])
+            self.send('objectPropertyChanged', [self, prop, newValue])
 
     def setAbsOrigin(self, origin):
         self.np.setPos(base.render, origin)
@@ -286,7 +286,7 @@ class MapObject(MapWritable):
 
     def transformChanged(self):
         self.recalcBoundingBox()
-        messenger.send('objectTransformChanged', [self])
+        self.send('objectTransformChanged', [self])
 
     def showBoundingBox(self):
         self.boundsBox.np.reparentTo(self.np)
@@ -380,7 +380,7 @@ class MapObject(MapWritable):
             self.collNp.node().addSolid(CollisionBox(mins, maxs))
             self.collNp.hide(~VIEWPORT_3D_MASK)
 
-        messenger.send('mapObjectBoundsChanged', [self])
+        self.send('mapObjectBoundsChanged', [self])
 
     def removePickBox(self):
         if self.collNp:

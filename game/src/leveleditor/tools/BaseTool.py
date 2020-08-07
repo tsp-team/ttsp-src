@@ -1,6 +1,6 @@
 from PyQt5 import QtGui, QtWidgets
 
-from direct.showbase.DirectObject import DirectObject
+from src.leveleditor.DocObject import DocObject
 
 from enum import IntEnum
 
@@ -10,7 +10,7 @@ class ToolUsage(IntEnum):
     View3D = 1
     Both = 2
 
-class BaseTool(DirectObject):
+class BaseTool(DocObject):
 
     Name = "Tool"
     KeyBind = None
@@ -21,11 +21,16 @@ class BaseTool(DirectObject):
     Usage = ToolUsage.Both
 
     def __init__(self, mgr):
-        DirectObject.__init__(self)
+        DocObject.__init__(self, mgr.doc)
         self.enabled = False
         self.activated = False
         self.mgr = mgr
-        self.doc = mgr.doc
+
+    def cleanup(self):
+        self.enabled = None
+        self.activated = None
+        self.mgr = None
+        DocObject.cleanup(self)
 
     def toolTriggered(self):
         pass
@@ -37,7 +42,7 @@ class BaseTool(DirectObject):
 
     def activate(self):
         self.activated = True
-        base.taskMgr.add(self.__updateTask, self.Name + "-UpdateTool")
+        self.doc.taskMgr.add(self.__updateTask, self.Name + "-UpdateTool")
 
     def __updateTask(self, task):
         self.update()
@@ -53,5 +58,5 @@ class BaseTool(DirectObject):
 
     def deactivate(self):
         self.activated = False
-        base.taskMgr.remove(self.Name + "-UpdateTool")
+        self.doc.taskMgr.remove(self.Name + "-UpdateTool")
         self.ignoreAll()

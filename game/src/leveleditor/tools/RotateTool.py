@@ -25,6 +25,11 @@ class RotateWidgetAxis(TransformWidgetAxis):
         self.axisCircle = self.attachNewNode(segs.create())
         self.axisCircle.setAntialias(AntialiasAttrib.MLine)
 
+    def cleanup(self):
+        self.axisCircle.removeNode()
+        self.axisCircle = None
+        TransformWidgetAxis.cleanup(self)
+
     def getClickBox(self):
         return [Vec3(-1, -0.2, -1), Vec3(1, 0.2, 1)]
 

@@ -1,17 +1,18 @@
 from panda3d.core import Vec3, Point2, WindowProperties, NodePath, SamplerState
 
-from direct.showbase.DirectObject import DirectObject
-from direct.showbase.InputStateGlobal import inputState
 from direct.gui.DirectGui import OnscreenImage
+from src.leveleditor.menu import KeyBinds
+from src.leveleditor.menu.KeyBind import KeyBind
+from src.leveleditor.DocObject import DocObject
 
 import math
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-class FlyCam(DirectObject):
+class FlyCam(DocObject):
 
     def __init__(self, viewport):
-        DirectObject.__init__(self)
+        DocObject.__init__(self, viewport.doc)
 
         self.viewport = viewport
 
@@ -41,20 +42,58 @@ class FlyCam(DirectObject):
         crosshair.reparentTo(NodePath())
         self.crosshair = crosshair
 
-        inputState.watchWithModifiers("forward", "w")
-        inputState.watchWithModifiers("reverse", "s")
-        inputState.watchWithModifiers("slideLeft", "a")
-        inputState.watchWithModifiers("slideRight", "d")
-        inputState.watchWithModifiers("floatDown", "q")
-        inputState.watchWithModifiers("floatUp", "e")
-        inputState.watchWithModifiers("lookUp", "arrow_up")
-        inputState.watchWithModifiers("lookDown", "arrow_down")
-        inputState.watchWithModifiers("lookRight", "arrow_right")
-        inputState.watchWithModifiers("lookLeft", "arrow_left")
+        self.inputState = {}
 
-        self.accept('z', self.handleZ)
+        self.addInput("forward", KeyBind.Forward3DView)
+        self.addInput("reverse", KeyBind.Back3DView)
+        self.addInput("slideLeft", KeyBind.Left3DView)
+        self.addInput("slideRight", KeyBind.Right3DView)
+        self.addInput("floatDown", KeyBind.Down3DView)
+        self.addInput("floatUp", KeyBind.Up3DView)
+        self.addInput("lookUp", KeyBind.LookUp3DView)
+        self.addInput("lookDown", KeyBind.LookDown3DView)
+        self.addInput("lookRight", KeyBind.LookRight3DView)
+        self.addInput("lookLeft", KeyBind.LookLeft3DView)
 
-        base.taskMgr.add(self.__flyCamTask, 'flyCam')
+        self.accept(KeyBinds.getPandaShortcut(KeyBind.FlyCam), self.handleZ)
+
+        self.doc.taskMgr.add(self.__flyCamTask, 'flyCam')
+
+    def cleanup(self):
+        self.viewport = None
+        self.doc.taskMgr.remove('flyCam')
+        self.inputState = None
+        self.crosshair.destroy()
+        self.crosshair = None
+        self.cursor = None
+        self.moving = None
+        self.lastSpeeds = None
+        self.diagonalFactor = None
+        self.maxPitch = None
+        self.minPitch = None
+        self.slideFactor = None
+        self.cameraSmooth = None
+        self.cameraRotateSpeed = None
+        self.cameraSpeed = None
+        self.moveStart = None
+        self.enabled = None
+        self.mouseSensitivity = None
+        DocObject.cleanup(self)
+
+    def addInput(self, name, keyBindID):
+        self.inputState[name] = False
+        shortcut = KeyBinds.getPandaShortcut(keyBindID)
+        self.accept(shortcut, self.__keyDown, [name])
+        self.accept(shortcut + '-up', self.__keyUp, [name])
+
+    def __keyDown(self, name):
+        self.inputState[name] = True
+
+    def __keyUp(self, name):
+        self.inputState[name] = False
+
+    def isSet(self, name):
+        return self.inputState[name]
 
     def handleZ(self):
         if self.viewport.mouseWatcher.hasMouse():
@@ -93,17 +132,17 @@ class FlyCam(DirectObject):
 
             # linear movement WASD+QE
             goalDir = Vec3(0)
-            if inputState.isSet("forward"):
+            if self.isSet("forward"):
                 goalDir[1] += 1
-            if inputState.isSet("reverse"):
+            if self.isSet("reverse"):
                 goalDir[1] -= 1
-            if inputState.isSet("slideLeft"):
+            if self.isSet("slideLeft"):
                 goalDir[0] -= 1
-            if inputState.isSet("slideRight"):
+            if self.isSet("slideRight"):
                 goalDir[0] += 1
-            if inputState.isSet("floatUp"):
+            if self.isSet("floatUp"):
                 goalDir[2] += 1
-            if inputState.isSet("floatDown"):
+            if self.isSet("floatDown"):
                 goalDir[2] -= 1
 
             if abs(goalDir[0]) and not abs(goalDir[1]):
@@ -114,13 +153,13 @@ class FlyCam(DirectObject):
 
             # rotational movement arrow keys
             goalRot = Vec3(0)
-            if inputState.isSet("lookLeft"):
+            if self.isSet("lookLeft"):
                 goalRot[0] += 1
-            if inputState.isSet("lookRight"):
+            if self.isSet("lookRight"):
                 goalRot[0] -= 1
-            if inputState.isSet("lookUp"):
+            if self.isSet("lookUp"):
                 goalRot[1] += 1
-            if inputState.isSet("lookDown"):
+            if self.isSet("lookDown"):
                 goalRot[1] -= 1
             camera.setH(camera.getH() + (goalRot[0] * self.cameraRotateSpeed * dt))
             camera.setP(camera.getP() + (goalRot[1] * self.cameraRotateSpeed * dt))

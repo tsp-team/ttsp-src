@@ -1,7 +1,5 @@
 from panda3d.core import RenderState, ColorAttrib, Vec4, Point3, GeomNode
 
-from direct.showbase.DirectObject import DirectObject
-
 from src.leveleditor.objectproperties.ObjectPropertiesWindow import ObjectPropertiesWindow
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
@@ -10,8 +8,18 @@ from src.leveleditor import RenderModes
 from src.leveleditor import LEGlobals
 from .SelectionType import SelectionType
 from src.leveleditor.actions.Delete import Delete
+from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
+from src.leveleditor.DocObject import DocObject
+
+from .GroupsMode import GroupsMode
+from .ObjectMode import ObjectMode
+from .FaceMode import FaceMode
+from .VertexMode import VertexMode
 
 from enum import IntEnum
+from functools import partial
+
+from PyQt5 import QtWidgets, QtCore
 
 Bounds3DState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(1, 1, 0, 1))
@@ -20,11 +28,17 @@ Bounds3DState = RenderState.make(
 Bounds2DState = RenderModes.DashedLineNoZ()
 Bounds2DState = Bounds2DState.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
 
-class SelectionManager(DirectObject):
+class SelectionManager(DocObject):
+
+    Modes = [
+        GroupsMode,
+        ObjectMode,
+        FaceMode,
+        VertexMode
+    ]
 
     def __init__(self, doc):
-        DirectObject.__init__(self)
-        self.doc = doc
+        DocObject.__init__(self, doc)
         self.selectedObjects = []
         self.selectionMins = Point3()
         self.selectionMaxs = Point3()
@@ -32,15 +46,98 @@ class SelectionManager(DirectObject):
 
         # We'll select groups by default
         self.selectionModes = {}
+        self.funcs = {}
         self.selectionMode = None
+        self.connected = False
 
-        self.accept('delete', self.deleteSelectedObjects)
+        self.acceptGlobal('documentActivated', self.__onDocActivated)
+        self.acceptGlobal('documentDeactivated', self.__onDocDeactivated)
         self.accept('objectTransformChanged', self.handleObjectTransformChange)
         self.accept('mapObjectBoundsChanged', self.handleMapObjectBoundsChanged)
 
         self.addSelectionModes()
 
         self.setSelectionMode(SelectionType.Groups)
+
+    def cleanup(self):
+        self.selectedObjects = None
+        self.selectionMins = None
+        self.selectionMaxs = None
+        self.selectionCenter = None
+        self.disconnectModes()
+        self.connected = None
+        self.funcs = None
+        if self.selectionMode:
+            self.selectionMode.disable()
+        self.selectionMode = None
+        for mode in self.selectionModes.values():
+            mode.cleanup()
+        self.selectionModes = None
+        self.selectionMode = None
+        self.connected = None
+        DocObject.cleanup(self)
+
+    def __onDocActivated(self, doc):
+        if doc != self.doc:
+            return
+
+        if self.selectionMode and not self.selectionMode.activated:
+            self.selectionMode.activate()
+            self.selectionMode.onSelectionsChanged()
+
+        self.connectModes()
+
+    def connectModes(self):
+        if self.connected:
+            return
+
+        for mode in self.selectionModes.values():
+            action = base.menuMgr.action(mode.KeyBind)
+            action.setChecked(mode.enabled)
+            action.setEnabled(True)
+            action.connect(self.funcs[mode])
+
+        self.connected = True
+
+    def __onDocDeactivated(self, doc):
+        if doc != self.doc:
+            return
+
+        if self.selectionMode and self.selectionMode.activated:
+            self.selectionMode.deactivate()
+
+        self.disconnectModes()
+
+    def disconnectModes(self):
+        if not self.connected:
+            return
+
+        for mode in self.selectionModes.values():
+            action = base.menuMgr.action(mode.KeyBind)
+            action.setChecked(False)
+            action.setEnabled(False)
+            action.disconnect(self.funcs[mode])
+
+        self.connected = False
+
+    @staticmethod
+    def addModeActions():
+        editMenu = base.menuMgr.editMenu
+        editMenu.addSeparator()
+
+        selectBar = base.menuMgr.createToolBar("Select:")
+        selectBar.setIconSize(QtCore.QSize(24, 24))
+        selectBar.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        selectMenu = editMenu.addMenu("Select")
+        group = QtWidgets.QActionGroup(selectBar)
+        for mode in SelectionManager.Modes:
+            action = base.menuMgr.addAction(mode.KeyBind, mode.Name, mode.Desc, toolBar=selectBar,
+                menu=selectMenu, checkable=True, enabled=False, icon=mode.Icon)
+            group.addAction(action)
+
+    def changeSelectionMode(self, mode):
+        modeInst = self.selectionModes[mode]
+        base.actionMgr.performAction("Select %s" % modeInst.Name, ChangeSelectionMode(mode))
 
     def getSelectionKey(self):
         return self.selectionMode.Key
@@ -53,17 +150,11 @@ class SelectionManager(DirectObject):
 
     def addSelectionMode(self, modeInst):
         self.selectionModes[modeInst.Type] = modeInst
+        self.funcs[modeInst] = partial(self.changeSelectionMode,  modeInst.Type)
 
     def addSelectionModes(self):
-        from .GroupsMode import GroupsMode
-        from .ObjectMode import ObjectMode
-        from .FaceMode import FaceMode
-        from .VertexMode import VertexMode
-        self.addSelectionMode(GroupsMode(self))
-        self.addSelectionMode(ObjectMode(self))
-        self.faceMode = FaceMode(self)
-        self.addSelectionMode(self.faceMode)
-        self.addSelectionMode(VertexMode(self))
+        for mode in self.Modes:
+            self.addSelectionMode(mode(self))
 
     def setSelectionMode(self, mode):
         if self.selectionMode is not None:
@@ -78,12 +169,12 @@ class SelectionManager(DirectObject):
     def handleMapObjectBoundsChanged(self, mapObject):
         if mapObject in self.selectedObjects:
             self.updateSelectionBounds()
-            messenger.send('selectedObjectBoundsChanged', [mapObject])
+            self.send('selectedObjectBoundsChanged', [mapObject])
 
     def handleObjectTransformChange(self, entity):
         if entity in self.selectedObjects:
             self.updateSelectionBounds()
-            messenger.send('selectedObjectTransformChanged', [entity])
+            self.send('selectedObjectTransformChanged', [entity])
 
     def deleteSelectedObjects(self):
         if not self.selectionMode.CanDelete:
@@ -94,7 +185,7 @@ class SelectionManager(DirectObject):
         base.actionMgr.performAction("Delete %i object(s)" % len(selected), Delete(selected))
         self.selectedObjects = []
         self.updateSelectionBounds()
-        messenger.send('selectionsChanged')
+        self.send('selectionsChanged')
 
     def hasSelectedObjects(self):
         return len(self.selectedObjects) > 0
@@ -111,7 +202,7 @@ class SelectionManager(DirectObject):
         self.selectedObjects = []
         if update:
             self.updateSelectionBounds()
-            messenger.send('selectionsChanged')
+            self.send('selectionsChanged')
 
     def singleSelect(self, obj):
         self.deselectAll(False)
@@ -122,7 +213,7 @@ class SelectionManager(DirectObject):
         for obj in listOfObjs:
             self.select(obj, False)
         self.updateSelectionBounds()
-        messenger.send('selectionsChanged')
+        self.send('selectionsChanged')
 
     def deselect(self, obj, updateBounds = True):
         if obj in self.selectedObjects:
@@ -131,7 +222,7 @@ class SelectionManager(DirectObject):
 
             if updateBounds:
                 self.updateSelectionBounds()
-                messenger.send('selectionsChanged')
+                self.send('selectionsChanged')
 
     def select(self, obj, updateBounds = True):
         if not obj in self.selectedObjects:
@@ -140,7 +231,7 @@ class SelectionManager(DirectObject):
 
             if updateBounds:
                 self.updateSelectionBounds()
-                messenger.send('selectionsChanged')
+                self.send('selectionsChanged')
 
     def updateSelectionBounds(self):
 

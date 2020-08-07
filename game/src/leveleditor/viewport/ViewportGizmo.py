@@ -23,6 +23,20 @@ class ViewportGizmo:
             # Z line
             self.zNp = self.makeGizmoAxis(2, "Z")
 
+    def cleanup(self):
+        self.vp = None
+        if hasattr(self, 'xNp'):
+            self.xNp.removeNode()
+            self.xNp = None
+        if hasattr(self, 'yNp'):
+            self.yNp.removeNode()
+            self.yNp = None
+        if hasattr(self, 'zNp'):
+            self.zNp.removeNode()
+            self.zNp = None
+        self.np.removeNode()
+        self.np = None
+
     def makeGizmoAxis(self, axis, text, textOffset = 1.1):
         color = Vec4(0, 0, 0, 1)
         color[axis] = 1

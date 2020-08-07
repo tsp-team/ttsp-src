@@ -60,3 +60,12 @@ class KeyBind(IntEnum):
     PrevDocument = 48
 
     Exit = 49
+
+    FileSaveAll = 50
+    FileCloseAll = 51
+
+    ViewQuads = 52
+    View3D = 53
+    ViewXY = 54
+    ViewYZ = 55
+    ViewXZ = 56

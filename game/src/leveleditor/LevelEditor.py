@@ -12,7 +12,6 @@ from direct.showbase.DirectObject import DirectObject
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.task.TaskManagerGlobal import taskMgr
 from direct.showbase.MessengerGlobal import messenger
-from direct.showbase.EventManagerGlobal import eventMgr
 
 from src.coginvasion.base.CogInvasionLoader import CogInvasionLoader
 
@@ -35,6 +34,7 @@ from src.leveleditor.ui.ModelBrowser import ModelBrowser
 from src.leveleditor.ui.MaterialBrowser import MaterialBrowser
 from src.leveleditor.menu.MenuManager import MenuManager
 from src.leveleditor.menu.KeyBind import KeyBind
+from src.leveleditor.menu import KeyBinds
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtWidgets import QMessageBox
@@ -42,6 +42,28 @@ from src.leveleditor.fgdtools import FgdParse, FgdWrite
 
 import builtins
 import time
+
+stylesheet = """
+
+QPushButton:hover {
+    background-color: rgb(204, 91, 12);
+    color: rgb(25, 25, 25);
+    border-color: rgb(255, 134, 59);
+}
+
+QToolButton:hover {
+    background-color: rgb(204, 91, 12);
+    color: rgb(25, 25, 25);
+    border-color: rgb(255, 134, 59);
+}
+
+QToolButton:checked {
+    background-color: rgb(204, 91, 12);
+    color: rgb(25, 25, 25);
+    border-color: rgb(255, 134, 59);
+}
+
+"""
 
 class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
 
@@ -80,43 +102,62 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         base.docTabs = self.docTabs
 
         self.docTabs.currentChanged.connect(self.__docTabChanged)
+        self.docTabs.tabCloseRequested.connect(self.__reqClose)
 
-        """
-        self.ui.actionAbout.triggered.connect(self.__showAbout)
-        self.ui.actionSave.triggered.connect(self.__save)
-        self.ui.actionSaveAs.triggered.connect(self.__saveAs)
-        self.ui.actionClose.triggered.connect(self.__close)
-        self.ui.actionExit.triggered.connect(self.close)
-        self.ui.actionOpen.triggered.connect(self.__open)
-        self.ui.actionNew_Map.triggered.connect(self.__close)
-        self.ui.actionUndo.triggered.connect(self.__undo)
-        self.ui.actionRedo.triggered.connect(self.__redo)
+    def __reqClose(self, index):
+        doc = self.docTabs.widget(index).doc
+        self.__close(doc)
 
-        selectionModeActions = {
-            SelectionType.Groups: self.ui.actionGroups, SelectionType.Objects: self.ui.actionObjects,
-            SelectionType.Faces: self.ui.actionFaces, SelectionType.Vertices: self.ui.actionVertices
-        }
-        self.selectionModeActions = selectionModeActions
-        self.ui.actionGroups.setChecked(True)
-        selectionModeGroup = QtWidgets.QActionGroup(self.ui.topBar)
-        for mode, action in selectionModeActions.items():
-            selectionModeGroup.addAction(action)
-            action.toggled.connect(lambda checked, mode=mode: self.__maybeSetSelelectionMode(checked, mode))
-        """
+    def initialize(self):
+        base.menuMgr.connect(KeyBind.FileNew, self.__new)
+        base.menuMgr.connect(KeyBind.FileOpen, self.__open)
+        base.menuMgr.connect(KeyBind.FileClose, self.__close)
+        base.menuMgr.connect(KeyBind.FileSave, self.__save)
+        base.menuMgr.connect(KeyBind.FileSaveAll, self.__saveAll)
+        base.menuMgr.connect(KeyBind.FileSaveAs, self.__saveAs)
+        base.menuMgr.connect(KeyBind.FileCloseAll, self.__closeAll)
+        base.menuMgr.connect(KeyBind.Undo, self.__undo)
+        base.menuMgr.connect(KeyBind.Redo, self.__redo)
 
-        self.accept('actionTriggered', self.__onActionTriggered)
+    def __new(self):
+        base.openDocument(None)
 
-    def __onActionTriggered(self, keybind, checked):
-        if keybind == KeyBind.Undo:
-            self.__undo()
-        elif keybind == KeyBind.Redo:
-            self.__redo()
+    def __open(self):
+        selectedFilename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open', filter=('Panda3D map file (*.pmap)'))
+        if len(selectedFilename[0]) == 0:
+            # Save as was cancelled
+            return False
+        # Convert to a panda filename
+        filename = Filename.fromOsSpecific(selectedFilename[0])
+        # Open it!
+        base.openDocument(filename)
+        return True
+
+    def __closeAll(self):
+        for doc in base.documents:
+            if not self.__close(doc):
+                return False
+
+        return True
+
+    def __close(self, doc = None):
+        if not doc:
+            doc = base.document
+
+        if not self.askSaveIfUnsaved(doc):
+            # User decided against closing
+            return False
+        base.closeDocument(doc)
+        return True
 
     def __docTabChanged(self, index):
         if base.document:
             base.document.deactivated()
+        base.document = None
 
         page = self.docTabs.widget(index)
+        if not page:
+            return
         page.doc.activated()
         base.document = page.doc
 
@@ -130,7 +171,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
     def __redo(self):
         base.actionMgr.redo()
 
-    def addDockWindow(self, dockWidget, location = "right"):
+    def addDockWindow(self, dockWidget, location = "left"):
         location = self.dockLocations[location]
         dockWidget.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
         self.addDockWidget(location, dockWidget, QtCore.Qt.Vertical)
@@ -147,12 +188,12 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.ui.statusbar.addPermanentWidget(lbl)
         return lbl
 
-    def askSaveIfUnsaved(self):
-        if base.document.unsaved:
+    def askSaveIfUnsaved(self, doc):
+        if doc.unsaved:
             msg = QMessageBox(parent = self, icon = QMessageBox.Warning)
             msg.setWindowTitle(LEGlobals.AppName)
             msg.setModal(True)
-            msg.setText("Do you want to save changes to '%s' before closing?" % base.document.getMapName())
+            msg.setText("Do you want to save changes to '%s' before closing?" % doc.getMapName())
             msg.setInformativeText("Your changes will be lost if you don't save them.")
             msg.setStandardButtons(QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
             msg.setDefaultButton(QMessageBox.Save)
@@ -160,7 +201,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
             ret = msg.exec_()
 
             if ret == QMessageBox.Save:
-                return self.__save()
+                return self.__save(doc)
             elif ret == QMessageBox.Cancel:
                 return False
             elif ret == QMessageBox.Discard:
@@ -169,46 +210,36 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
 
         return True
 
-    def __close(self, openBlank = True):
-        if not self.askSaveIfUnsaved():
-            # User decided against closing
-            return False
-        base.document.close()
-        if openBlank:
-            # We are never actually without a document.
-            # When we close the current document, open a blank one.
-            base.document.open()
+    def __save(self, doc = None):
+        if not doc:
+            doc = base.document
+
+        if not doc.filename:
+            return self.doSaveAs(doc)
+
+        doc.save()
         return True
 
-    def __save(self):
-        if not base.document.filename:
-            return self.doSaveAs()
+    def __saveAll(self):
+        for doc in base.documents:
+            if not self.__save(doc):
+                return False
 
-        base.document.save()
         return True
 
-    def __saveAs(self):
-        return self.doSaveAs()
+    def __saveAs(self, doc = None):
+        if not doc:
+            doc = base.document
+        return self.doSaveAs(doc)
 
-    def doSaveAs(self):
+    def doSaveAs(self, doc):
         selectedFilename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save As')
         if len(selectedFilename[0]) == 0:
             # Save as was cancelled
             return False
         # Convert to a panda filename
         filename = Filename.fromOsSpecific(selectedFilename[0])
-        base.document.save(filename)
-        return True
-
-    def __open(self):
-        selectedFilename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open', filter=('Panda3D map file (*.pmap)'))
-        if len(selectedFilename[0]) == 0:
-            # Save as was cancelled
-            return False
-        # Convert to a panda filename
-        filename = Filename.fromOsSpecific(selectedFilename[0])
-        # Open it!
-        base.openDocument(filename)
+        doc.save(filename)
         return True
 
     def __showAbout(self):
@@ -223,7 +254,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         dlg.show()
 
     def closeEvent(self, event):
-        if not self.__close():
+        if not self.__closeAll():
             event.ignore()
             return
 
@@ -242,24 +273,183 @@ class LevelEditorApp(QtWidgets.QApplication):
 
         self.setWindowIcon(QtGui.QIcon("resources/icons/foundry.ico"))
 
-        style = QtWidgets.QStyleFactory.create("fusion")
-        self.setStyle(style)
-        accent = QtGui.QColor(255, 134, 59)
-        dark_palette = QtGui.QPalette()
-        dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(68, 68, 68))
-        dark_palette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
-        dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(82, 82, 82))
-        dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(68, 68, 68))
-        dark_palette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.black)
-        dark_palette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
-        dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(68, 68, 68))
-        dark_palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
-        dark_palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
-        dark_palette.setColor(QtGui.QPalette.Link, accent)
-        dark_palette.setColor(QtGui.QPalette.Highlight, accent)
-        dark_palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
-        dark_palette.setColor(QtGui.QPalette.Shadow, QtCore.Qt.black)
-        self.setPalette(dark_palette)
+        self.setStyle("Fusion")
+
+        palette = QtGui.QPalette()
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.WindowText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Button, brush)
+        brush = QtGui.QBrush(QtGui.QColor(103, 103, 103))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Light, brush)
+        brush = QtGui.QBrush(QtGui.QColor(86, 86, 86))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Midlight, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Dark, brush)
+        brush = QtGui.QBrush(QtGui.QColor(46, 46, 46))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Mid, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Text, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.BrightText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.ButtonText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(46, 46, 46))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Base, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Window, brush)
+        brush = QtGui.QBrush(QtGui.QColor(27, 27, 27))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Shadow, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 134, 59))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Highlight, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.HighlightedText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 134, 59))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Link, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.AlternateBase, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 220))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.ToolTipBase, brush)
+        brush = QtGui.QBrush(QtGui.QColor(0, 0, 0))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.ToolTipText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255, 128))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.PlaceholderText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.WindowText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Button, brush)
+        brush = QtGui.QBrush(QtGui.QColor(103, 103, 103))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Light, brush)
+        brush = QtGui.QBrush(QtGui.QColor(86, 86, 86))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Midlight, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Dark, brush)
+        brush = QtGui.QBrush(QtGui.QColor(46, 46, 46))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Mid, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Text, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.BrightText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.ButtonText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(46, 46, 46))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Window, brush)
+        brush = QtGui.QBrush(QtGui.QColor(27, 27, 27))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Shadow, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 134, 59))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Highlight, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.HighlightedText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 134, 59))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Link, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.AlternateBase, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 220))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.ToolTipBase, brush)
+        brush = QtGui.QBrush(QtGui.QColor(0, 0, 0))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.ToolTipText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255, 128))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.PlaceholderText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Button, brush)
+        brush = QtGui.QBrush(QtGui.QColor(103, 103, 103))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Light, brush)
+        brush = QtGui.QBrush(QtGui.QColor(86, 86, 86))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Midlight, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Dark, brush)
+        brush = QtGui.QBrush(QtGui.QColor(46, 46, 46))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Mid, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Text, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.BrightText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.ButtonText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Base, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Window, brush)
+        brush = QtGui.QBrush(QtGui.QColor(27, 27, 27))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Shadow, brush)
+        brush = QtGui.QBrush(QtGui.QColor(189, 189, 189))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Highlight, brush)
+        brush = QtGui.QBrush(QtGui.QColor(34, 34, 34))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.HighlightedText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 134, 59))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Link, brush)
+        brush = QtGui.QBrush(QtGui.QColor(69, 69, 69))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.AlternateBase, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 220))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.ToolTipBase, brush)
+        brush = QtGui.QBrush(QtGui.QColor(0, 0, 0))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.ToolTipText, brush)
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255, 128))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.PlaceholderText, brush)
+        self.setPalette(palette)
+
+        self.setStyleSheet(stylesheet)
 
         self.window = LevelEditorWindow()
         splash.finish(self.window)
@@ -267,6 +457,26 @@ class LevelEditorApp(QtWidgets.QApplication):
 
 class LevelEditor(DirectObject):
     notify = directNotify.newCategory("Foundry")
+
+    DocActions = [
+        KeyBind.FileSave,
+        KeyBind.FileSaveAll,
+        KeyBind.FileSaveAs,
+        KeyBind.FileClose,
+        KeyBind.FileCloseAll,
+        KeyBind.Undo,
+        KeyBind.Redo,
+        KeyBind.ViewQuads,
+        KeyBind.View3D,
+        KeyBind.ViewXY,
+        KeyBind.ViewYZ,
+        KeyBind.ViewXZ,
+        KeyBind.Toggle2DGrid,
+        KeyBind.Toggle3DGrid,
+        KeyBind.ToggleGridSnap,
+        KeyBind.IncGridSize,
+        KeyBind.DecGridSize
+    ]
 
     def __init__(self):
         DirectObject.__init__(self)
@@ -282,10 +492,6 @@ class LevelEditor(DirectObject):
             self.notify.error("No graphics pipe is available!")
             return
 
-        self.taskMgr = taskMgr
-        self.eventMgr = eventMgr
-        builtins.eventMgr = self.eventMgr
-
         self.globalClock = ClockObject.getGlobalClock()
         # Since we have already started up a TaskManager, and probably
         # a number of tasks; and since the TaskManager had to use the
@@ -300,11 +506,10 @@ class LevelEditor(DirectObject):
         self.graphicsEngine.setDefaultLoader(self.loader.loader)
         builtins.loader = self.loader
 
-        self.dgTrav = DataGraphTraverser()
+        self.taskMgr = taskMgr
+        builtins.taskMgr = self.taskMgr
 
-        self.taskMgr.add(self.__gbcLoop, "garbageCollectStates", sort = 46)
-        self.taskMgr.add(self.__dataLoop, "dataLoop", sort = -50)
-        self.taskMgr.add(self.__igLoop, "igLoop", sort = 50)
+        self.dgTrav = DataGraphTraverser()
 
         self.dataRoot = NodePath("data")
         self.hidden = NodePath("hidden")
@@ -312,14 +517,12 @@ class LevelEditor(DirectObject):
         self.aspect2d = NodePath("aspect2d")
         builtins.aspect2d = self.aspect2d
 
+        # Messages that are sent regardless of the active document.
         self.messenger = messenger
         builtins.messenger = self.messenger
 
         builtins.base = self
-        builtins.taskMgr = self.taskMgr
         builtins.hidden = self.hidden
-
-        self.eventMgr.restart()
 
         ###################################################################
 
@@ -334,27 +537,46 @@ class LevelEditor(DirectObject):
 
         self.initialize()
 
-    def __gbcLoop(self, task):
+    def __docLoop(self):
+        if self.document:
+            self.document.step()
+
+    def __gbcLoop(self):
         TransformState.garbageCollect()
         RenderState.garbageCollect()
-        return task.cont
 
-    def __dataLoop(self, task):
+    def __dataLoop(self):
         self.dgTrav.traverse(self.dataRoot.node())
-        return task.cont
 
-    def __igLoop(self, task):
+    def __igLoop(self):
         self.graphicsEngine.renderFrame()
         throwNewFrame()
-        return task.cont
 
     def openDocument(self, filename):
         doc = Document()
-        doc.open(filename)
         self.documents.append(doc)
         base.docTabs.addTab(doc.page, "")
-        doc.updateTabText()
         base.docTabs.setCurrentWidget(doc.page)
+        doc.open(filename)
+        doc.updateTabText()
+
+        if len(self.documents) == 1:
+            self.enableDocActions()
+
+    def closeDocument(self, doc):
+        self.docTabs.removeTab(self.docTabs.indexOf(doc.page))
+        doc.close()
+        self.documents.remove(doc)
+        if len(self.documents) == 0:
+            self.disableDocActions()
+
+    def enableDocActions(self):
+        for act in self.DocActions:
+            self.menuMgr.enableAction(act)
+
+    def disableDocActions(self):
+        for act in self.DocActions:
+            self.menuMgr.disableAction(act)
 
     def clickTraverse(self, np, handler, travRoot = None):
         self.clickTrav.addCollider(np, handler)
@@ -378,20 +600,46 @@ class LevelEditor(DirectObject):
         self.menuMgr = MenuManager()
         self.menuMgr.addMenuItems()
         ToolManager.addToolActions()
+        SelectionManager.addModeActions()
+        self.qtWindow.initialize()
         # Open a blank document
-        self.openDocument(None)
-        #self.qtApp.window.ui.actionToggleGrid.setChecked(GridSettings.EnableGrid)
-        #self.qtApp.window.ui.actionToggleGrid.toggled.connect(self.__toggleGrid)
-        ##self.qtApp.window.ui.actionGridSnap.setChecked(GridSettings.GridSnap)
-        #self.qtApp.window.ui.actionGridSnap.toggled.connect(self.__gridSnap)
-        #self.qtApp.window.ui.actionIncreaseGridSize.triggered.connect(self.__incGridSize)
-        #self.qtApp.window.ui.actionDecreaseGridSize.triggered.connect(self.__decGridSize)
+        #self.openDocument(None)
         self.adjustGridText()
         self.brushMgr = BrushManager()
         self.modelBrowser = ModelBrowser(None)
         self.materialBrowser = MaterialBrowser(None)
 
+        self.menuMgr.connect(KeyBind.ToggleGridSnap, self.__gridSnap)
+        self.menuMgr.connect(KeyBind.IncGridSize, self.__incGridSize)
+        self.menuMgr.connect(KeyBind.DecGridSize, self.__decGridSize)
+        self.menuMgr.connect(KeyBind.Toggle2DGrid, self.__toggleGrid)
+        self.menuMgr.connect(KeyBind.Toggle3DGrid, self.__toggleGrid3D)
+        self.menuMgr.connect(KeyBind.ViewQuads, self.__viewQuads)
+        self.menuMgr.connect(KeyBind.View3D, self.__view3D)
+        self.menuMgr.connect(KeyBind.ViewXY, self.__viewXY)
+        self.menuMgr.connect(KeyBind.ViewXZ, self.__viewXZ)
+        self.menuMgr.connect(KeyBind.ViewYZ, self.__viewYZ)
+
+        self.menuMgr.action(KeyBind.ToggleGridSnap).setChecked(GridSettings.GridSnap)
+        self.menuMgr.action(KeyBind.Toggle2DGrid).setChecked(GridSettings.EnableGrid)
+        self.menuMgr.action(KeyBind.Toggle3DGrid).setChecked(GridSettings.EnableGrid3D)
+
         self.brushMgr.addBrushes()
+
+    def __viewQuads(self):
+        self.document.page.arrangeInQuadLayout()
+
+    def __view3D(self):
+        self.document.page.focusOnViewport(VIEWPORT_3D)
+
+    def __viewXY(self):
+        self.document.page.focusOnViewport(VIEWPORT_2D_TOP)
+
+    def __viewYZ(self):
+        self.document.page.focusOnViewport(VIEWPORT_2D_SIDE)
+
+    def __viewXZ(self):
+        self.document.page.focusOnViewport(VIEWPORT_2D_FRONT)
 
     def __gridSnap(self):
         GridSettings.GridSnap = not GridSettings.GridSnap
@@ -399,6 +647,10 @@ class LevelEditor(DirectObject):
 
     def __toggleGrid(self):
         GridSettings.EnableGrid = not GridSettings.EnableGrid
+        self.adjustGridText()
+
+    def __toggleGrid3D(self):
+        GridSettings.EnableGrid3D = not GridSettings.EnableGrid3D
         self.adjustGridText()
 
     def __incGridSize(self):
@@ -419,4 +671,8 @@ class LevelEditor(DirectObject):
         self.running = True
         while self.running:
             self.qtApp.processEvents()
+            self.__gbcLoop()
+            self.__dataLoop()
+            self.__docLoop()
             self.taskMgr.step()
+            self.__igLoop()

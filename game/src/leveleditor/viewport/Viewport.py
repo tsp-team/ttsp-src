@@ -45,6 +45,7 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         self.win = None
         self.displayRegion = None
         self.mouseWatcher = None
+        self.mouseWatcherNp = None
         self.buttonThrower = None
         self.clickRay = None
         self.clickNode = None
@@ -54,6 +55,7 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         self.zoom = 1.0
         self.gizmo = None
         self.inputDevice = None
+        self.mouseAndKeyboard = None
 
         # 2D stuff copied from ShowBase :(
         self.camera2d = None
@@ -175,9 +177,11 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         # keep track of the mouse in this viewport
         mak = MouseAndKeyboard(self.win, 0, "mouse")
         mouse = base.dataRoot.attachNewNode(mak)
+        self.mouseAndKeyboard = mouse
         self.mouseWatcher = MouseWatcher()
         self.mouseWatcher.setDisplayRegion(self.displayRegion)
         mw = mouse.attachNewNode(self.mouseWatcher)
+        self.mouseWatcherNp = mw
 
         # listen for keyboard and mouse events in this viewport
         bt = ButtonThrower("kbEvents")
@@ -206,6 +210,83 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         self.doc.viewportMgr.addViewport(self)
 
         self.makeGrid()
+
+    def cleanup(self):
+        self.grid.cleanup()
+        self.grid = None
+        self.gridRoot.removeNode()
+        self.gridRoot = None
+
+        self.lens = None
+        self.camNode = None
+        self.cam.removeNode()
+        self.cam = None
+        self.camera.removeNode()
+        self.camera = None
+        self.spec = None
+        self.doc = None
+        self.type = None
+        self.window = None
+        self.zoom = None
+        self.gizmo.cleanup()
+        self.gizmo = None
+        self.clickNp.removeNode()
+        self.clickNp = None
+        self.clickQueue.clearEntries()
+        self.clickQueue = None
+        self.clickNode = None
+        self.clickRay = None
+        self.buttonThrower.removeNode()
+        self.buttonThrower = None
+        self.inputDevice = None
+        self.mouseWatcherNp.removeNode()
+        self.mouseWatcherNp = None
+        self.mouseWatcher = None
+        self.mouseAndKeyboard.removeNode()
+        self.mouseAndKeyboard = None
+        self.win.removeAllDisplayRegions()
+        self.displayRegion = None
+        base.graphicsEngine.removeWindow(self.win)
+        self.win = None
+
+        self.camera2d.removeNode()
+        self.camera2d = None
+        self.cam2d = None
+
+        self.render2d.removeNode()
+        self.render2d = None
+
+        self.a2dBackground = None
+        self.a2dTop = None
+        self.a2dBottom = None
+        self.a2dLeft = None
+        self.a2dRight = None
+        self.aspect2d = None
+        self.a2dTopCenter = None
+        self.a2dTopCenterNs = None
+        self.a2dBottomCenter = None
+        self.a2dBottomCenterNs = None
+        self.a2dLeftCenter = None
+        self.a2dLeftCenterNs = None
+        self.a2dRightCenter = None
+        self.a2dRightCenterNs = None
+
+        self.a2dTopLeft = None
+        self.a2dTopLeftNs = None
+        self.a2dTopRight = None
+        self.a2dTopRightNs = None
+        self.a2dBottomLeft = None
+        self.a2dBottomLeftNs = None
+        self.a2dBottomRight = None
+        self.a2dBottomRightNs = None
+        self.__oldAspectRatio = None
+
+        self.qtWindow.deleteLater()
+        self.qtWidget.deleteLater()
+        self.qtWindow = None
+        self.qtWidget = None
+
+        self.deleteLater()
 
     def keyPressEvent(self, event):
         button = LEUtils.keyboardButtonFromQtKey(event.key())

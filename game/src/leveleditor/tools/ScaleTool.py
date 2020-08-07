@@ -24,6 +24,13 @@ class ScaleWidgetAxis(TransformWidgetAxis):
         self.base = self.attachNewNode(baseSegs.create())
         self.base.setAntialias(AntialiasAttrib.MLine)
 
+    def cleanup(self):
+        self.head.removeNode()
+        self.head = None
+        self.base.removeNode()
+        self.base = None
+        TransformWidgetAxis.cleanup(self)
+
     def getClickBox(self):
         return [Vec3(-0.06, 0.0, -0.06), Vec3(0.06, 0.8, 0.06)]
 
@@ -46,6 +53,13 @@ class ScaleTool(BaseTransformTool):
         self.initialBoxStart = Vec3(0)
         self.initialBoxEnd = Vec3(0)
         self.startGizmoDelta = Vec3(0)
+
+    def cleanup(self):
+        self.startBoxSize = None
+        self.initialBoxEnd = None
+        self.initialBoxStart = None
+        self.startGizmoDelta = None
+        BaseTransformTool.cleanup(self)
 
     def createWidget(self):
         self.widget = ScaleWidget(self)

@@ -13,6 +13,11 @@ class Viewport3D(Viewport):
         Viewport.__init__(self, vpType, window, doc)
         self.flyCam = None
 
+    def cleanup(self):
+        self.flyCam.cleanup()
+        self.flyCam = None
+        Viewport.cleanup(self)
+
     def mouseMove(self):
         base.qtWindow.coordsLabel.setText("")
 
