@@ -83,7 +83,6 @@ class SelectionManager(DocObject):
 
         if self.selectionMode and not self.selectionMode.activated:
             self.selectionMode.activate()
-            self.selectionMode.onSelectionsChanged()
 
         self.connectModes()
 

@@ -55,6 +55,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
             self.ignoreAll()
         self.mgr = None
         self.setDoc(None)
+        self.updateForSelection()
 
     def __onDocActivate(self, doc):
         if self.doc:
@@ -62,6 +63,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
         self.mgr = doc.selectionMgr
         self.setDoc(doc)
         self.accept('objectPropertyChanged', self.__handleObjectPropertyChanged)
+        self.updateForSelection()
 
     def __handleObjectPropertyChanged(self, entity, prop, value):
         if entity == self.entity:
@@ -117,7 +119,7 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
             self.ui.propertiesView.setRowHidden(item.row(), QtCore.QModelIndex(), False)
 
     def updateForSelection(self):
-        numSelections = self.mgr.getNumSelectedObjects()
+        numSelections = self.mgr.getNumSelectedObjects() if self.mgr else 0
 
         self.valueItemByPropName = {}
 

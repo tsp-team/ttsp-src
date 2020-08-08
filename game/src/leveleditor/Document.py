@@ -34,7 +34,7 @@ models = [
     "phase_14/models/props/gumballShooter.bam"
 ]
 
-class DocumentPage(QtWidgets.QWidget):
+class DocumentWidget(QtWidgets.QWidget):
 
     QuadArrangement = {
         VIEWPORT_3D: (0, 0),
@@ -43,9 +43,10 @@ class DocumentPage(QtWidgets.QWidget):
         VIEWPORT_2D_TOP: (0, 1)
     }
 
-    def __init__(self, doc):
+    def __init__(self, doc, win):
         self.doc = doc
-        QtWidgets.QWidget.__init__(self)
+        self.win = win
+        QtWidgets.QWidget.__init__(self, win)
         self.setLayout(QtWidgets.QGridLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
 
@@ -87,6 +88,7 @@ class DocumentPage(QtWidgets.QWidget):
 
     def cleanup(self):
         self.doc = None
+        self.win = None
         self.viewports = None
         self.splitter.cleanup()
         self.splitter = None
@@ -96,6 +98,31 @@ class DocumentPage(QtWidgets.QWidget):
     def addViewport(self, vp):
         vp.initialize()
         self.viewports[vp.type] = vp
+
+class DocumentWindow(QtWidgets.QMdiSubWindow):
+
+    def __init__(self, doc):
+        QtWidgets.QMdiSubWindow.__init__(self, base.docArea)
+        self.doc = doc
+        self.docWidget = DocumentWidget(doc, self)
+        self.setWidget(self.docWidget)
+
+    def arrangeInQuadLayout(self):
+        self.docWidget.arrangeInQuadLayout()
+
+    def focusOnViewport(self, vp):
+        self.docWidget.focusOnViewport(vp)
+
+    def closeEvent(self, event):
+        if not base.reqCloseDocument(self.doc):
+            event.ignore()
+            return
+
+    def cleanup(self):
+        self.docWidget.cleanup()
+        self.docWidget = None
+        self.doc = None
+        self.deleteLater()
 
 # Represents a single map document we have open.
 class Document(DirectObject):
@@ -126,7 +153,7 @@ class Document(DirectObject):
         self.actionMgr = ActionManager(self)
 
         # Create the page that the document is viewed in.
-        self.page = DocumentPage(self)
+        self.page = DocumentWindow(self)
         self.createShaderGenerator()
 
         self.toolMgr.addTools()
@@ -227,10 +254,9 @@ class Document(DirectObject):
         self.updateTabText()
 
     def updateTabText(self):
-        name = self.getMapName()
-        if self.unsaved:
-            name = "* " + name
-        base.docTabs.setTabText(base.docTabs.indexOf(self.page), name)
+        title = self.getMapTitle()
+        self.page.setWindowTitle(title)
+        base.setWindowSubTitle(title)
 
     def r_open(self, kv, parent = None):
         classDef = MapObjectFactory.MapObjectsByName.get(kv.getName())
@@ -250,7 +276,7 @@ class Document(DirectObject):
             self.r_open(kv.getChild(i), obj)
 
     def createShaderGenerator(self):
-        vp = self.page.viewports[VIEWPORT_3D]
+        vp = self.page.docWidget.viewports[VIEWPORT_3D]
         shgen = BSPShaderGenerator(vp.win, self.gsg, vp.camera, self.render)
         self.gsg.setShaderGenerator(shgen)
         for shader in ShaderGlobals.getShaders():
@@ -291,3 +317,9 @@ class Document(DirectObject):
         if not self.filename:
             return "Untitled"
         return self.filename.getBasename()
+
+    def getMapTitle(self):
+        name = self.getMapName()
+        if self.unsaved:
+            name += " *"
+        return name

@@ -57,7 +57,6 @@ class ViewportManager(DocObject):
             ScreenshotHandler.takeScreenshot(self.activeViewport.win, False)
 
     def m1Down(self):
-        print("MOUSE 1 DOWN!!!", self.doc)
         if self.activeViewport:
             self.activeViewport.mouse1Down()
 

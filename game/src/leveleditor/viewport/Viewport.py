@@ -154,8 +154,9 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         self.qtWindow = QtGui.QWindow.fromWinId(output.getWindowHandle().getIntHandle())
         self.qtWidget = QtWidgets.QWidget.createWindowContainer(self.qtWindow, self,
             (QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowDoesNotAcceptFocus
-            | QtCore.Qt.WindowTransparentForInput
-            | QtCore.Qt.SubWindow | QtCore.Qt.BypassWindowManagerHint))
+            | QtCore.Qt.WindowTransparentForInput | QtCore.Qt.BypassWindowManagerHint
+            | QtCore.Qt.SubWindow | QtCore.Qt.WindowStaysOnBottomHint))
+        self.qtWidget.setFocusPolicy(QtCore.Qt.NoFocus)
 
         self.inputDevice = output.getInputDevice(0)
 
@@ -563,7 +564,10 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         if size is None:
             aspectRatio = self.win.getXSize() / self.win.getYSize()
         else:
-            aspectRatio = size.x / size.y
+            if size.y > 0:
+                aspectRatio = size.x / size.y
+            else:
+                aspectRatio = 1.0
 
         if self.is2D():
             zoomFactor = (1.0 / self.zoom) * 100.0

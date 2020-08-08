@@ -39,6 +39,7 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.ui.chkTreatAsOne.toggled.connect(self.__toggleTreatAsOne)
 
         base.qtWindow.addDockWindow(self, "left")
+        self.adjustSize()
 
         self.hide()
 

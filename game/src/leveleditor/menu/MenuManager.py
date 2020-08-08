@@ -88,18 +88,22 @@ class MenuManager:
         fileMenu = self.createMenu("File")
         self.addAction(KeyBind.FileNew, "New", "Create a new map", menu=fileMenu)
         self.addAction(KeyBind.FileOpen, "Open...", "Open an existing map", menu=fileMenu)
-        self.addAction(KeyBind.FileClose, "Close", "Close the map", toolBar=editToolBar, menu=fileMenu, enabled=False)
+        self.addAction(KeyBind.FileClose, "Close", "Close the map", toolBar=editToolBar, menu=fileMenu, enabled=False,
+            icon="resources/icons/editor-close.png")
         self.addAction(KeyBind.FileCloseAll, "Close All", "Close all open maps", menu=fileMenu, enabled=False)
         fileMenu.addSeparator()
-        self.addAction(KeyBind.FileSave, "Save", "Save the map", toolBar=editToolBar, menu=fileMenu, enabled=False)
+        self.addAction(KeyBind.FileSave, "Save", "Save the map", toolBar=editToolBar, menu=fileMenu, enabled=False,
+            icon="resources/icons/editor-save.png")
         self.addAction(KeyBind.FileSaveAs, "Save As...", "Save the map as", menu=fileMenu, enabled=False)
         self.addAction(KeyBind.FileSaveAll, "Save All", "Save all maps", menu=fileMenu, enabled=False)
         fileMenu.addSeparator()
         self.addAction(KeyBind.Exit, "Exit", "Exit %s" % LEGlobals.AppName, menu=fileMenu)
 
         editMenu = self.createMenu("Edit")
-        self.addAction(KeyBind.Undo, "Undo", "Undo the previous action", menu=editMenu, toolBar=editToolBar, enabled=False)
-        self.addAction(KeyBind.Redo, "Redo", "Redo the previous action", menu=editMenu, toolBar=editToolBar, enabled=False)
+        self.addAction(KeyBind.Undo, "Undo", "Undo the previous action", menu=editMenu, toolBar=editToolBar, enabled=False,
+            icon="resources/icons/editor-undo.png")
+        self.addAction(KeyBind.Redo, "Redo", "Redo the previous action", menu=editMenu, toolBar=editToolBar, enabled=False,
+            icon="resources/icons/editor-redo.png")
         editMenu.addSeparator()
         self.addAction(KeyBind.Delete, "Delete", "Delete the selected objects", menu=editMenu, enabled=False)
         self.addAction(KeyBind.Copy, "Copy", "Copy the selected objects", menu=editMenu, enabled=False)
@@ -119,7 +123,9 @@ class MenuManager:
         self.addAction(KeyBind.ViewYZ, "2D Side", "Focus 2D Side", menu=viewMenu, enabled=False)
         self.addAction(KeyBind.ViewXZ, "2D Front", "Focus 2D Front", menu=viewMenu, enabled=False)
         viewMenu.addSeparator()
-        self.addAction(KeyBind.Toggle2DGrid, "2D Grid", "Toggle 2D grid", menu=viewMenu, toolBar=editToolBar, enabled=False, checkable=True)
-        self.addAction(KeyBind.Toggle3DGrid, "3D Grid", "Toggle 3D grid", menu=viewMenu, toolBar=editToolBar, enabled=False, checkable=True)
+        self.addAction(KeyBind.Toggle2DGrid, "2D Grid", "Toggle 2D grid", menu=viewMenu, toolBar=editToolBar, enabled=False, checkable=True,
+            icon="resources/icons/editor-grid-2d.png")
+        self.addAction(KeyBind.Toggle3DGrid, "3D Grid", "Toggle 3D grid", menu=viewMenu, toolBar=editToolBar, enabled=False, checkable=True,
+            icon="resources/icons/editor-grid-3d.png")
 
         self.editMenu = editMenu

@@ -6,7 +6,7 @@ class BaseEditor(QtWidgets.QWidget):
         QtWidgets.QFrame.__init__(self, parent)
         self.setLayout(QtWidgets.QHBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
-        self.setAutoFillBackground(False)
+        self.setAutoFillBackground(True)
         self.item = item
         self.model = model
 

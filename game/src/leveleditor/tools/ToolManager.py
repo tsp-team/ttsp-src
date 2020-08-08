@@ -59,6 +59,7 @@ class ToolManager(DocObject):
         DocObject.cleanup(self)
 
     def __onDocActivated(self, doc):
+        print("ON DOC ACTIVATE", doc, self.doc)
         if doc != self.doc:
             return
 
@@ -78,10 +79,12 @@ class ToolManager(DocObject):
 
     def connectTools(self):
         if self.connected:
+            print("already connected?")
             return
 
         for tool in self.tools:
             action = base.menuMgr.action(tool.KeyBind)
+            print(action)
             action.setEnabled(True)
             action.setChecked(tool.enabled)
             action.connect(self.funcs[tool])
