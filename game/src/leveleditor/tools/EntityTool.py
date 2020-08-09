@@ -17,45 +17,56 @@ from src.leveleditor.actions.Select import Select
 from src.leveleditor.actions.ActionGroup import ActionGroup
 from src.leveleditor.menu.KeyBind import KeyBind
 
+import random
+
 VisState = RenderState.make(
     ColorAttrib.makeFlat(Vec4(0, 1, 0, 1)),
     LightAttrib.makeAllOff(),
     FogAttrib.makeOff()
 )
 
-class EntityToolOptions(QtWidgets.QDockWidget):
+class EntityToolOptions(QtWidgets.QWidget):
 
-    def __init__(self, tool):
-        QtWidgets.QDockWidget.__init__(self)
-        self.tool = tool
-        self.setWindowTitle("Entity Tool")
+    GlobalPtr = None
+    @staticmethod
+    def getGlobalPtr():
+        self = EntityToolOptions
+        if not self.GlobalPtr:
+            self.GlobalPtr = EntityToolOptions()
+        return self.GlobalPtr
 
-        frame = QtWidgets.QFrame(self)
-        frame.setLayout(QtWidgets.QFormLayout())
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.tool = None
+        self.setLayout(QtWidgets.QVBoxLayout())
         lbl = QtWidgets.QLabel("Entity class")
-        frame.layout().addWidget(lbl)
+        self.layout().addWidget(lbl)
         combo = QtWidgets.QComboBox()
-        frame.layout().addWidget(combo)
+        self.layout().addWidget(combo)
+        check = QtWidgets.QCheckBox("Random yaw")
+        check.stateChanged.connect(self.__randomYawChecked)
+        self.layout().addWidget(check)
+        self.randomYawCheck = check
+
         self.combo = combo
         self.combo.currentTextChanged.connect(self.__handleClassChanged)
         self.combo.setEditable(True)
 
-        self.setWidget(frame)
-        self.hide()
+        self.updateEntityClasses()
 
-        base.qtWindow.addDockWindow(self)
-
-    def cleanup(self):
-        self.tool = None
-        self.combo = None
-        self.deleteLater()
+    def setTool(self, tool):
+        self.tool = tool
+        if tool:
+            self.combo.setCurrentText(self.tool.classname)
+            self.randomYawCheck.setChecked(self.tool.applyRandomYaw)
 
     def __handleClassChanged(self, classname):
         self.tool.classname = classname
 
-    def updateEntityClasses(self):
-        classname = str(self.tool.classname)
+    def __randomYawChecked(self, state):
+        self.tool.applyRandomYaw = (state == QtCore.Qt.Checked)
 
+    def updateEntityClasses(self):
         self.combo.clear()
 
         names = []
@@ -74,8 +85,6 @@ class EntityToolOptions(QtWidgets.QDockWidget):
         for name in names:
             self.combo.addItem(name)
 
-        self.combo.setCurrentText(classname)
-
 # Tool used to place an entity in the level.
 class EntityTool(BaseTool):
 
@@ -87,9 +96,8 @@ class EntityTool(BaseTool):
     def __init__(self, mgr):
         BaseTool.__init__(self, mgr)
         self.classname = "prop_static"
+        self.applyRandomYaw = False
         self.pos = Point3(0, 0, 0)
-
-        self.options = EntityToolOptions(self)
 
         self.mouseIsDown = False
         self.hasPlaced = False
@@ -143,13 +151,11 @@ class EntityTool(BaseTool):
         self.lines = None
         self.visRoot.removeNode()
         self.visRoot = None
-        self.options.cleanup()
-        self.options = None
+        self.applyRandomYaw = None
         BaseTool.cleanup(self)
 
     def enable(self):
         BaseTool.enable(self)
-        self.options.updateEntityClasses()
         self.reset()
 
     def activate(self):
@@ -163,10 +169,14 @@ class EntityTool(BaseTool):
         self.accept('arrow_down', self.moveDown)
         self.accept('arrow_left', self.moveLeft)
         self.accept('arrow_right', self.moveRight)
-        self.options.show()
+
+        options = EntityToolOptions.getGlobalPtr()
+        options.setTool(self)
+        self.mgr.toolProperties.addGroup(options)
 
     def deactivate(self):
-        self.options.hide()
+        options = EntityToolOptions.getGlobalPtr()
+        options.setTool(None)
         BaseTool.deactivate(self)
 
     def disable(self):
@@ -265,10 +275,15 @@ class EntityTool(BaseTool):
         if not self.hasPlaced:
             return
 
+        if self.applyRandomYaw:
+            yaw = random.uniform(0, 360)
+        else:
+            yaw = 0
 
         ent = Entity(base.document.getNextID())
         ent.setClassname(self.classname)
         ent.np.setPos(self.pos)
+        ent.np.setH(yaw)
         # Select the entity right away so we can conveniently move it around and
         # whatever without having to manually select it.
         base.actionMgr.performAction("Create entity",

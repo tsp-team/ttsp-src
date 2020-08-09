@@ -9,16 +9,22 @@ from src.leveleditor.actions.ActionGroup import ActionGroup
 
 from PyQt5 import QtWidgets, QtCore
 
-class FaceEditSheet(QtWidgets.QDockWidget):
+class FaceEditSheet(QtWidgets.QGroupBox):
+
+    GlobalPtr = None
+
+    @staticmethod
+    def getGlobalPtr():
+        self = FaceEditSheet
+        if not self.GlobalPtr:
+            self.GlobalPtr = FaceEditSheet()
+        return self.GlobalPtr
 
     def __init__(self):
-        QtWidgets.QDockWidget.__init__(self)
-        self.setFeatures(QtWidgets.QDockWidget.AllDockWidgetFeatures)
-        self.setWindowTitle("Face Edit Sheet")
-        sheet = QtWidgets.QWidget()
+        QtWidgets.QGroupBox.__init__(self)
+        self.setTitle("Face Editing")
         ui = Ui_FaceEditSheet()
-        ui.setupUi(sheet)
-        self.setWidget(sheet)
+        ui.setupUi(self)
         self.ui = ui
 
         self.faces = []
@@ -37,11 +43,6 @@ class FaceEditSheet(QtWidgets.QDockWidget):
         self.ui.btnJustifyRight.clicked.connect(self.__justifyRight)
         self.ui.btnJustifyTop.clicked.connect(self.__justifyTop)
         self.ui.chkTreatAsOne.toggled.connect(self.__toggleTreatAsOne)
-
-        base.qtWindow.addDockWindow(self, "left")
-        self.adjustSize()
-
-        self.hide()
 
     def faceMaterialChanged(self, face):
         if face == self.face:

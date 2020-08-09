@@ -30,6 +30,12 @@ class SelectTool(BoxTool):
 
     def activate(self):
         BoxTool.activate(self)
+
+        # Update tool properties with the properties of our selection mode.
+        props = base.selectionMgr.selectionMode.getProperties()
+        if props:
+            self.mgr.toolProperties.addGroup(props)
+
         self.accept('shift-mouse1', self.mouseDown)
         self.accept('shift-mouse1-up', self.mouseUp)
         self.accept('wheel_up', self.wheelUp)
@@ -38,6 +44,19 @@ class SelectTool(BoxTool):
         self.accept('shift-up', self.shiftUp)
         self.accept('escape', self.deselectAll)
         self.accept('selectionsChanged', self.selectionChanged)
+        self.accept('selectionModeChanged', self.selectionModeChanged)
+
+    def selectionModeChanged(self, old, mode):
+        if old:
+            # Remove the old mode properties
+            oldProps = old.getProperties()
+            if oldProps:
+                self.mgr.toolProperties.removeGroup(oldProps)
+
+        # Add the new mode properties
+        newProps = mode.getProperties()
+        if newProps:
+            self.mgr.toolProperties.addGroup(newProps)
 
     def enable(self):
         BoxTool.enable(self)

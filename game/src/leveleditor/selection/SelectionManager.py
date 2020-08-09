@@ -158,12 +158,15 @@ class SelectionManager(DocObject):
     def setSelectionMode(self, mode):
         if self.selectionMode is not None:
             oldMode = self.selectionMode.Type
+            oldModeInst = self.selectionMode
         else:
             oldMode = None
+            oldModeInst = None
         if mode != self.selectionMode and self.selectionMode is not None:
             self.selectionMode.disable()
         self.selectionMode = self.selectionModes[mode]
         self.selectionMode.enable()
+        self.send('selectionModeChanged', [oldModeInst, self.selectionMode])
 
     def handleMapObjectBoundsChanged(self, mapObject):
         if mapObject in self.selectedObjects:

@@ -21,12 +21,9 @@ class FaceMode(SelectionMode):
     Name = "Faces"
     Desc = "Select solid faces"
 
-    @staticmethod
-    def getFaceEditSheet():
-        global _FaceEditSheet
-        if not _FaceEditSheet:
-            _FaceEditSheet = FaceEditSheet()
-        return _FaceEditSheet
+    def __init__(self, mgr):
+        SelectionMode.__init__(self, mgr)
+        self.properties = FaceEditSheet.getGlobalPtr()
 
     def getTranslatedSelections(self, mode):
         if mode in [SelectionType.Groups, SelectionType.Objects]:
@@ -42,13 +39,9 @@ class FaceMode(SelectionMode):
     def activate(self):
         SelectionMode.activate(self)
 
-        self.accept('faceMaterialChanged', FaceMode.getFaceEditSheet().faceMaterialChanged)
+        self.accept('faceMaterialChanged', self.properties.faceMaterialChanged)
         # Right click on face to apply active material
         self.accept('mouse3', self.applyActiveMaterial)
-
-    def deactivate(self):
-        FaceMode.getFaceEditSheet().hide()
-        SelectionMode.deactivate(self)
 
     def applyActiveMaterial(self):
         vp = base.viewportMgr.activeViewport
@@ -69,7 +62,7 @@ class FaceMode(SelectionMode):
 
     def onSelectionsChanged(self):
         if self.mgr.getNumSelectedObjects() == 0:
-            FaceMode.getFaceEditSheet().hide()
+            self.properties.hide()
         else:
-            FaceMode.getFaceEditSheet().updateForSelection()
-            FaceMode.getFaceEditSheet().show()
+            self.properties.updateForSelection()
+            self.properties.show()

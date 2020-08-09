@@ -20,11 +20,13 @@ class SelectionMode(DocObject):
         self.mgr = mgr
         self.enabled = False
         self.activated = False
+        self.properties = None
 
     def cleanup(self):
         self.mgr = None
         self.enabled = None
         self.activatated = None
+        self.properties = None
         DocObject.cleanup(self)
 
     def enable(self):
@@ -44,7 +46,11 @@ class SelectionMode(DocObject):
         self.ignoreAll()
 
     def onSelectionsChanged(self):
-        raise NotImplementedError
+        if self.properties:
+            self.properties.updateForSelection()
+
+    def getProperties(self):
+        return self.properties
 
     # Returns a list of objects that will be selected
     # when switching to this mode from prevMode.

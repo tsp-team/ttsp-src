@@ -87,6 +87,10 @@ QToolBar::separator {
     height: 1px;
 }
 
+QDockWidget {
+    border: 1px solid #282828;
+}
+
 QDockWidget::title  {
     background-color: #282828;
 }
@@ -124,7 +128,7 @@ QAbstractButton:pressed {
 QAbstractButton:checked:!disabled {
     border-color: #ff863b;
     color: #ff863b;
-    background-color: #5f5f5f;
+    background-color: #797979;
 }
 
 """
@@ -336,7 +340,7 @@ class LevelEditorApp(QtWidgets.QApplication):
 
         self.window = LevelEditorWindow()
         splash.finish(self.window)
-        self.window.show()
+        self.window.showMaximized()
 
 class LevelEditor(DirectObject):
     notify = directNotify.newCategory("Foundry")

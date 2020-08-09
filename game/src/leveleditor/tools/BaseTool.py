@@ -60,3 +60,4 @@ class BaseTool(DocObject):
         self.activated = False
         self.doc.taskMgr.remove(self.Name + "-UpdateTool")
         self.ignoreAll()
+        self.mgr.toolProperties.clear()

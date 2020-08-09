@@ -16,6 +16,14 @@ class ObjectPropertiesModel(QtGui.QStandardItemModel):
 
 class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
 
+    GlobalPtr = None
+
+    @staticmethod
+    def getGlobalPtr():
+        if not ObjectPropertiesWindow.GlobalPtr:
+            ObjectPropertiesWindow.GlobalPtr = ObjectPropertiesWindow()
+        return ObjectPropertiesWindow.GlobalPtr
+
     def __init__(self):
         QtWidgets.QDockWidget.__init__(self)
         DocObject.__init__(self, None)
