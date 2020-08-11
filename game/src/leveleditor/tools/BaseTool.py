@@ -59,6 +59,7 @@ class BaseTool(DocObject):
         print("Disable", self.Name)
         self.deactivate()
         self.enabled = False
+        self.ignoreAllGlobal()
 
     def deactivate(self):
         self.activated = False

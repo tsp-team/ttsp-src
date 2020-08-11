@@ -4,8 +4,8 @@ from PyQt5 import QtWidgets, QtCore
 
 class FontChooserControl(BrushControl):
 
-    def __init__(self, label, callback = None, fontName = ""):
-        BrushControl.__init__(self, label, callback)
+    def __init__(self, brush, label, callback = None, fontName = ""):
+        BrushControl.__init__(self, brush, label, callback)
         self.label = QtWidgets.QLabel(label)
         self.control = QtWidgets.QFontComboBox()
         self.control.currentFontChanged.connect(self.valueChanged)

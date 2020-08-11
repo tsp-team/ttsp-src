@@ -14,14 +14,18 @@ class ArchBrush(BaseBrush):
 
     def __init__(self):
         BaseBrush.__init__(self)
-        self.numSides = self.addControl(NumericControl("Number of sides"))
-        self.wallWidth = self.addControl(NumericControl("Wall width", minVal = 1, maxVal = 1024, val = 32))
-        self.arc = self.addControl(NumericControl("Arc", minVal = 1, maxVal = 360 * 4, val = 360))
-        self.startAngle = self.addControl(NumericControl("Start angle", maxVal = 359))
-        self.addHeight = self.addControl(NumericControl("Add height", minVal = -1024, maxVal = 1024))
-        self.curvedRamp = self.addControl(BooleanControl("Curved ramp"))
-        self.tiltAngle = self.addControl(NumericControl("Tilt angle", minVal = -Atan2, maxVal = Atan2, enabled = False))
-        self.tiltInterp = self.addControl(BooleanControl("Tilt interpolation", enabled = False))
+        self.numSides = self.addControl(NumericControl(self, "Number of sides"))
+        self.wallWidth = self.addControl(NumericControl(self, "Wall width", minVal = 1, maxVal = 1024, val = 32))
+        self.arc = self.addControl(NumericControl(self, "Arc", minVal = 1, maxVal = 360 * 4, val = 360))
+        self.startAngle = self.addControl(NumericControl(self, "Start angle", maxVal = 359))
+        self.addHeight = self.addControl(NumericControl(self, "Add height", minVal = -1024, maxVal = 1024))
+        self.curvedRamp = self.addControl(BooleanControl(self, "Curved ramp", callback = self.__onSetCurvedRamp))
+        self.tiltAngle = self.addControl(NumericControl(self, "Tilt angle", minVal = -Atan2, maxVal = Atan2, enabled = False))
+        self.tiltInterp = self.addControl(BooleanControl(self, "Tilt interpolation", enabled = False))
+
+    def __onSetCurvedRamp(self, val):
+        self.tiltAngle.setEnabled(val)
+        self.tiltInterp.setEnabled(val)
 
     def create(self, generator, mins, maxs, material, roundDecimals):
         solids = []

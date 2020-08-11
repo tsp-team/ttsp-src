@@ -4,8 +4,8 @@ from PyQt5 import QtWidgets, QtCore
 
 class BooleanControl(BrushControl):
 
-    def __init__(self, label, callback = None, checked = False, enabled = True):
-        BrushControl.__init__(self, label, callback)
+    def __init__(self, brush, label, callback = None, checked = False, enabled = True):
+        BrushControl.__init__(self, brush, label, callback)
         self.control = QtWidgets.QCheckBox(label)
         self.control.setChecked(checked)
         self.control.setEnabled(enabled)

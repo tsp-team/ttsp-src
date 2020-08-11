@@ -69,6 +69,14 @@ class BlockTool(BoxTool):
         self.options = BlockToolOptions.getGlobalPtr()
         self.previewBrushes = []
 
+    def activate(self):
+        BoxTool.activate(self)
+        self.acceptGlobal('brushValuesChanged', self.onBrushValuesChanged)
+
+    def onBrushValuesChanged(self, brush):
+        if brush == self.options.selectedBrush:
+            self.maybeUpdatePreviewBrushes()
+
     def enable(self):
         BoxTool.enable(self)
 
@@ -123,7 +131,9 @@ class BlockTool(BoxTool):
 
     def onBoxChanged(self):
         BoxTool.onBoxChanged(self)
+        self.maybeUpdatePreviewBrushes()
 
+    def maybeUpdatePreviewBrushes(self):
         if (not self.state.boxStart or not self.state.boxEnd) or \
         (self.state.boxStart[0] == self.state.boxEnd[0] or self.state.boxStart[1] == self.state.boxEnd[1]
             or self.state.boxStart[2] == self.state.boxEnd[2]):
