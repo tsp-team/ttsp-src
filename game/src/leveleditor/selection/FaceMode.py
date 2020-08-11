@@ -36,8 +36,8 @@ class FaceMode(SelectionMode):
         else:
             return []
 
-    def activate(self):
-        SelectionMode.activate(self)
+    def toolActivate(self):
+        SelectionMode.toolActivate(self)
 
         self.accept('faceMaterialChanged', self.properties.faceMaterialChanged)
         # Right click on face to apply active material
@@ -59,10 +59,3 @@ class FaceMode(SelectionMode):
                 face = faceNp.getPythonTag(self.Key)
                 face.setMaterial(MaterialPool.ActiveMaterial)
                 break
-
-    def onSelectionsChanged(self):
-        if self.mgr.getNumSelectedObjects() == 0:
-            self.properties.hide()
-        else:
-            self.properties.updateForSelection()
-            self.properties.show()

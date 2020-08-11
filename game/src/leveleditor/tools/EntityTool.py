@@ -4,6 +4,7 @@ from panda3d.core import Vec3, LPlane, GeomNode
 from PyQt5 import QtWidgets, QtCore
 
 from .BaseTool import BaseTool
+from .ToolOptions import ToolOptions
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.grid.GridSettings import GridSettings
@@ -25,7 +26,7 @@ VisState = RenderState.make(
     FogAttrib.makeOff()
 )
 
-class EntityToolOptions(QtWidgets.QWidget):
+class EntityToolOptions(ToolOptions):
 
     GlobalPtr = None
     @staticmethod
@@ -36,9 +37,8 @@ class EntityToolOptions(QtWidgets.QWidget):
         return self.GlobalPtr
 
     def __init__(self):
-        QtWidgets.QWidget.__init__(self)
-        self.tool = None
-        self.setLayout(QtWidgets.QVBoxLayout())
+        ToolOptions.__init__(self)
+
         lbl = QtWidgets.QLabel("Entity class")
         self.layout().addWidget(lbl)
         combo = QtWidgets.QComboBox()
@@ -55,10 +55,9 @@ class EntityToolOptions(QtWidgets.QWidget):
         self.updateEntityClasses()
 
     def setTool(self, tool):
-        self.tool = tool
-        if tool:
-            self.combo.setCurrentText(self.tool.classname)
-            self.randomYawCheck.setChecked(self.tool.applyRandomYaw)
+        ToolOptions.setTool(self, tool)
+        self.combo.setCurrentText(self.tool.classname)
+        self.randomYawCheck.setChecked(self.tool.applyRandomYaw)
 
     def __handleClassChanged(self, classname):
         self.tool.classname = classname
@@ -137,6 +136,8 @@ class EntityTool(BaseTool):
         lines.drawTo(Point3(0, 0, 10000))
         self.lines = self.visRoot.attachNewNode(lines.create())
 
+        self.options = EntityToolOptions.getGlobalPtr()
+
     def cleanup(self):
         self.classname = None
         self.pos = None
@@ -169,15 +170,6 @@ class EntityTool(BaseTool):
         self.accept('arrow_down', self.moveDown)
         self.accept('arrow_left', self.moveLeft)
         self.accept('arrow_right', self.moveRight)
-
-        options = EntityToolOptions.getGlobalPtr()
-        options.setTool(self)
-        self.mgr.toolProperties.addGroup(options)
-
-    def deactivate(self):
-        options = EntityToolOptions.getGlobalPtr()
-        options.setTool(None)
-        BaseTool.deactivate(self)
 
     def disable(self):
         BaseTool.disable(self)

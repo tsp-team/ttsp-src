@@ -9,22 +9,6 @@ from src.leveleditor.math.Plane import Plane
 class BlockBrush(BaseBrush):
     Name = "Block"
 
-    def create(self, mins, maxs, material, roundDecimals):
-        solid = Solid(base.document.getNextID())
-
-        faces = LEUtils.getBoxFaces(mins, maxs)
-        for faceVerts in faces:
-            face = SolidFace(base.document.getNextFaceID(),
-                             Plane.fromVertices(faceVerts[0], faceVerts[1], faceVerts[2]),
-                             solid)
-            face.setMaterial(material)
-            for vert in faceVerts:
-                face.vertices.append(SolidVertex(LEUtils.roundVector(vert, roundDecimals), face))
-            solid.faces.append(face)
-
-        solid.setToSolidOrigin()
-        solid.alignTexturesToFaces()
-        solid.generateFaces()
-        solid.recalcBoundingBox()
-
-        return [solid]
+    def create(self, generator, mins, maxs, material, roundDecimals):
+        faces = LEUtils.getBoxFaces(mins, maxs, roundDecimals)
+        return [self.makeSolid(generator, faces, material)]

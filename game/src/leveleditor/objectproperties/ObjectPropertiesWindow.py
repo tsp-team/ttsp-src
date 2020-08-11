@@ -55,23 +55,10 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
         self.clearAll()
         self.setEnabled(False)
 
-        self.acceptGlobal('documentDeactivated', self.__onDocDeactivate)
-        self.acceptGlobal('documentActivated', self.__onDocActivate)
-
-    def __onDocDeactivate(self, doc):
-        if self.doc:
-            self.ignoreAll()
-        self.mgr = None
-        self.setDoc(None)
-        self.updateForSelection()
-
-    def __onDocActivate(self, doc):
-        if self.doc:
-            self.ignoreAll()
-        self.mgr = doc.selectionMgr
-        self.setDoc(doc)
+    def setMgr(self, mgr):
+        self.mgr = mgr
+        self.setDoc(mgr.doc)
         self.accept('objectPropertyChanged', self.__handleObjectPropertyChanged)
-        self.updateForSelection()
 
     def __handleObjectPropertyChanged(self, entity, prop, value):
         if entity == self.entity:
@@ -126,15 +113,22 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
         for item in items:
             self.ui.propertiesView.setRowHidden(item.row(), QtCore.QModelIndex(), False)
 
+    def disable(self):
+        self.entity = None
+        self.clearAll()
+        self.setEnabled(False)
+
+    def enable(self):
+        if self.mgr.getNumSelectedObjects() > 0:
+            self.updateForSelection()
+
     def updateForSelection(self):
         numSelections = self.mgr.getNumSelectedObjects() if self.mgr else 0
 
         self.valueItemByPropName = {}
 
         if numSelections == 0:
-            self.entity = None
-            self.clearAll()
-            self.setEnabled(False)
+            self.disable()
             return
         else:
             self.setEnabled(True)
@@ -146,7 +140,6 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
         # and choose the most recently selected one if there are multiple selections
         selection = self.mgr.selectedObjects[len(self.mgr.selectedObjects) - 1]
         self.entity = selection
-
 
         classname = selection.getName()
         desc = selection.getDescription()

@@ -5,7 +5,7 @@ from src.leveleditor.actions.EditObjectProperties import EditObjectProperties
 from src.leveleditor.actions.ActionGroup import ActionGroup
 from src.leveleditor.menu.KeyBind import KeyBind
 
-from panda3d.core import LineSegs, Vec3, AntialiasAttrib, LPlane, Point3
+from panda3d.core import LineSegs, Vec3, AntialiasAttrib, LPlane, Point3, KeyboardButton
 
 class RotateWidgetAxis(TransformWidgetAxis):
 
@@ -95,8 +95,8 @@ class RotateTool(BaseTransformTool):
         if gizmoDir == ref:
             ref = Vec3.right()
 
-        nowVec = Vec3(now - self.getGizmoOrigin()).normalized()
-        origVec = Vec3(self.transformStart - self.getGizmoOrigin()).normalized()
+        nowVec = Vec3(now - gizmoOrigin).normalized()
+        origVec = Vec3(self.transformStart - gizmoOrigin).normalized()
 
         axisToHprAxis = {
             0: 1, # pitch
@@ -104,8 +104,14 @@ class RotateTool(BaseTransformTool):
             2: 0 # yaw
         }
 
+        snap = not vp.mouseWatcher.isButtonDown(KeyboardButton.shift())
+
         origAngle = origVec.signedAngleDeg(ref, self.getGizmoDirection(self.widget.activeAxis.axisIdx))
         angle = nowVec.signedAngleDeg(ref, self.getGizmoDirection(self.widget.activeAxis.axisIdx))
         hpr = Vec3(0)
-        hpr[axisToHprAxis[self.widget.activeAxis.axisIdx]] = -(angle - origAngle)
+        if snap:
+            ang = round(-(angle - origAngle) / 15) * 15
+        else:
+            ang = -(angle - origAngle)
+        hpr[axisToHprAxis[self.widget.activeAxis.axisIdx]] = ang
         self.toolVisRoot.setHpr(hpr)

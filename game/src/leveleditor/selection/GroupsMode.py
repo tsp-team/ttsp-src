@@ -9,3 +9,4 @@ class GroupsMode(ObjectMode):
     Icon = "resources/icons/editor-select-groups.png"
     Name = "Groups"
     Desc = "Select object groups"
+    ToolOnly = False

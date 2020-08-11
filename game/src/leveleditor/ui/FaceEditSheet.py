@@ -44,6 +44,8 @@ class FaceEditSheet(QtWidgets.QGroupBox):
         self.ui.btnJustifyTop.clicked.connect(self.__justifyTop)
         self.ui.chkTreatAsOne.toggled.connect(self.__toggleTreatAsOne)
 
+        self.hide()
+
     def faceMaterialChanged(self, face):
         if face == self.face:
             self.updateForSelection()
@@ -221,6 +223,12 @@ class FaceEditSheet(QtWidgets.QGroupBox):
         self.ui.rotationSpin.valueChanged.disconnect(self.__rotationChanged)
 
     def updateForSelection(self):
+        if base.selectionMgr.getNumSelectedObjects() == 0:
+            self.setEnabled(False)
+            return
+        else:
+            self.setEnabled(True)
+
         self.faces = []
 
         faces = list(base.selectionMgr.selectedObjects)

@@ -67,7 +67,9 @@ KeyBinds = [
     KeyBindDef("Focus 3D view", KeyBind.View3D, "f2"),
     KeyBindDef("Focus XY view", KeyBind.ViewXY, "f3"),
     KeyBindDef("Focus YZ view", KeyBind.ViewYZ, "f4"),
-    KeyBindDef("Focus XZ view", KeyBind.ViewXZ, "f5")
+    KeyBindDef("Focus XZ view", KeyBind.ViewXZ, "f5"),
+
+    KeyBindDef("Switch to DNA tool", KeyBind.DNATool, "shift+d")
 ]
 
 KeyBindsByID = {x.id: x for x in KeyBinds}

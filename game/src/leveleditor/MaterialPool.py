@@ -4,8 +4,6 @@ from .MaterialReference import MaterialReference
 
 MaterialRefs = {}
 
-ActiveMaterial = None
-
 def getMaterial(filename):
     global MaterialRefs
     filename = Filename(filename)
@@ -16,3 +14,5 @@ def getMaterial(filename):
         ref = MaterialReference(filename)
         MaterialRefs[fullpath] = ref
     return ref
+
+ActiveMaterial = None

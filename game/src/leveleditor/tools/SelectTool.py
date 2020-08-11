@@ -26,43 +26,31 @@ class SelectTool(BoxTool):
 
     def cleanup(self):
         self.suppressSelect = None
+        self.multiSelect = None
         BoxTool.cleanup(self)
 
     def activate(self):
         BoxTool.activate(self)
-
-        # Update tool properties with the properties of our selection mode.
-        props = base.selectionMgr.selectionMode.getProperties()
-        if props:
-            self.mgr.toolProperties.addGroup(props)
-
         self.accept('shift-mouse1', self.mouseDown)
         self.accept('shift-mouse1-up', self.mouseUp)
         self.accept('wheel_up', self.wheelUp)
         self.accept('wheel_down', self.wheelDown)
         self.accept('shift', self.shiftDown)
         self.accept('shift-up', self.shiftUp)
-        self.accept('escape', self.deselectAll)
         self.accept('selectionsChanged', self.selectionChanged)
         self.accept('selectionModeChanged', self.selectionModeChanged)
 
-    def selectionModeChanged(self, old, mode):
-        if old:
-            # Remove the old mode properties
-            oldProps = old.getProperties()
-            if oldProps:
-                self.mgr.toolProperties.removeGroup(oldProps)
+        base.selectionMgr.selectionMode.toolActivate()
 
-        # Add the new mode properties
-        newProps = mode.getProperties()
-        if newProps:
-            self.mgr.toolProperties.addGroup(newProps)
+    def deactivate(self):
+        BoxTool.deactivate(self)
+        base.selectionMgr.selectionMode.toolDeactivate()
+
+    def selectionModeChanged(self, old, mode):
+        mode.toolActivate()
 
     def enable(self):
         BoxTool.enable(self)
-        self.lastEntries = None
-        self.entryIdx = 0
-
         self.multiSelect = False
         self.mouseIsDown = False
 
@@ -71,18 +59,6 @@ class SelectTool(BoxTool):
 
     def shiftUp(self):
         self.multiSelect = False
-
-    def __toggleSelect(self, obj):
-        if not self.multiSelect:
-            if not base.selectionMgr.isSelected(obj) or base.selectionMgr.getNumSelectedObjects() > 1:
-                base.actionMgr.performAction("Select %s" % obj.getName(), Select([obj], True))
-        else:
-            # In multi-select (shift held), if the object we clicked on has
-            # already been selected, deselect it.
-            if base.selectionMgr.isSelected(obj):
-                base.actionMgr.performAction("Deselect %s" % obj.getName(), Deselect([obj]))
-            else:
-                base.actionMgr.performAction("Append select %s" % obj.getName(), Select([obj], False))
 
     def selectionChanged(self):
         pass
@@ -99,33 +75,10 @@ class SelectTool(BoxTool):
         if self.suppressSelect:
             return
 
-        entries = vp.click(base.selectionMgr.getSelectionMask())
-        if not entries:
-            if (not self.multiSelect) and (self.state.action != BoxAction.ReadyToResize):
-                # Deselect all if not doing multi-select and no hits
-                self.deselectAll()
-            return
-
-        key = base.selectionMgr.getSelectionKey()
-
-        for i in range(len(entries)):
-            # Our entries have been sorted by distance, so use the first (closest) one.
-            entry = entries[i]
-            np = entry.getIntoNodePath().findNetPythonTag(key)
-            if not np.isEmpty():
-                # Don't backface cull if there is a billboard effect on or above this node
-                if not LEUtils.hasNetBillboard(entry.getIntoNodePath()):
-                    surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
-                    rayDir = entry.getFrom().getDirection().normalized()
-                    if surfNorm.dot(rayDir) >= 0:
-                        # Backface cull
-                        continue
-                obj = np.getPythonTag(key)
-                self.__toggleSelect(obj)
-                break
-
-        self.entryIdx = 0
-        self.lastEntries = entries
+        ret = base.selectionMgr.selectionMode.selectObjectUnderMouse(self.multiSelect)
+        if (not ret) and (not self.multiSelect) and (self.state.action != BoxAction.ReadyToResize):
+            # Deselect all if not doing multi-select and no hits
+            self.deselectAll()
 
     def mouseUp(self):
         self.mouseIsDown = False
@@ -140,31 +93,7 @@ class SelectTool(BoxTool):
         if invalid:
             return
 
-        selection = []
-
-        # Create a one-off collision box, traverser, and queue to test against all MapObjects
-        box = CollisionBox(mins, maxs)
-        node = CollisionNode("selectToolCollBox")
-        node.addSolid(box)
-        node.setFromCollideMask(base.selectionMgr.getSelectionMask())
-        node.setIntoCollideMask(BitMask32.allOff())
-        boxNp = self.doc.render.attachNewNode(node)
-        queue = CollisionHandlerQueue()
-        base.clickTraverse(boxNp, queue)
-        queue.sortEntries()
-        key = base.selectionMgr.getSelectionKey()
-        entries = queue.getEntries()
-        # Select every MapObject our box intersected with
-        for entry in entries:
-            np = entry.getIntoNodePath().findNetPythonTag(key)
-            if not np.isEmpty():
-                obj = np.getPythonTag(key)
-                if not obj in selection:
-                    selection.append(obj)
-        boxNp.removeNode()
-
-        if len(selection) > 0:
-            base.actionMgr.performAction("Select %i objects" % len(selection), Select(selection, True))
+        base.selectionMgr.selectionMode.selectObjectsInBox(mins, maxs)
 
     def wheelUp(self):
         if not self.mouseIsDown:
@@ -174,12 +103,12 @@ class SelectTool(BoxTool):
         if not self.mouseIsDown:
             return
 
-    def deselectAll(self):
-        self.lastEntries = None
-        self.entryIdx = 0
+    def escapeDown(self):
+        BoxTool.escapeDown(self)
+        self.deselectAll()
 
-        if base.selectionMgr.hasSelectedObjects():
-            base.actionMgr.performAction("Deselect all", Deselect(all = True))
+    def deselectAll(self):
+        base.selectionMgr.selectionMode.deselectAll()
 
     def disable(self):
         BoxTool.disable(self)

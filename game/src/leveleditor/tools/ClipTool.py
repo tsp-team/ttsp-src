@@ -3,6 +3,7 @@ from panda3d.core import Point3, Vec3, ClipPlaneAttrib, NodePath, PlaneNode, \
     CullBinAttrib, CardMaker, LineSegs
 
 from .BaseTool import BaseTool
+from .ToolOptions import ToolOptions
 from src.leveleditor.geometry.Polygon import Polygon
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.math.Polygon import Polygon as MathPolygon
@@ -13,6 +14,8 @@ from src.leveleditor import LEGlobals
 from src.leveleditor.IDGenerator import IDGenerator
 from src.leveleditor.menu.KeyBind import KeyBind
 from src.leveleditor.menu import KeyBinds
+
+from PyQt5 import QtWidgets
 
 from enum import IntEnum
 
@@ -99,6 +102,64 @@ class ClipToolViewport2D:
         np.hide(~self.vp.getViewportMask())
         return np
 
+class ClipToolOptions(ToolOptions):
+
+    GlobalPtr = None
+
+    @staticmethod
+    def getGlobalPtr():
+        if not ClipToolOptions.GlobalPtr:
+            ClipToolOptions.GlobalPtr = ClipToolOptions()
+        return ClipToolOptions.GlobalPtr
+
+    def __init__(self):
+        ToolOptions.__init__(self)
+
+        group = QtWidgets.QGroupBox("Keep Side", self)
+        group.setLayout(QtWidgets.QHBoxLayout())
+
+        frontBtn = QtWidgets.QRadioButton("Front", group)
+        frontBtn.clicked.connect(self.__toggleFront)
+        self.frontBtn = frontBtn
+        group.layout().addWidget(frontBtn)
+
+        backBtn = QtWidgets.QRadioButton("Back", group)
+        backBtn.clicked.connect(self.__toggleBack)
+        self.backBtn = backBtn
+        group.layout().addWidget(backBtn)
+
+        bothBtn = QtWidgets.QRadioButton("Both", group)
+        bothBtn.clicked.connect(self.__toggleBoth)
+        self.bothBtn = bothBtn
+        group.layout().addWidget(bothBtn)
+
+        self.layout().addWidget(group)
+
+    def __toggleFront(self):
+        self.tool.updateClipSide(ClipSide.Front)
+
+    def __toggleBack(self):
+        self.tool.updateClipSide(ClipSide.Back)
+
+    def __toggleBoth(self):
+        self.tool.updateClipSide(ClipSide.Both)
+
+    def setTool(self, tool):
+        ToolOptions.setTool(self, tool)
+        self.updateButtonStates()
+
+    def updateButtonStates(self):
+        self.frontBtn.setChecked(False)
+        self.backBtn.setChecked(False)
+        self.bothBtn.setChecked(False)
+
+        if self.tool.side == ClipSide.Front:
+            self.frontBtn.setChecked(True)
+        elif self.tool.side == ClipSide.Back:
+            self.backBtn.setChecked(True)
+        elif self.tool.side == ClipSide.Both:
+            self.bothBtn.setChecked(True)
+
 class ClipTool(BaseTool):
 
     Name = "Clip"
@@ -123,6 +184,8 @@ class ClipTool(BaseTool):
                 self.vp2Ds.append(ClipToolViewport2D(self, vp))
 
         self.reset()
+
+        self.options = ClipToolOptions.getGlobalPtr()
 
     def cleanup(self):
         self.clearClipPlane()
@@ -192,6 +255,7 @@ class ClipTool(BaseTool):
 
     def toolTriggered(self):
         self.cycleClipSide()
+        self.options.updateButtonStates()
 
     def doResetKeepSide(self):
         side = ClipSide(self.side)

@@ -10,6 +10,7 @@ from src.leveleditor.tools.ScaleTool import ScaleTool
 from src.leveleditor.tools.EntityTool import EntityTool
 from src.leveleditor.tools.BlockTool import BlockTool
 from src.leveleditor.tools.ClipTool import ClipTool
+from src.leveleditor.tools.DNATool import DNATool
 
 from functools import partial
 
@@ -27,7 +28,11 @@ class ToolManager(DocObject):
 
         EntityTool,
         BlockTool,
-        ClipTool
+        ClipTool#,
+
+        #Separator,
+
+        #DNATool
     ]
 
     def __init__(self, doc):

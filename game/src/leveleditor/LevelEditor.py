@@ -95,7 +95,7 @@ QDockWidget::title  {
     background-color: #282828;
 }
 
-QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox:editable {
+QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox, QScrollBar {
     background-color: #373737;
 }
 
@@ -472,9 +472,9 @@ class LevelEditor(DirectObject):
         return self.qtWindow.closeDoc(doc)
 
     def closeDocument(self, doc):
+        doc.close()
         if doc == base.document:
             self.qtWindow.docArea.activateNextSubWindow()
-        doc.close()
         self.documents.remove(doc)
         if len(self.documents) == 0:
             self.disableDocActions()

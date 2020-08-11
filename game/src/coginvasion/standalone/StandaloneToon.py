@@ -10,7 +10,7 @@ Copyright (c) CIO Team. All rights reserved.
 
 from panda3d.core import NodePath
 
-import Standalone
+from . import Standalone
 
 #from src.coginvasion.toon import LocalToon
 #from src.coginvasion.login.AvChoice import AvChoice

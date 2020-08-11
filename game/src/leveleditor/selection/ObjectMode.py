@@ -18,16 +18,30 @@ class ObjectMode(SelectionMode):
     Icon = "resources/icons/editor-select-objects.png"
     Name = "Objects"
     Desc = "Select individual objects"
+    ToolOnly = False
 
     def __init__(self, mgr):
         SelectionMode.__init__(self, mgr)
         self.objectProperties = ObjectMode.getObjectPropertiesWindow()
+
+    def updateObjProperties(self):
+        self.objectProperties.setMgr(self.mgr)
+        self.objectProperties.enable()
+
+    def activate(self):
+        SelectionMode.activate(self)
+        self.updateObjProperties()
+
+    def deactivate(self):
+        self.objectProperties.disable()
+        SelectionMode.deactivate(self)
 
     def cleanup(self):
         self.objectProperties = None
         SelectionMode.cleanup(self)
 
     def onSelectionsChanged(self):
+        SelectionMode.onSelectionsChanged(self)
         self.objectProperties.updateForSelection()
 
     @staticmethod

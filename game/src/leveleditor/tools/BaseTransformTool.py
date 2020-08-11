@@ -3,6 +3,7 @@ from panda3d.core import Point3, Vec3, NodePath, LineSegs, Vec4, \
     BitMask32, KeyboardButton
 
 from .BoxTool import BoxAction, ResizeHandle
+from .ToolOptions import ToolOptions
 from src.leveleditor.selection.SelectionType import SelectionModeTransform
 from src.leveleditor.math.Ray import Ray
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK
@@ -23,12 +24,18 @@ Down = 2
 Global = 0
 Local = 1
 
-class TransformToolOptions(QtWidgets.QDockWidget):
+class TransformToolOptions(ToolOptions):
 
-    def __init__(self, tool):
-        QtWidgets.QDockWidget.__init__(self)
-        self.tool = tool
-        self.setWindowTitle(self.tool.Name + " Tool Options")
+    GlobalPtr = None
+    @staticmethod
+    def getGlobalPtr():
+        self = TransformToolOptions
+        if not self.GlobalPtr:
+            self.GlobalPtr = TransformToolOptions()
+        return self.GlobalPtr
+
+    def __init__(self):
+        ToolOptions.__init__(self)
 
         group = QtWidgets.QGroupBox("With Respect To", self)
         group.setLayout(QtWidgets.QFormLayout())
@@ -39,18 +46,18 @@ class TransformToolOptions(QtWidgets.QDockWidget):
         localBtn.toggled.connect(self.__toggleLocal)
         group.layout().addWidget(localBtn)
 
+        self.globalBtn = globalBtn
+        self.localBtn = localBtn
+
+        self.layout().addWidget(group)
+
+    def setTool(self, tool):
+        ToolOptions.setTool(self, tool)
+
         if self.tool.wrtMode == Global:
-            globalBtn.setChecked(True)
+            self.globalBtn.setChecked(True)
         elif self.tool.wrtMode == Local:
-            localBtn.setChecked(True)
-
-        self.setWidget(group)
-        self.hide()
-        base.qtWindow.addDockWindow(self)
-
-    def cleanup(self):
-        self.tool = None
-        self.deleteLater()
+            self.localBtn.setChecked(True)
 
     def __toggleGlobal(self):
         self.tool.setWrtMode(Global)
@@ -221,8 +228,9 @@ class BaseTransformTool(SelectTool):
         self.transformStart = Point3(0)
         self.preTransformStart = Point3(0)
         self.transformType = SelectionModeTransform.Off
-        self.options = TransformToolOptions(self)
         self.createWidget()
+
+        self.options = TransformToolOptions.getGlobalPtr()
 
     def cleanup(self):
         self.hasWidgets = None
@@ -241,8 +249,6 @@ class BaseTransformTool(SelectTool):
         self.transformStart = None
         self.preTransformStart = None
         self.transformType = None
-        self.options.cleanup()
-        self.options = None
         SelectTool.cleanup(self)
 
     def filterHandle(self, handle):
@@ -521,7 +527,6 @@ class BaseTransformTool(SelectTool):
         if base.selectionMgr.hasSelectedObjects() \
             and base.selectionMgr.isTransformAllowed(self.transformType):
             self.enableWidget()
-        self.options.show()
 
     def disable(self):
         SelectTool.disable(self)
@@ -529,4 +534,3 @@ class BaseTransformTool(SelectTool):
         if self.isTransforming:
             self.destroyMoveVis()
         self.isTransforming = False
-        self.options.hide()

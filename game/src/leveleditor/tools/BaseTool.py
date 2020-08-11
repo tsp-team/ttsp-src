@@ -25,6 +25,7 @@ class BaseTool(DocObject):
         self.enabled = False
         self.activated = False
         self.mgr = mgr
+        self.options = None
 
     def cleanup(self):
         self.enabled = None
@@ -43,6 +44,9 @@ class BaseTool(DocObject):
     def activate(self):
         self.activated = True
         self.doc.taskMgr.add(self.__updateTask, self.Name + "-UpdateTool")
+        if self.options:
+            self.options.setTool(self)
+            self.mgr.toolProperties.addGroup(self.options)
 
     def __updateTask(self, task):
         self.update()

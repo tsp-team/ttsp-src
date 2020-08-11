@@ -185,17 +185,16 @@ def boolToStr(boolean):
     return str(int(boolean))
 
 # THE FACES ARE COUNTER-CLOCKWISE!!!
-def getBoxFaces(start, end):
-    print(start, end)
-    topLeftBack = Point3(start.x, end.y, end.z)
-    topRightBack = end
-    topLeftFront = Point3(start.x, start.y, end.z)
-    topRightFront = Point3(end.x, start.y, end.z)
+def getBoxFaces(start, end, roundDecimals = 8):
+    topLeftBack = roundVector(Point3(start.x, end.y, end.z), roundDecimals)
+    topRightBack = roundVector(end, roundDecimals)
+    topLeftFront = roundVector(Point3(start.x, start.y, end.z), roundDecimals)
+    topRightFront = roundVector(Point3(end.x, start.y, end.z), roundDecimals)
 
-    bottomLeftBack = Point3(start.x, end.y, start.z)
-    bottomRightBack = Point3(end.x, end.y, start.z)
-    bottomLeftFront = start
-    bottomRightFront = Point3(end.x, start.y, start.z)
+    bottomLeftBack = roundVector(Point3(start.x, end.y, start.z), roundDecimals)
+    bottomRightBack = roundVector(Point3(end.x, end.y, start.z), roundDecimals)
+    bottomLeftFront = roundVector(start, roundDecimals)
+    bottomRightFront = roundVector(Point3(end.x, start.y, start.z), roundDecimals)
 
     return [
         [topLeftFront, topRightFront, bottomRightFront, bottomLeftFront],

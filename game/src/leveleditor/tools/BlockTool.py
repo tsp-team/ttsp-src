@@ -1,6 +1,7 @@
-from panda3d.core import Point3
+from panda3d.core import Point3, Vec4
 
 from .BoxTool import BoxTool
+from .ToolOptions import ToolOptions
 from src.leveleditor.actions.Create import MultiCreate
 from src.leveleditor.actions.Select import Select, Deselect
 from src.leveleditor.actions.ActionGroup import ActionGroup
@@ -8,8 +9,50 @@ from src.leveleditor.actions.ChangeSelectionMode import ChangeSelectionMode
 from src.leveleditor.selection.SelectionType import SelectionType
 from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.menu.KeyBind import KeyBind
+from src.leveleditor.IDGenerator import IDGenerator
 
 from src.leveleditor import MaterialPool
+
+from PyQt5 import QtWidgets
+
+class BlockToolOptions(ToolOptions):
+
+    GlobalPtr = None
+    @staticmethod
+    def getGlobalPtr():
+        self = BlockToolOptions
+        if not self.GlobalPtr:
+            self.GlobalPtr = BlockToolOptions()
+        return self.GlobalPtr
+
+    def __init__(self):
+        ToolOptions.__init__(self)
+
+        shapeBase = QtWidgets.QWidget(self)
+        self.layout().addWidget(shapeBase)
+        shapeBase.setLayout(QtWidgets.QFormLayout())
+        typeLbl = QtWidgets.QLabel("Shape:", shapeBase)
+        self.typeCombo = QtWidgets.QComboBox(shapeBase)
+        self.typeCombo.currentIndexChanged.connect(self.__selectBrush)
+        shapeBase.layout().addRow(typeLbl, self.typeCombo)
+
+        self.currentControls = None
+        self.selectedBrush = base.brushMgr.brushes[0]
+
+        for brush in base.brushMgr.brushes:
+            self.typeCombo.addItem(brush.Name)
+
+    def __selectBrush(self, index):
+        if self.currentControls:
+            self.layout().removeWidget(self.currentControls)
+
+        brush = base.brushMgr.brushes[index]
+        self.selectedBrush = brush
+        if len(brush.controls) > 0:
+            self.currentControls = brush.controlsGroup
+            self.layout().addWidget(self.currentControls)
+        else:
+            self.currentControls = None
 
 class BlockTool(BoxTool):
 
@@ -17,13 +60,53 @@ class BlockTool(BoxTool):
     KeyBind = KeyBind.BlockTool
     ToolTip = "Block tool"
     Icon = "resources/icons/editor-block.png"
+    Draw3DBox = False
 
     def __init__(self, mgr):
         BoxTool.__init__(self, mgr)
+        self.box.setColor(Vec4(51 / 255, 223 / 255, 1.0, 1.0))
         self.lastBox = None
+        self.options = BlockToolOptions.getGlobalPtr()
+        self.previewBrushes = []
+
+    def enable(self):
+        BoxTool.enable(self)
+
+        solids = []
+        for sel in base.selectionMgr.selectedObjects:
+            if sel.ObjectName == "solid":
+                solids.append(sel)
+
+        if len(solids) > 0:
+            mins = Point3()
+            maxs = Point3()
+            solids[len(solids) - 1].np.calcTightBounds(mins, maxs, base.render)
+            self.lastBox = [mins, maxs]
+        elif self.lastBox is None:
+            self.lastBox = [Point3(0), Point3(GridSettings.DefaultStep)]
+
+    def disable(self):
+        self.removePreviewBrushes()
+        BoxTool.disable(self)
+
+    def removePreviewBrushes(self):
+        for brush in self.previewBrushes:
+            brush.delete()
+        self.previewBrushes = []
+
+    def updatePreviewBrushes(self):
+        self.removePreviewBrushes()
+
+        self.previewBrushes = self.options.selectedBrush.create(IDGenerator(), self.state.boxStart,
+            self.state.boxEnd, self.determineMaterial(), 2)
+        for brush in self.previewBrushes:
+            brush.np.setTransparency(True, 2)
+            brush.np.setColorScale(1, 1, 1, 0.75, 2)
+            brush.reparentTo(base.render)
 
     def cleanup(self):
         self.lastBox = None
+        self.previewBrushes = None
         BoxTool.cleanup(self)
 
     def leftMouseDownToDraw(self):
@@ -38,11 +121,30 @@ class BlockTool(BoxTool):
 
         self.onBoxChanged()
 
+    def onBoxChanged(self):
+        BoxTool.onBoxChanged(self)
+
+        if (not self.state.boxStart or not self.state.boxEnd) or \
+        (self.state.boxStart[0] == self.state.boxEnd[0] or self.state.boxStart[1] == self.state.boxEnd[1]
+            or self.state.boxStart[2] == self.state.boxEnd[2]):
+            self.removePreviewBrushes()
+            return
+
+        self.updatePreviewBrushes()
+
+    def determineMaterial(self):
+        if MaterialPool.ActiveMaterial:
+            return MaterialPool.ActiveMaterial
+        else:
+            return MaterialPool.getMaterial("materials/dev/dev_measuregeneric01.mat")
+
     def boxDrawnConfirm(self):
+        self.removePreviewBrushes()
+
         box = [self.state.boxStart, self.state.boxEnd]
         if box[0].x != box[1].x and box[0].y != box[1].y and box[0].z != box[1].z:
-            solids = base.brushMgr.brushes[0].create(self.state.boxStart, self.state.boxEnd,
-                MaterialPool.getMaterial("materials/dev/dev_measuregeneric01b.mat"), 2)
+            solids = self.options.selectedBrush.create(base.document.idGenerator, self.state.boxStart, self.state.boxEnd,
+                self.determineMaterial(), 2)
 
             creations = []
             for solid in solids:
@@ -60,3 +162,4 @@ class BlockTool(BoxTool):
 
     def boxDrawnCancel(self):
         self.lastBox = [self.state.boxStart, self.state.boxEnd]
+        self.removePreviewBrushes()

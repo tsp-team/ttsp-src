@@ -69,3 +69,5 @@ class KeyBind(IntEnum):
     ViewXY = 54
     ViewYZ = 55
     ViewXZ = 56
+
+    DNATool = 57

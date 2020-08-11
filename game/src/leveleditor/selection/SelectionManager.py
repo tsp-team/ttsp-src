@@ -164,6 +164,9 @@ class SelectionManager(DocObject):
             oldModeInst = None
         if mode != self.selectionMode and self.selectionMode is not None:
             self.selectionMode.disable()
+        elif mode == self.selectionMode:
+            return
+        self.deselectAll()
         self.selectionMode = self.selectionModes[mode]
         self.selectionMode.enable()
         self.send('selectionModeChanged', [oldModeInst, self.selectionMode])
@@ -179,8 +182,8 @@ class SelectionManager(DocObject):
             self.send('selectedObjectTransformChanged', [entity])
 
     def deleteSelectedObjects(self):
-        if not self.selectionMode.CanDelete:
-            # This mode doesn't allow deleting our selected objects.
+        if len(self.selectedObjects) == 0:
+            # Nothing to delete.
             return
 
         selected = list(self.selectedObjects)

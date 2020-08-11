@@ -11,23 +11,27 @@ class ChangeSelectionMode(Action):
     def do(self):
         Action.do(self)
 
+        if self.mode == self.oldMode:
+            return
+
         oldAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.oldMode].KeyBind)
         oldAction.setChecked(False)
         newAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.mode].KeyBind)
         newAction.setChecked(True)
 
+        translated = base.selectionMgr.selectionModes[self.mode].getTranslatedSelections(self.oldMode)
         base.selectionMgr.setSelectionMode(self.mode)
-        base.selectionMgr.multiSelect(
-            base.selectionMgr.selectionModes[self.mode].getTranslatedSelections(self.oldMode))
+        base.selectionMgr.multiSelect(translated)
 
     def undo(self):
-        oldAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.oldMode].KeyBind)
-        oldAction.setChecked(True)
-        newAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.mode].KeyBind)
-        newAction.setChecked(False)
+        if self.mode != self.oldMode:
+            oldAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.oldMode].KeyBind)
+            oldAction.setChecked(True)
+            newAction = base.menuMgr.action(base.selectionMgr.selectionModes[self.mode].KeyBind)
+            newAction.setChecked(False)
 
-        base.selectionMgr.setSelectionMode(self.oldMode)
-        base.selectionMgr.multiSelect(self.previousSelections)
+            base.selectionMgr.setSelectionMode(self.oldMode)
+            base.selectionMgr.multiSelect(self.previousSelections)
 
         Action.undo(self)
 
