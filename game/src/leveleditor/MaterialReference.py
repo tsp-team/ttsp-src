@@ -9,11 +9,12 @@ from PyQt5 import QtGui, QtCore
 class MaterialReference:
 
     def __init__(self, filename):
+        vfs = VirtualFileSystem.getGlobalPtr()
         self.material = BSPMaterial.getFromFile(filename)
         self.filename = filename
         if self.material.hasKeyvalue("$basetexture"):
             baseTexturePath = self.material.getKeyvalue("$basetexture")
-            vfs = VirtualFileSystem.getGlobalPtr()
+
             if vfs.exists(baseTexturePath):
                 imageData = bytes(VirtualFileSystem.getGlobalPtr().readFile(baseTexturePath, True))
                 byteArray = QtCore.QByteArray.fromRawData(imageData)
@@ -23,11 +24,11 @@ class MaterialReference:
                 self.size = LVector2i(image.width(), image.height())
             else:
                 self.texture = None
-                self.size = LVector2i(0, 0)
+                self.size = LVector2i(64, 64)
                 self.icon = None
                 self.pixmap = None
         else:
             self.texture = None
-            self.size = LVector2i(0, 0)
+            self.size = LVector2i(64, 64)
             self.icon = None
             self.pixmap = None

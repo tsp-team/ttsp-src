@@ -34,7 +34,7 @@ class Viewport3D(Viewport):
         self.flyCam = FlyCam(self)
 
         self.lens.setFov(90)
-        self.lens.setNearFar(0.1, 10000)
+        self.lens.setNearFar(0.1, 5000)
 
         # Set a default camera position + angle
         self.camera.setPos(193, 247, 124)

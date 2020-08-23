@@ -56,6 +56,9 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         self.gizmo = None
         self.inputDevice = None
         self.mouseAndKeyboard = None
+        self.lastRenderTime = 0.0
+        self.enabled = False
+        self.needsUpdate = True
 
         # 2D stuff copied from ShowBase :(
         self.camera2d = None
@@ -91,6 +94,12 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         self.gridRoot.hide(~self.getViewportMask())
 
         self.grid = None
+
+    def updateView(self, now = False):
+        if now:
+            self.renderView()
+        else:
+            self.needsUpdate = True
 
     def getGizmoAxes(self):
         raise NotImplementedError
@@ -144,11 +153,16 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         winprops.setParentWindow(int(self.winId()))
         winprops.setForeground(False)
 
+        if self.is3D():
+            gsg = self.doc.gsg
+        else:
+            gsg = self.doc.gsg2D
+
         output = base.graphicsEngine.makeOutput(
             base.pipe, "viewportOutput", 0,
             FrameBufferProperties.getDefault(),
             winprops, (GraphicsPipe.BFFbPropsOptional | GraphicsPipe.BFRequireWindow),
-            self.doc.gsg
+            gsg
         )
 
         self.qtWindow = QtGui.QWindow.fromWinId(output.getWindowHandle().getIntHandle())
@@ -162,16 +176,16 @@ class Viewport(QtWidgets.QWidget, DirectObject):
 
         assert output is not None, "Unable to create viewport output!"
 
-        output.setClearColorActive(False)
-        output.setClearDepthActive(False)
-        output.setActive(False)
-
         dr = output.makeDisplayRegion()
-        dr.setClearColor(self.ClearColor)
-        dr.setClearColorActive(True)
-        dr.setClearDepthActive(True)
+        dr.disableClears()
         dr.setCamera(self.cam)
         self.displayRegion = dr
+
+        output.disableClears()
+        output.setClearColor(Viewport.ClearColor)
+        output.setClearColorActive(True)
+        output.setClearDepthActive(True)
+        output.setActive(False)
 
         self.win = output
 
@@ -475,7 +489,7 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         pass
 
     def mouseEnter(self):
-        pass
+        self.updateView()
 
     def mouseExit(self):
         pass
@@ -489,8 +503,34 @@ class Viewport(QtWidgets.QWidget, DirectObject):
     def wheelDown(self):
         pass
 
+    def shouldRender(self):
+        if not self.enabled:
+            return False
+
+        now = globalClock.getRealTime()
+        if self.lastRenderTime != 0:
+            elapsed = now - self.lastRenderTime
+            if elapsed <= 0:
+                return False
+
+            frameRate = 1 / elapsed
+            if frameRate > 100.0:
+                # Never render faster than 100Hz
+                return False
+
+        return self.needsUpdate
+
+    def renderView(self):
+        self.lastRenderTime = globalClock.getRealTime()
+        self.needsUpdate = False
+        self.win.setActive(1)
+        base.requestRender()
+
     def tick(self):
-        pass
+        if self.shouldRender():
+            self.renderView()
+        else:
+            self.win.setActive(0)
 
     def getViewportName(self):
         return self.spec.name
@@ -572,6 +612,7 @@ class Viewport(QtWidgets.QWidget, DirectObject):
         if self.is2D():
             zoomFactor = (1.0 / self.zoom) * 100.0
             self.lens.setFilmSize(zoomFactor * aspectRatio, zoomFactor)
+            print(self.lens.getFilmSize())
         else:
             self.lens.setAspectRatio(aspectRatio)
 
@@ -627,13 +668,17 @@ class Viewport(QtWidgets.QWidget, DirectObject):
 
         self.fixRatio(newsize)
 
+        self.updateView()
+
     def draw(self):
         pass
 
     def enable(self):
         # Render to the viewport
         self.win.setActive(True)
+        self.enabled = True
 
     def disable(self):
         # Don't render to the viewport
         self.win.setActive(False)
+        self.enabled = False

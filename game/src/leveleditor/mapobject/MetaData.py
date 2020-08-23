@@ -16,6 +16,8 @@ MetaDataExclusions = [
 # (type, unserialize func, serialize func, default value)
 MetaDataType = {
     'string': (str, str, str, ""),
+    'decal': (str, str, str, ""),
+    'sound': (str, str, str, ""),
     'float': (float, float, str, 0.0),
     'color255': (LVecBase4f, CKeyValues.to4f, CKeyValues.toString, LVecBase4f(255, 255, 255, 255)),
     'vec3': (LVecBase3f, CKeyValues.to3f, CKeyValues.toString, LVecBase3f(0, 0, 0)),

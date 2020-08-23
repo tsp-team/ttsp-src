@@ -113,10 +113,17 @@ class ToolManager(DocObject):
             return
 
         if self.currentTool:
+            base.menuMgr.action(self.currentTool.KeyBind).setChecked(False)
             self.currentTool.disable()
 
         self.currentTool = tool
         self.currentTool.enable()
+        base.menuMgr.action(self.currentTool.KeyBind).setChecked(True)
+
+        self.doc.updateAllViews()
+
+    def switchToSelectTool(self):
+        self.switchToTool(self.selectTool)
 
     @staticmethod
     def addToolActions():
@@ -143,7 +150,9 @@ class ToolManager(DocObject):
         for tool in self.Tools:
             if tool == Separator:
                 continue
-
+            toolInst = tool(self)
+            if tool is SelectTool:
+                self.selectTool = toolInst
             self.addTool(tool(self))
 
     def getNumTools(self):

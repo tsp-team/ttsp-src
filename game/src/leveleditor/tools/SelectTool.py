@@ -99,9 +99,13 @@ class SelectTool(BoxTool):
         if not self.mouseIsDown:
             return
 
+        base.selectionMgr.selectionMode.cycleNextSelection(self.multiSelect)
+
     def wheelDown(self):
         if not self.mouseIsDown:
             return
+
+        base.selectionMgr.selectionMode.cyclePreviousSelection(self.multiSelect)
 
     def escapeDown(self):
         BoxTool.escapeDown(self)

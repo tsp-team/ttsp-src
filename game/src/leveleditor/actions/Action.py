@@ -17,9 +17,11 @@ class Action(DirectObject):
 
     def do(self):
         self.state = self.Done
+        base.document.updateAllViews()
 
     def undo(self):
         self.state = self.Undone
+        base.document.updateAllViews()
 
     def cleanup(self):
         self.state = None

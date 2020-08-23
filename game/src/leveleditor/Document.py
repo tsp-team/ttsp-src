@@ -56,7 +56,9 @@ class DocumentWidget(QtWidgets.QWidget):
         vp3d = Viewport3D(VIEWPORT_3D, self.splitter, self.doc)
         self.addViewport(vp3d)
         self.doc.gsg = vp3d.win.getGsg()
-        self.addViewport(Viewport2D(VIEWPORT_2D_FRONT, self.splitter, self.doc))
+        vp2df = Viewport2D(VIEWPORT_2D_FRONT, self.splitter, self.doc)
+        self.addViewport(vp2df)
+        self.doc.gsg2D = vp2df.win.getGsg()
         self.addViewport(Viewport2D(VIEWPORT_2D_SIDE, self.splitter, self.doc))
         self.addViewport(Viewport2D(VIEWPORT_2D_TOP, self.splitter, self.doc))
 
@@ -135,6 +137,10 @@ class Document(DirectObject):
         self.world = None
         self.isOpen = False
         self.gsg = None
+        self.gsg2D = None
+        self.shaderGenerators = []
+
+        self.numlights = 0
 
         # Each document has its own message bus, task manager, and event manager.
         self.taskMgr = TaskManager()
@@ -222,6 +228,8 @@ class Document(DirectObject):
         self.unsaved = None
         self.isOpen = None
         self.gsg = None
+        self.gsg2D = None
+        self.shaderGenerators = None
 
         self.viewportMgr.cleanup()
         self.viewportMgr = None
@@ -248,9 +256,7 @@ class Document(DirectObject):
         self.world = World(self.getNextID())
         self.world.reparentTo(self.render)
         self.isOpen = True
-        #if base.toolMgr.selectTool:
-        #    # Open with the select tool by default
-        #    base.toolMgr.selectTool.toggle()
+        self.toolMgr.switchToSelectTool()
         self.updateTabText()
 
     def updateTabText(self):
@@ -262,7 +268,6 @@ class Document(DirectObject):
         classDef = MapObjectFactory.MapObjectsByName.get(kv.getName())
         if not classDef:
             return
-
         id = int(kv.getValue("id"))
         self.reserveID(id)
         obj = classDef(id)
@@ -275,13 +280,16 @@ class Document(DirectObject):
         for i in range(kv.getNumChildren()):
             self.r_open(kv.getChild(i), obj)
 
+    def getViewport(self, type):
+        return self.page.docWidget.viewports[type]
+
     def createShaderGenerator(self):
-        vp = self.page.docWidget.viewports[VIEWPORT_3D]
-        shgen = BSPShaderGenerator(vp.win, self.gsg, vp.camera, self.render)
-        self.gsg.setShaderGenerator(shgen)
-        for shader in ShaderGlobals.getShaders():
-            shgen.addShader(shader)
-        self.shaderGenerator = shgen
+        for gsg, vp in [(self.gsg, self.getViewport(VIEWPORT_3D)), (self.gsg2D, self.getViewport(VIEWPORT_2D_FRONT))]:
+            shgen = BSPShaderGenerator(vp.win, gsg, vp.camera, self.render)
+            gsg.setShaderGenerator(shgen)
+            for shader in ShaderGlobals.getShaders():
+                shgen.addShader(shader)
+            self.shaderGenerators.append(shgen)
 
     def open(self, filename = None):
         # if filename is none, this is a new document/map
@@ -298,8 +306,7 @@ class Document(DirectObject):
         self.unsaved = False
         self.filename = filename
         self.isOpen = True
-        # Open with the select tool by default
-        #base.toolMgr.selectTool.toggle()
+        self.toolMgr.switchToSelectTool()
         self.updateTabText()
 
     def markSaved(self):
@@ -323,3 +330,17 @@ class Document(DirectObject):
         if self.unsaved:
             name += " *"
         return name
+
+    def updateAllViews(self, now = False):
+        for vp in self.viewportMgr.viewports:
+            vp.updateView(now)
+
+    def update2DViews(self, now = False):
+        for vp in self.viewportMgr.viewports:
+            if vp.is2D():
+                vp.updateView(now)
+
+    def update3DViews(self, now = False):
+        for vp in self.viewportMgr.viewports:
+            if vp.is3D():
+                vp.updateView(now)

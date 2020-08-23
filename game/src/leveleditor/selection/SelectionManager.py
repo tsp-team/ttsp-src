@@ -257,9 +257,7 @@ class SelectionManager(DocObject):
         maxs = Point3(-9999999)
 
         for obj in self.selectedObjects:
-            objMins = Point3()
-            objMaxs = Point3()
-            obj.np.calcTightBounds(objMins, objMaxs)
+            objMins, objMaxs = obj.getBounds(base.render)
             if objMins.x < mins.x:
                 mins.x = objMins.x
             if objMins.y < mins.y:

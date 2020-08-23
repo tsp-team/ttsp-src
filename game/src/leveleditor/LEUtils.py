@@ -1,5 +1,5 @@
 from panda3d.core import Point3, Vec3, Quat, LineSegs, CKeyValues, ButtonRegistry
-from panda3d.core import LPlane
+from panda3d.core import LPlane, Vec4
 
 from direct.showbase.PythonUtil import invertDict
 
@@ -7,7 +7,7 @@ from src.coginvasion.globals import CIGlobals
 
 from PyQt5 import QtGui, QtCore
 
-import math
+import math, random
 
 # Qt key codes -> Panda KeyboardButton names.
 QtKeyToKeyboardButton = {
@@ -228,3 +228,7 @@ def circle(x, y, radius, vertices=32):
         theta *= math.pi/180 # Degrees to radians
         result.append((x + math.sin(theta)*radius, y + math.cos(theta)*radius))
     return result
+
+def getRandomSolidColor():
+    # Picks a random shade of blue/green.
+    return Vec4(0, random.uniform(0.6, 1.0), random.uniform(0.6, 1.0), 1.0)

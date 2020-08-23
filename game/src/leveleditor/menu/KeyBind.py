@@ -71,3 +71,8 @@ class KeyBind(IntEnum):
     ViewXZ = 56
 
     DNATool = 57
+
+    GroupSelected = 58
+    UngroupSelected = 59
+
+    Cut = 60

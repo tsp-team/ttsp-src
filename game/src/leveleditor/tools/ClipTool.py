@@ -6,7 +6,6 @@ from .BaseTool import BaseTool
 from .ToolOptions import ToolOptions
 from src.leveleditor.geometry.Polygon import Polygon
 from src.leveleditor.geometry.GeomView import GeomView
-from src.leveleditor.math.Polygon import Polygon as MathPolygon
 from src.leveleditor.viewport.ViewportType import VIEWPORT_3D_MASK, VIEWPORT_2D_MASK
 from src.leveleditor.actions.Clip import Clip
 from src.leveleditor.math.Plane import Plane
@@ -243,6 +242,7 @@ class ClipTool(BaseTool):
         self.clearClipPlane()
         self.disable2DPoints()
         self.disable2DLines()
+        self.doc.updateAllViews()
 
     def activate(self):
         BaseTool.activate(self)
@@ -264,6 +264,7 @@ class ClipTool(BaseTool):
 
     def cycleClipSide(self):
         self.updateClipSide((self.side + 1) % 3)
+        self.doc.updateAllViews()
 
     def confirmClip(self):
         if self.point1 is None or self.point2 is None or self.point3 is None:
@@ -374,6 +375,7 @@ class ClipTool(BaseTool):
             self.update2DLines()
             self.update2DPoints()
             self.updateClipPlane()
+            self.doc.updateAllViews()
 
     def clearClipPlane(self):
         for origSolid, front, back in self.tempSolids:
@@ -396,8 +398,8 @@ class ClipTool(BaseTool):
                 continue
             ret, back, front = obj.split(plane, tempGen, True)
             if ret:
-                front.reparentTo(self.doc.render)
-                back.reparentTo(self.doc.render)
+                front.np.reparentTo(self.doc.render)
+                back.np.reparentTo(self.doc.render)
                 self.tempSolids.append((obj, front, back))
                 # Hide the original solid
                 obj.np.stash()

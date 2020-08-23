@@ -54,9 +54,9 @@ class ObjectProperty:
         if isinstance(string, self.getNativeType()):
             # Already unserialized
             return string
-
         func = MetaData.getUnserializeFunc(self.valueType)
-        return func(string)
+        ret = func(string)
+        return ret
 
     def getSerializedValue(self):
         func = MetaData.getSerializeFunc(self.valueType)

@@ -138,18 +138,19 @@ class ObjectPropertiesWindow(QtWidgets.QDockWidget, DocObject):
 
         # Only show one entity in the object properties..
         # and choose the most recently selected one if there are multiple selections
-        selection = self.mgr.selectedObjects[len(self.mgr.selectedObjects) - 1]
+        selection = self.mgr.selectionMode.getObjectPropertiesTarget()
         self.entity = selection
 
-        classname = selection.getName()
+        name = selection.getName()
         desc = selection.getDescription()
 
-        self.ui.lblPropertyName.setText(classname)
+        self.ui.lblPropertyName.setText(name)
         self.ui.lblPropertyDesc.setText(desc)
         if not isinstance(selection, Entity):
             self.ui.comboClass.hide()
         else:
             self.ui.comboClass.show()
+            classname = selection.getClassName()
             self.ui.comboClass.setCurrentText(classname)
 
         self.propertiesModel.removeRows(0, self.propertiesModel.rowCount())

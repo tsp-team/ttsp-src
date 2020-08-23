@@ -17,5 +17,5 @@ class GridSettings:
     HideSmallerToggle = True
     HideSmallerThan = 4
     HideFactor = 8
-    Low = -4096
-    High = 4096
+    Low = -16384
+    High = 16384

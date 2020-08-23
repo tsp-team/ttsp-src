@@ -1,5 +1,6 @@
 from panda3d.core import NodePath, CollisionBox, CollisionNode, Vec4, ModelNode, BoundingBox, Vec3
 from panda3d.core import Point3, CKeyValues, BitMask32, RenderState, ColorAttrib, CullBinAttrib
+from panda3d.core import PStatCollector
 
 from .MapWritable import MapWritable
 from src.leveleditor import LEGlobals
@@ -7,6 +8,7 @@ from .TransformProperties import OriginProperty, AnglesProperty, ScaleProperty, 
 from . import MetaData
 from .ObjectProperty import ObjectProperty
 
+from src.leveleditor.math.Line import Line
 from src.leveleditor.geometry.Box import Box
 from src.leveleditor.geometry.GeomView import GeomView
 from src.leveleditor.viewport.ViewportType import VIEWPORT_2D_MASK, VIEWPORT_3D_MASK
@@ -22,13 +24,18 @@ BoundsBox2DState = RenderState.make(
     CullBinAttrib.make("selected-foreground", 0)
 )
 
+MapObjectInit = PStatCollector("Arch:CreateSolid:MapObjInit")
+
 # Base class for any object in the map (brush, entity, etc)
 class MapObject(MapWritable):
 
     ObjectName = "object"
 
     def __init__(self, id):
+        MapObjectInit.start()
+
         MapWritable.__init__(self, base.document)
+        self.temporary = False
         self.id = id
         self.selected = False
         self.classname = ""
@@ -41,6 +48,8 @@ class MapObject(MapWritable):
         self.boundsBox.generateGeometry()
         self.collNp = None
 
+        self.group = None
+
         self.properties = {}
 
         # All MapObjects have transform
@@ -51,6 +60,72 @@ class MapObject(MapWritable):
 
         self.np = NodePath(ModelNode(self.ObjectName + ".%i" % self.id))
         self.np.setPythonTag("mapobject", self)
+        self.applyCollideMask()
+        # Test bounding volume at this node and but nothing below it.
+        self.np.node().setFinal(True)
+
+        MapObjectInit.stop()
+
+    def getClassName(self):
+        return self.classname
+
+    def isWorld(self):
+        return False
+
+    def r_findAllParents(self, parents, type):
+        if not self.parent or self.parent.isWorld():
+            return
+
+        if type is None or isinstance(self.parent, type):
+            parents.append(self.parent)
+
+        self.parent.r_findAllParents(parents, type)
+
+    def findAllParents(self, type = None):
+        parents = []
+        self.r_findAllParents(parents, type)
+        return parents
+
+    def findTopmostParent(self, type = None):
+        parents = self.findAllParents(type)
+        if len(parents) == 0:
+            return None
+
+        return parents[len(parents) - 1]
+
+    def r_findAllChildren(self, children, type):
+        for child in self.children.values():
+            if type is None or isinstance(child, type):
+                children.append(child)
+            child.r_findAllChildren(children, type)
+
+    def findAllChildren(self, type = None):
+        children = []
+
+        self.r_findAllChildren(children, type)
+
+        return children
+
+    def applyCollideMask(self):
+        self.np.setCollideMask(LEGlobals.ObjectMask)
+
+    def setTemporary(self, flag):
+        self.temporary = flag
+
+    # Returns the bounding volume of the object itself, not including children objects.
+    def getObjBounds(self, other = None):
+        if not other:
+            other = self.np.getParent()
+        return self.np.getTightBounds(other)
+
+    # Returns the min and max points of the bounds of the object, not including children.
+    def getBounds(self, other = None):
+        if not other:
+            other = self.np.getParent()
+        mins = Point3()
+        maxs = Point3()
+        self.np.calcTightBounds(mins, maxs, other)
+        return [mins, maxs]
 
     def findChildByID(self, id):
         if id == self.id:
@@ -360,9 +435,7 @@ class MapObject(MapWritable):
         self.hideBoundingBox()
 
         # Calculate a bounding box relative to ourself
-        mins = Point3()
-        maxs = Point3()
-        self.np.calcTightBounds(mins, maxs, self.np)
+        mins, maxs = self.getBounds(self.np)
 
         invalid, mins, maxs = self.fixBounds(mins, maxs)
         if invalid:
@@ -388,13 +461,13 @@ class MapObject(MapWritable):
             self.collNp = None
 
     def delete(self):
-        # Take the children with us
-        for child in list(self.children.values()):
-            child.delete()
-        self.children = None
-
-        # if we are selected, deselect
-        base.selectionMgr.deselect(self)
+        if not self.temporary:
+            # Take the children with us
+            for child in list(self.children.values()):
+                child.delete()
+            self.children = None
+            # if we are selected, deselect
+            base.selectionMgr.deselect(self)
 
         if self.boundsBox:
             self.boundsBox.cleanup()
@@ -402,11 +475,14 @@ class MapObject(MapWritable):
 
         self.removePickBox()
 
-        self.reparentTo(NodePath())
+        if not self.temporary:
+            self.reparentTo(NodePath())
         self.np.removeNode()
         self.np = None
         self.properties = None
         self.metaData = None
+
+        self.temporary = None
 
     def __clearParent(self):
         if self.parent:
@@ -440,12 +516,12 @@ class MapObject(MapWritable):
 
     def __addChild(self, child):
         self.children[child.id] = child
-        self.recalcBoundingBox()
+        #self.recalcBoundingBox()
 
     def __removeChild(self, child):
         if child.id in self.children:
             del self.children[child.id]
-            self.recalcBoundingBox()
+            #self.recalcBoundingBox()
 
     def doWriteKeyValues(self, parent):
         kv = CKeyValues(self.ObjectName, parent)

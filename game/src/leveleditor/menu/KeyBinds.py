@@ -7,8 +7,8 @@ KeyBinds = [
     KeyBindDef("Save the map", KeyBind.FileSave, "ctrl+s"),
     KeyBindDef("Save the map as", KeyBind.FileSaveAs, "ctrl+shift+s"),
     KeyBindDef("Save all maps", KeyBind.FileSaveAll, "ctrl+alt+s"),
-    KeyBindDef("Close the map", KeyBind.FileClose, "ctrl+x"),
-    KeyBindDef("Close all maps", KeyBind.FileCloseAll, "ctrl+alt+x"),
+    KeyBindDef("Close the map", KeyBind.FileClose, "ctrl+w"),
+    KeyBindDef("Close all maps", KeyBind.FileCloseAll, "ctrl+alt+w"),
 
     KeyBindDef("Undo previous action", KeyBind.Undo, "ctrl+z"),
     KeyBindDef("Redo previous action", KeyBind.Redo, "ctrl+shift+z"),
@@ -69,7 +69,12 @@ KeyBinds = [
     KeyBindDef("Focus YZ view", KeyBind.ViewYZ, "f4"),
     KeyBindDef("Focus XZ view", KeyBind.ViewXZ, "f5"),
 
-    KeyBindDef("Switch to DNA tool", KeyBind.DNATool, "shift+d")
+    KeyBindDef("Switch to DNA tool", KeyBind.DNATool, "shift+d"),
+
+    KeyBindDef("Group selected objects", KeyBind.GroupSelected, "ctrl+g"),
+    KeyBindDef("Ungroup selected objects", KeyBind.UngroupSelected, "ctrl+shift+g"),
+
+    KeyBindDef("Cut selected objects", KeyBind.Cut, "ctrl+x")
 ]
 
 KeyBindsByID = {x.id: x for x in KeyBinds}

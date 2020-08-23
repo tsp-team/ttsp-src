@@ -13,7 +13,7 @@ class ObjectMode(SelectionMode):
 
     Type = SelectionType.Objects
     Key = "mapobject"
-    Mask = GeomNode.getDefaultCollideMask() | LEGlobals.EntityMask
+    Mask = LEGlobals.ObjectMask
     KeyBind = KeyBind.SelectObjects
     Icon = "resources/icons/editor-select-objects.png"
     Name = "Objects"
@@ -23,6 +23,9 @@ class ObjectMode(SelectionMode):
     def __init__(self, mgr):
         SelectionMode.__init__(self, mgr)
         self.objectProperties = ObjectMode.getObjectPropertiesWindow()
+
+    def getObjectPropertiesTarget(self):
+        return self.mgr.selectedObjects[len(self.mgr.selectedObjects) - 1]
 
     def updateObjProperties(self):
         self.objectProperties.setMgr(self.mgr)

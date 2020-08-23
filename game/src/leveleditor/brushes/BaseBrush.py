@@ -5,6 +5,9 @@ from src.leveleditor.mapobject.Solid import Solid
 from src.leveleditor.mapobject.SolidFace import SolidFace
 from src.leveleditor.mapobject.SolidVertex import SolidVertex
 
+from src.leveleditor import LEUtils
+
+
 class BaseBrush:
     Name = "Brush"
     CanRound = True
@@ -22,11 +25,14 @@ class BaseBrush:
         self.controls.append(ctrl)
         return ctrl
 
-    def create(self, generator, mins, maxs, material, roundDecimals):
+    def create(self, generator, mins, maxs, material, roundDecimals, temp = False):
         raise NotImplementedError
 
-    def makeSolid(self, generator, faces, material):
+    def makeSolid(self, generator, faces, material, temp = False, color = None):
         solid = Solid(generator.getNextID())
+        solid.setTemporary(temp)
+        if color is not None:
+            solid.setColor(color)
         for arr in faces:
             face = SolidFace(generator.getNextFaceID(),
                              Plane.fromVertices(arr[0], arr[1], arr[2]),
@@ -35,10 +41,16 @@ class BaseBrush:
             for vert in arr:
                 face.vertices.append(SolidVertex(vert, face))
             solid.faces.append(face)
+            face.alignTextureToFace()
+            if temp:
+                face.setPreviewState()
+                face.generate()
 
-        solid.setToSolidOrigin()
-        solid.alignTexturesToFaces()
-        solid.generateFaces()
-        solid.recalcBoundingBox()
+        if not temp:
+            solid.setToSolidOrigin()
+            solid.generateFaces()
+            solid.recalcBoundingBox()
+        else:
+            solid.reparentTo(base.render)
 
         return solid

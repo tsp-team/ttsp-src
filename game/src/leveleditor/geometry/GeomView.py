@@ -31,6 +31,10 @@ class GeomView:
         if renderState is not None:
             self.np.setState(renderState)
 
+    def clear(self):
+        self.indices.clearVertices()
+        self.np.node().removeAllGeoms()
+
     def generateTriangleIndices(self, firstVertex, numVerts):
         raise NotImplementedError
 

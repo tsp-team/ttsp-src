@@ -7,7 +7,7 @@ from src.leveleditor import LEGlobals
 class VertexMode(SelectionMode):
 
     Type = SelectionType.Vertices
-    Mask = LEGlobals.VertexMask
+    Mask = LEGlobals.FaceMask
     Key = "solidvertex"
     CanDelete = False
     CanDuplicate = False

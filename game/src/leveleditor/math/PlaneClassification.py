@@ -1,4 +1,4 @@
-OnPlane = 0
+OnPlane = 2
 Back = 1
-Front = 2
+Front = 0
 Spanning = 3

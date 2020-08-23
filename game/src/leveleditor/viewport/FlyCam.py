@@ -98,6 +98,7 @@ class FlyCam(DocObject):
     def handleZ(self):
         if self.viewport.mouseWatcher.hasMouse():
             self.setEnabled(not self.enabled)
+            self.viewport.updateView()
 
     def setEnabled(self, flag):
         if flag:
@@ -129,6 +130,8 @@ class FlyCam(DocObject):
                 camera.setH(camera.getH() + (dx * self.mouseSensitivity))
                 camera.setP(camera.getP() + (dy * self.mouseSensitivity))
                 self.viewport.centerCursor(self.cursor)
+                if (dx != 0 or dy != 0):
+                    self.viewport.updateView()
 
             # linear movement WASD+QE
             goalDir = Vec3(0)
@@ -183,6 +186,8 @@ class FlyCam(DocObject):
             # dont have float value be affected by direction, always completely up or down
             camera.setPos(camera.getPos() + camera.getQuat().xform(Vec3(speeds[0], speeds[1], 0)))
             camera.setZ(camera, speeds[2])
+
+            self.viewport.updateView()
         else:
             self.moving = False
 

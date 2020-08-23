@@ -14,7 +14,7 @@ class ArchBrush(BaseBrush):
 
     def __init__(self):
         BaseBrush.__init__(self)
-        self.numSides = self.addControl(NumericControl(self, "Number of sides"))
+        self.numSides = self.addControl(NumericControl(self, "Number of sides", val = 8))
         self.wallWidth = self.addControl(NumericControl(self, "Wall width", minVal = 1, maxVal = 1024, val = 32))
         self.arc = self.addControl(NumericControl(self, "Arc", minVal = 1, maxVal = 360 * 4, val = 360))
         self.startAngle = self.addControl(NumericControl(self, "Start angle", maxVal = 359))
@@ -27,7 +27,7 @@ class ArchBrush(BaseBrush):
         self.tiltAngle.setEnabled(val)
         self.tiltInterp.setEnabled(val)
 
-    def create(self, generator, mins, maxs, material, roundDecimals):
+    def create(self, generator, mins, maxs, material, roundDecimals, temp = False):
         solids = []
 
         numSides = self.numSides.getValue()
@@ -90,6 +90,8 @@ class ArchBrush(BaseBrush):
                 zval += h - tiltHeight
             inner.append(LEUtils.roundVector(Point3(xval, yval, zval), roundDecimals))
 
+        color = LEUtils.getRandomSolidColor()
+
         # create the solids
         z = LEUtils.roundVector(Point3(0, 0, height), roundDecimals)
         for i in range(numSides):
@@ -100,7 +102,7 @@ class ArchBrush(BaseBrush):
                 # The splitting orientation depends on the curving direction of the arch
                 if addHeight >= 0:
                     faces.append([ outer[i],        outer[i] + z,   outer[i+1] + z, outer[i+1] ])
-                    faces.append([ outer[i+1],      outer[i+1] + z, inner[i] + z,   inner[1] ])
+                    faces.append([ outer[i+1],      outer[i+1] + z, inner[i] + z,   inner[i] ])
                     faces.append([ inner[i],        inner[i] + z,   outer[i] + z,   outer[i] ])
                     faces.append([ outer[i] + z,    inner[i] + z,   outer[i+1] + z ])
                     faces.append([ outer[i+1],      inner[i],       outer[i] ])
@@ -110,7 +112,7 @@ class ArchBrush(BaseBrush):
                     faces.append([ inner[i],        inner[i] + z,   outer[i] + z,   outer[i] ])
                     faces.append([ inner[i+1] + z,  outer[i] + z,   inner[i] + z ])
                     faces.append([ inner[i],        outer[i],       inner[i+1] ])
-                solids.append(self.makeSolid(generator, faces, material))
+                solids.append(self.makeSolid(generator, faces, material, temp, color))
 
                 faces.clear()
 
@@ -127,7 +129,7 @@ class ArchBrush(BaseBrush):
                     faces.append([ outer[i] + z,    inner[i+1] + z, outer[i+1] + z ])
                     faces.append([ outer[i+1],      inner[i+1],     outer[i] ])
 
-                solids.append(self.makeSolid(generator, faces, material))
+                solids.append(self.makeSolid(generator, faces, material, temp, color))
             else:
                 h = Vec3.unitZ() * i * addHeight
                 faces.append([ outer[i] + h,    outer[i] + z + h,   outer[i+1] + z + h, outer[i+1] + h ])
@@ -136,6 +138,6 @@ class ArchBrush(BaseBrush):
                 faces.append([ inner[i] + h, inner[i] + z + h, outer[i] + z + h, outer[i] + h])
                 faces.append([ inner[i+1] + z + h, outer[i+1] + z + h, outer[i] + z + h, inner[i] + z + h ])
                 faces.append([ inner[i] + h, outer[i] + h, outer[i+1] + h, inner[i+1] + h ])
-                solids.append(self.makeSolid(generator, faces, material))
+                solids.append(self.makeSolid(generator, faces, material, temp, color))
 
         return solids

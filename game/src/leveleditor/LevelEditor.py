@@ -3,7 +3,7 @@ from panda3d.core import CollisionRay, CollisionNode, CollisionHandlerQueue, Col
 from panda3d.core import TextNode, Filename, KeyboardButton, ButtonRegistry
 from panda3d.core import CullBinManager, GraphicsEngine, GraphicsPipeSelection
 from panda3d.core import TransformState, RenderState, DataGraphTraverser
-from panda3d.core import ClockObject, TrueClock
+from panda3d.core import ClockObject, TrueClock, PStatClient, ConfigVariableBool
 from panda3d.direct import throwNewFrame
 
 import builtins
@@ -159,6 +159,7 @@ class LevelEditorWindow(QtWidgets.QMainWindow, DirectObject):
         self.coordsLabel = self.addPaneLabel(100)
         self.zoomLabel = self.addPaneLabel(90)
         self.gridSnapLabel = self.addPaneLabel(135)
+        self.fpsLabel = self.addPaneLabel(135)
 
         self.toolBar = self.ui.leftBar
         self.toolBar.setIconSize(QtCore.QSize(48, 48))
@@ -328,7 +329,7 @@ class LevelEditorApp(QtWidgets.QApplication):
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
 
-        pixmap = QtGui.QPixmap("resources/icons/foundry-splash.png")
+        pixmap = QtGui.QPixmap("resources/icons/foundry-splash.png").scaledToWidth(1024, QtCore.Qt.SmoothTransformation)
         splash = QtWidgets.QSplashScreen(self.primaryScreen(), pixmap, QtCore.Qt.WindowStaysOnTopHint)
         splash.show()
         self.processEvents()
@@ -368,8 +369,13 @@ class LevelEditor(DirectObject):
     def __init__(self):
         DirectObject.__init__(self)
 
+        if ConfigVariableBool("want-pstats", False):
+            PStatClient.connect()
+
         self.docTitle = ""
         self.viewportName = ""
+
+        self.renderRequested = False
 
         ###################################################################
         # Minimal emulation of ShowBase glue code. Note we're not using
@@ -427,6 +433,9 @@ class LevelEditor(DirectObject):
 
         self.initialize()
 
+    def requestRender(self):
+        self.renderRequested = True
+
     def setWindowSubTitle(self, sub):
         title = LEGlobals.AppName
         if sub:
@@ -445,7 +454,17 @@ class LevelEditor(DirectObject):
         self.dgTrav.traverse(self.dataRoot.node())
 
     def __igLoop(self):
-        self.graphicsEngine.renderFrame()
+        if self.renderRequested:
+            self.graphicsEngine.renderFrame()
+            #self.graphicsEngine.syncFrame()
+            #self.graphicsEngine.readyFlip()
+            self.graphicsEngine.flipFrame()
+            #self.graphicsEngine.openWindows()
+            self.renderRequested = False
+        else:
+            #self.graphicsEngine.flipFrame()
+            self.globalClock.tick()
+            PStatClient.mainTick()
         throwNewFrame()
 
     def openDocument(self, filename):
@@ -557,20 +576,24 @@ class LevelEditor(DirectObject):
     def __toggleGrid(self):
         GridSettings.EnableGrid = not GridSettings.EnableGrid
         self.adjustGridText()
+        self.document.update2DViews()
 
     def __toggleGrid3D(self):
         GridSettings.EnableGrid3D = not GridSettings.EnableGrid3D
         self.adjustGridText()
+        self.document.update3DViews()
 
     def __incGridSize(self):
         GridSettings.DefaultStep *= 2
         GridSettings.DefaultStep = min(256, GridSettings.DefaultStep)
         self.adjustGridText()
+        self.document.updateAllViews()
 
     def __decGridSize(self):
         GridSettings.DefaultStep //= 2
         GridSettings.DefaultStep = max(1, GridSettings.DefaultStep)
         self.adjustGridText()
+        self.document.updateAllViews()
 
     def adjustGridText(self):
         text = "Snap: %s Grid: %i" % ("On" if GridSettings.GridSnap else "Off", GridSettings.DefaultStep)
@@ -579,6 +602,9 @@ class LevelEditor(DirectObject):
     def run(self):
         self.running = True
         while self.running:
+            fr = globalClock.getAverageFrameRate()
+            dt = globalClock.getDt()
+            self.qtWindow.fpsLabel.setText("%.2f ms / %i fps" % (dt * 1000, fr))
             self.qtApp.processEvents()
             self.__gbcLoop()
             self.__dataLoop()

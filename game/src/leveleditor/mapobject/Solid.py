@@ -1,15 +1,19 @@
-from panda3d.core import Point3, Vec3, NodePath, CKeyValues
+from panda3d.core import Point3, Vec3, NodePath, CKeyValues, CollisionNode, CollisionPolygon, CollisionSegment, Vec4
+from panda3d.editor import SolidGeomNode
 
-from src.leveleditor.math.Polygon import Polygon
+from src.leveleditor.math.Winding import Winding
 from .MapObject import MapObject
 from .SolidFace import SolidFace
 from .SolidVertex import SolidVertex
 
-from src.leveleditor import LEUtils
+from src.leveleditor import LEUtils, LEGlobals
 from src.leveleditor.math import PlaneClassification
 from src.leveleditor.math.Plane import Plane
 
 from .ObjectProperty import ObjectProperty
+
+import sys
+import random
 
 class VisOccluder(ObjectProperty):
 
@@ -38,8 +42,46 @@ class Solid(MapObject):
 
     def __init__(self, id):
         MapObject.__init__(self, id)
+        self.np = NodePath(SolidGeomNode("solid.%i" % id))
+        self.np.setPythonTag("mapobject", self)
+        self.np.node().setFinal(True)
+
+        self.coll3D = self.np.attachNewNode(CollisionNode("coll3D"))
+        self.coll3D.setCollideMask(LEGlobals.ObjectMask | LEGlobals.FaceMask | LEGlobals.Mask3D)
+        #self.coll2D = self.np.attachNewNode(CollisionNode("coll2D"))
+        #self.coll2D.setCollideMask(LEGlobals.ObjectMask | LEGlobals.FaceMask | LEGlobals.Mask2D)
+
+        # CollisionSolid -> SolidFace
+        self.faceCollSolids = {}
+
+        self.geomIndices = {}
         self.faces = []
+
+        self.pickRandomColor()
+
         self.addProperty(VisOccluder(self))
+
+    def pickRandomColor(self):
+        # Picks a random shade of blue/green for this solid.
+        self.setColor(LEUtils.getRandomSolidColor())
+
+    def setColor(self, color):
+        self.color = color
+        for face in self.faces:
+            face.setColor(color)
+
+    def getFaceFromCollisionSolid(self, solid):
+        return self.faceCollSolids[solid]
+
+    def addFaceGeom(self, geom, state):
+        index = self.np.node().getNumGeoms()
+        self.geomIndices[geom] = index
+        self.np.node().addGeom(geom, state)
+        return index
+
+    def setFaceGeomState(self, geom, state):
+        index = self.geomIndices[geom]
+        self.np.node().setGeomState(index, state)
 
     def alignTexturesToFaces(self):
         for face in self.faces:
@@ -62,6 +104,8 @@ class Solid(MapObject):
     def generateFaces(self):
         for face in self.faces:
             face.generate()
+        if not self.temporary:
+            self.createFaceCollisions()
 
     def writeKeyValues(self, keyvalues):
         MapObject.writeKeyValues(self, keyvalues)
@@ -80,8 +124,57 @@ class Solid(MapObject):
             if child.getName() == "side":
                 face = SolidFace(solid = self)
                 face.readKeyValues(child)
-                face.generate()
                 self.faces.append(face)
+
+        self.createVerticesFromFacePlanes()
+        self.createFaceCollisions()
+
+    # Creates the collision objects that will be tested against for selecting solid faces.
+    def createFaceCollisions(self):
+        self.coll3D.node().clearSolids()
+        #self.coll2D.node().clearSolids()
+
+        self.faceCollSolids = {}
+
+        for face in self.faces:
+
+            numVerts = len(face.vertices)
+
+            # Tris in 3D for ray->face selection
+            for i in range(1, numVerts - 1):
+                poly = CollisionPolygon(face.vertices[i+1].pos, face.vertices[i].pos, face.vertices[0].pos)
+                self.coll3D.node().addSolid(poly)
+                self.faceCollSolids[poly] = face
+
+            # Lines in 2D for box->edge selection
+            #for i in range(len(face.vertices)):
+            #    a = face.vertices[i].pos
+            #    b = face.vertices[(i+1) % numVerts].pos
+            #    if a == b:
+            #        continue
+            #    segment = CollisionSegment(a, b)
+            #    self.coll2D.node().addSolid(segment)
+            #    self.faceCollSolids[face][1].append(segment)
+
+    def createVerticesFromFacePlanes(self):
+        for i in range(len(self.faces)):
+            face = self.faces[i]
+            w = Winding.fromPlaneAndRadius(face.plane)
+
+            for j in range(len(self.faces)):
+                if i == j:
+                    continue
+                other = self.faces[j]
+                #
+                # Flip the plane, because we want to keep the back side.
+                #
+                w.splitInPlace(-other.plane)
+            w.roundPoints()
+            # The final winding is the face
+            for j in range(len(w.vertices)):
+                face.vertices.append(SolidVertex(w.vertices[j], face))
+            face.calcTextureCoordinates(True)
+            face.generate()
 
     def showClipVisRemove(self):
         for face in self.faces:
@@ -138,9 +231,15 @@ class Solid(MapObject):
 
     def delete(self):
         MapObject.delete(self)
+        self.coll3D.removeNode()
+        self.coll3D = None
+        #self.coll2D.removeNode()
+        #self.coll2D = None
+        self.faceCollSolids = None
         for face in self.faces:
             face.delete()
         self.faces = None
+        self.color = None
 
     # Splits this solid into two solids by intersecting against a plane.
     def split(self, plane, generator, temp = False):
@@ -171,17 +270,18 @@ class Solid(MapObject):
             if classify != PlaneClassification.Front:
                 backPlanes.append(face.getWorldPlane())
 
-        back = Solid.createFromIntersectingPlanes(backPlanes, generator, False)
-        front = Solid.createFromIntersectingPlanes(frontPlanes, generator, False)
-        # copyBase() will set the transform to what we're copying from, but we already
-        # figured out a transform for the solids. Store the current transform so we can
-        # set it back.
-        bTrans = back.np.getTransform()
-        fTrans = front.np.getTransform()
-        self.copyBase(back, generator)
-        self.copyBase(front, generator)
-        back.np.setTransform(bTrans)
-        front.np.setTransform(fTrans)
+        back = Solid.createFromIntersectingPlanes(backPlanes, generator, False, temp)
+        front = Solid.createFromIntersectingPlanes(frontPlanes, generator, False, temp)
+        if not temp:
+            # copyBase() will set the transform to what we're copying from, but we already
+            # figured out a transform for the solids. Store the current transform so we can
+            # set it back.
+            bTrans = back.np.getTransform()
+            fTrans = front.np.getTransform()
+            self.copyBase(back, generator)
+            self.copyBase(front, generator)
+            back.np.setTransform(bTrans)
+            front.np.setTransform(fTrans)
 
         unionOfFaces = front.faces + back.faces
         for face in unionOfFaces:
@@ -209,42 +309,50 @@ class Solid(MapObject):
                 break
 
         back.generateFaces()
-        back.recalcBoundingBox()
         front.generateFaces()
-        front.recalcBoundingBox()
+
+        if not temp:
+            back.recalcBoundingBox()
+            front.recalcBoundingBox()
 
         return [True, back, front]
 
     @staticmethod
-    def createFromIntersectingPlanes(planes, generator, generateFaces = True):
+    def createFromIntersectingPlanes(planes, generator, generateFaces = True, temp = False):
         solid = Solid(generator.getNextID())
+        solid.setTemporary(temp)
         for i in range(len(planes)):
-            # Split the polygon by all the other planes
-            poly = Polygon.fromPlaneAndRadius(planes[i])
+            # Split the winding by all the other planes
+            w = Winding.fromPlaneAndRadius(planes[i])
             for j in range(len(planes)):
                 if i != j:
-                    poly.splitInPlace(planes[j])
+                    # Flip the plane, because we want to keep the back.
+                    w.splitInPlace(-planes[j])
 
-            # The final polygon is the face
+            # Round vertices a bit for sanity
+            w.roundPoints()
+
+            # The final winding is the face
             face = SolidFace(generator.getNextFaceID(), Plane(planes[i]), solid)
-            for i in range(len(poly.vertices)):
-                # Round vertices a bit for sanity
-                face.vertices.append(SolidVertex(LEUtils.roundVector(poly.vertices[i], 2), face))
+            for j in range(len(w.vertices)):
+                face.vertices.append(SolidVertex(w.vertices[j], face))
             solid.faces.append(face)
 
-        solid.setToSolidOrigin()
+        if not temp:
+            solid.setToSolidOrigin()
 
-        # Ensure all faces point outwards
-        origin = Point3(0)
-        for face in solid.faces:
-            # The solid origin should be on or behind the face plane.
-            # If the solid origin is in front of the face plane, flip the face.
-            if face.plane.distToPlane(origin) > 0:
-                face.flip()
+            # Ensure all faces point outwards
+            origin = Point3(0)
+            for face in solid.faces:
+                # The solid origin should be on or behind the face plane.
+                # If the solid origin is in front of the face plane, flip the face.
+                if face.plane.distToPlane(origin) > 0:
+                    face.flip()
 
         if generateFaces:
             solid.alignTexturesToFaces()
             solid.generateFaces()
-            solid.recalcBoundingBox()
+            if not temp:
+                solid.recalcBoundingBox()
 
         return solid

@@ -1,9 +1,11 @@
-from panda3d.core import GeomVertexData, GeomEnums, NodePath
+from panda3d.core import GeomVertexData, GeomEnums, NodePath, GeomVertexArrayFormat
 from panda3d.core import GeomNode, GeomTriangles, GeomLinestrips, GeomVertexFormat
 from panda3d.core import GeomVertexWriter, InternalName, Vec4, Geom
 from panda3d.core import ColorAttrib, Vec3, Vec2, deg2Rad, Quat, Point3
-from panda3d.core import CullFaceAttrib, AntialiasAttrib, CKeyValues
-from panda3d.bsp import PlaneCulledGeomNode
+from panda3d.core import CullFaceAttrib, AntialiasAttrib, CKeyValues, LVector2i
+from panda3d.core import RenderState, TransparencyAttrib, ColorScaleAttrib, DepthTestAttrib, DepthWriteAttrib, CullBinAttrib
+from panda3d.bsp import PlaneCulledGeomNode, BSPMaterialAttrib
+from panda3d.editor import SolidFaceGeom
 
 from .MapWritable import MapWritable
 from .SolidVertex import SolidVertex
@@ -17,6 +19,19 @@ from src.leveleditor.IDGenerator import IDGenerator
 from src.leveleditor import MaterialPool
 
 from enum import IntEnum
+
+FaceFormat = None
+def getFaceFormat():
+    global FaceFormat
+    if not FaceFormat:
+        arr = GeomVertexArrayFormat()
+        arr.addColumn(InternalName.getVertex(), 3, GeomEnums.NTStdfloat, GeomEnums.CPoint)
+        arr.addColumn(InternalName.getNormal(), 3, GeomEnums.NTStdfloat, GeomEnums.CNormal)
+        arr.addColumn(InternalName.getTangent(), 3, GeomEnums.NTStdfloat, GeomEnums.CVector)
+        arr.addColumn(InternalName.getBinormal(), 3, GeomEnums.NTStdfloat, GeomEnums.CVector)
+        arr.addColumn(InternalName.getTexcoord(), 2, GeomEnums.NTStdfloat, GeomEnums.CTexcoord)
+        FaceFormat = GeomVertexFormat.registerFormat(arr)
+    return FaceFormat
 
 class FaceOrientation(IntEnum):
     Floor = 0
@@ -54,12 +69,16 @@ RightVectors = [
     Vec3(0, 1, 0)   # west wall
 ]
 
+PreviewAlpha = 0.75
+
 class FaceMaterial:
 
     def __init__(self):
         self.material = None
+        self.tangent = Vec3(1, 0, 0)
+        self.binormal = Vec3(0, 0, 1)
         self.scale = Vec2(1, 1)
-        self.shift = Vec2(0, 0)
+        self.shift = LVector2i(0, 0)
         self.uAxis = Vec3(0)
         self.vAxis = Vec3(0)
         self.rotation = 0.0
@@ -188,25 +207,30 @@ class FaceMaterial:
 
     def writeKeyValues(self, kv):
         kv.setKeyValue("material", self.material.filename.getFullpath())
-        kv.setKeyValue("scale", CKeyValues.toString(self.scale))
-        kv.setKeyValue("shift", CKeyValues.toString(self.shift))
-        kv.setKeyValue("uaxis", CKeyValues.toString(self.uAxis))
-        kv.setKeyValue("vaxis", CKeyValues.toString(self.vAxis))
+        kv.setKeyValue("uaxis", "[%f %f %f %i] %f" % (self.uAxis[0], self.uAxis[1], self.uAxis[2],
+                                                      self.shift[0], self.scale[0]))
+        kv.setKeyValue("vaxis", "[%f %f %f %i] %f" % (self.vAxis[0], self.vAxis[1], self.vAxis[2],
+                                                      self.shift[1], self.scale[1]))
         kv.setKeyValue("rotation", str(self.rotation))
 
     def readKeyValues(self, kv):
         self.material = MaterialPool.getMaterial(kv.getValue("material"))
-        self.scale = CKeyValues.to2f(kv.getValue("scale"))
-        self.shift = CKeyValues.to2f(kv.getValue("shift"))
-        self.uAxis = CKeyValues.to3f(kv.getValue("uaxis"))
-        self.vAxis = CKeyValues.to3f(kv.getValue("vaxis"))
+
+        shiftScale = Vec2()
+        kv.parseMaterialAxis(kv.getValue("uaxis"), self.uAxis, shiftScale)
+        self.shift[0] = int(shiftScale[0])
+        self.scale[0] = shiftScale[1]
+        kv.parseMaterialAxis(kv.getValue("vaxis"), self.vAxis, shiftScale)
+        self.shift[1] = int(shiftScale[0])
+        self.scale[1] = shiftScale[1]
+
         self.rotation = float(kv.getValue("rotation"))
 
     def clone(self):
         mat = FaceMaterial()
         mat.material = self.material
         mat.scale = Vec2(self.scale)
-        mat.shift = Vec2(self.shift)
+        mat.shift = LVector2i(self.shift)
         mat.uAxis = Vec3(self.uAxis)
         mat.vAxis = Vec3(self.vAxis)
         mat.rotation = float(self.rotation)
@@ -223,16 +247,45 @@ class SolidFace(MapWritable):
         self.vertices = []
         self.isSelected = False
         self.plane = plane
-        self.color = Vec4(0.5, 0.5, 1, 1)
         self.solid = solid
         self.hasGeometry = False
         self.vdata = None
 
-        self.generateNodes()
+        # Different primitive representations of this face.
+        self.geom3D = None
+        self.geom3DLines = None
+        self.geom2D = None
+
+        # Index into the Solid's GeomNode of the Geoms we render for this face.
+        self.index3D = -1
+        self.index3DLines = -1
+        self.index2D = -1
+
+        # RenderState for each Geom we render for this face.
+        self.state3D = RenderState.makeEmpty()
+        self.state3DLines = RenderState.make(AntialiasAttrib.make(AntialiasAttrib.MLine), ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
+        self.state2D = RenderState.makeEmpty()
+        if solid:
+            self.setColor(self.solid.color)
+
+        # Not None if face is a displacement.
+        self.dispInfo = None
+
+        #self.generateNodes()
+
+    def setPreviewState(self):
+        self.state3D = self.state3D.setAttrib(TransparencyAttrib.make(True))
+        self.state3D = self.state3D.setAttrib(ColorScaleAttrib.make(Vec4(1, 1, 1, PreviewAlpha)))
+        self.state2D = self.state2D.setAttrib(ColorAttrib.makeFlat(LEGlobals.PreviewBrush2DColor))
+
+    def isDisplacement(self):
+        return self.dispInfo is not None
+
+    def getBounds(self, other = None):
+        return self.solid.getBounds(other)
 
     def setSolid(self, solid):
         self.solid = solid
-        self.np.reparentTo(self.solid.np)
 
     def getOrientation(self):
         plane = self.getWorldPlane()
@@ -259,29 +312,30 @@ class SolidFace(MapWritable):
         return orientation
 
     def showClipVisRemove(self):
-        if not self.np3D.isStashed():
-            self.np3D.stash()
-        self.np3DLines.setColor(1, 0, 0, 1)
-        self.np2D.setColor(1, 0, 0, 1)
+        self.geom3D.setDraw(False)
+        self.state3DLines = self.state3DLines.setAttrib(ColorAttrib.makeFlat(Vec4(1, 0, 0, 1)))
+        self.state2D = self.state2D.setAttrib(ColorAttrib.makeFlat(Vec4(1, 0, 0, 1)))
+        self.solid.setFaceGeomState(self.geom3DLines, self.state3DLines)
+        self.solid.setFaceGeomState(self.geom2D, self.state2D)
 
     def showClipVisKeep(self):
-        if self.np3D.isStashed():
-            self.np3D.unstash()
-        self.np3DLines.setColor(1, 1, 0, 1)
-        self.np2D.setColor(1, 1, 1, 1)
+        self.geom3D.setDraw(True)
+        self.state3DLines = self.state3DLines.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 0, 1)))
+        self.state2D = self.state2D.setAttrib(ColorAttrib.makeFlat(Vec4(1, 1, 1, 1)))
+        self.solid.setFaceGeomState(self.geom3DLines, self.state3DLines)
+        self.solid.setFaceGeomState(self.geom2D, self.state2D)
 
     def show3DLines(self):
-        if self.np3DLines and self.np3DLines.isStashed():
-            self.np3DLines.unstash()
+        if self.geom3DLines:
+            self.geom3DLines.setDraw(True)
 
     def hide3DLines(self):
-        if self.np3DLines and not self.np3DLines.isStashed():
-            self.np3DLines.stash()
+        if self.geom3DLines:
+            self.geom3DLines.setDraw(False)
 
     def copy(self, generator):
         f = SolidFace(generator.getNextID(), Plane(self.plane), self.solid)
         f.isSelected = self.isSelected
-        f.setColor(Vec4(self.color))
         f.setFaceMaterial(self.material.clone())
         for i in range(len(self.vertices)):
             newVert = self.vertices[i].clone()
@@ -296,7 +350,6 @@ class SolidFace(MapWritable):
 
     def paste(self, f):
         self.plane = Plane(f.plane)
-        self.setColor(Vec4(f.color))
         self.isSelected = f.isSelected
         self.setMaterial(f.material.clone())
         self.solid = f.solid
@@ -328,90 +381,81 @@ class SolidFace(MapWritable):
 
     def getWorldPlane(self):
         plane = Plane(self.plane)
-        plane.xform(self.np.getMat(NodePath()))
+        plane.xform(self.solid.np.getMat(NodePath()))
         return plane
 
     def getName(self):
         return "Solid face"
 
     def select(self):
-        self.np3D.setColorScale(1, 0.75, 0.75, 1)
-        self.np2D.setColor(1, 0, 0, 1)
-        self.np2D.setBin("fixed", LEGlobals.SelectedSort)
-        self.np2D.setDepthWrite(False)
-        self.np2D.setDepthTest(False)
+        self.state3D = self.state3D.setAttrib(ColorScaleAttrib.make(Vec4(1, 0.75, 0.75, 1)))
+        self.state2D = self.state2D.setAttrib(ColorAttrib.makeFlat(Vec4(1, 0, 0, 1)))
+        self.state2D = self.state2D.setAttrib(CullBinAttrib.make("fixed", LEGlobals.SelectedSort))
+        self.state2D = self.state2D.setAttrib(DepthWriteAttrib.make(False))
+        self.state2D = self.state2D.setAttrib(DepthTestAttrib.make(False))
+        self.solid.setFaceGeomState(self.geom3D, self.state3D)
+        self.solid.setFaceGeomState(self.geom2D, self.state2D)
+        self.show3DLines()
         self.isSelected = True
 
     def deselect(self):
-        self.np3D.clearColorScale()
-        self.np2D.setColor(self.color)
-        self.np2D.setDepthWrite(True)
-        self.np2D.setDepthTest(True)
-        self.np2D.clearBin()
+        self.state3D = self.state3D.removeAttrib(ColorScaleAttrib)
+        self.state2D = self.state2D.setAttrib(ColorAttrib.makeFlat(self.solid.color))
+        self.state2D = self.state2D.removeAttrib(DepthWriteAttrib)
+        self.state2D = self.state2D.removeAttrib(DepthTestAttrib)
+        self.state2D = self.state2D.removeAttrib(CullBinAttrib)
+        self.solid.setFaceGeomState(self.geom3D, self.state3D)
+        self.solid.setFaceGeomState(self.geom2D, self.state2D)
+        self.hide3DLines()
         self.isSelected = False
 
     def readKeyValues(self, kv):
-
         self.id = int(self.id)
         base.document.reserveFaceID(self.id)
 
-        self.plane = Plane(CKeyValues.to4f(kv.getValue("plane")))
+        p0 = Point3()
+        p1 = Point3()
+        p2 = Point3()
+        kv.parsePlanePoints(kv.getValue("plane"), p0, p1, p2)
+        self.plane = Plane.fromVertices(p0, p1, p2)
 
-        for i in range(kv.getNumChildren()):
-            child = kv.getChild(i)
-            if child.getName() == "material":
-                self.material.readKeyValues(child)
-            elif child.getName() == "vertex":
-                vert = SolidVertex(face = self)
-                vert.readKeyValues(child)
-                self.vertices.append(vert)
+        self.material.readKeyValues(kv)
+        self.setMaterial(self.material.material)
 
     def writeKeyValues(self, kv):
         kv.setKeyValue("id", str(self.id))
-        kv.setKeyValue("plane", CKeyValues.toString(self.plane))
 
-        matKv = CKeyValues("material", kv)
-        self.material.writeKeyValues(matKv)
+        # Write out the first three vertices to define the plane.
+        vert0 = self.vertices[0].pos
+        vert1 = self.vertices[1].pos
+        vert2 = self.vertices[2].pos
+        kv.setKeyValue("plane", "(%f %f %f) (%f %f %f) (%f %f %f)" % (
+            vert0.x, vert0.y, vert0.z,
+            vert1.x, vert1.y, vert1.z,
+            vert2.x, vert2.y, vert2.z
+        ))
 
-        for vert in self.vertices:
-            vertKv = CKeyValues("vertex", kv)
-            vert.writeKeyValues(vertKv)
-
-    def generateNodes(self):
-        self.np = NodePath("solidface.%i" % self.id)
-        # This is selectable in object/group mode and face mode
-        self.np.setPythonTag("solidface", self)
-        if self.solid:
-            self.np.reparentTo(self.solid.np)
-        self.np2D = self.np.attachNewNode(GeomNode("2d"))
-        self.np2D.hide(~VIEWPORT_2D_MASK)
-        # PlaneCulledGeomNode doesn't render the face if the camera is behind
-        # the plane.
-        self.np3D = self.np.attachNewNode(PlaneCulledGeomNode("3d"))
-        self.np3D.hide(~VIEWPORT_3D_MASK)
-        self.np3DLines = self.np.attachNewNode(GeomNode("3dlines"))
-        self.np3DLines.hide(~VIEWPORT_3D_MASK)
-        self.np3DLines.setColor(1, 1, 0, 1)
-        self.np3DLines.setAntialias(AntialiasAttrib.MLine)
-        self.hide3DLines()
-        self.np.setCollideMask(GeomNode.getDefaultCollideMask() | LEGlobals.FaceMask)
+        # Write out material values
+        self.material.writeKeyValues(kv)
 
     def generate(self):
-        if self.color:
-            self.setColor(self.color)
-        if self.material.material:
-            self.setMaterial(self.material.material)
         self.regenerateGeometry()
 
     def setMaterial(self, mat):
         self.material.material = mat
-        if self.np3D and mat:
-            self.np3D.setBSPMaterial(mat.material)
+        if mat:
+            self.state3D = self.state3D.setAttrib(BSPMaterialAttrib.make(mat.material))
+            if mat.material.hasKeyvalue("$translucent") and bool(int(mat.material.getKeyvalue("$translucent"))):
+                self.state3D = self.state3D.setAttrib(TransparencyAttrib.make(TransparencyAttrib.MDual))
+            if self.geom3D:
+                self.solid.setFaceGeomState(self.geom3D, self.state3D)
+                #if mat.material.hasKeyvalue("$basetexture") and "tools" in mat.material.getKeyvalue("$basetexture"):
+                #    self.geom3D.setDraw(False)
 
     def setColor(self, color):
-        if self.np2D:
-            self.np2D.setColor(color)
-        self.color = color
+        self.state2D = self.state2D.setAttrib(ColorAttrib.makeFlat(color))
+        if self.geom2D:
+            self.solid.setFaceGeomState(self.geom2D, self.state2D)
 
     def setFaceMaterial(self, faceMat):
         self.material = faceMat
@@ -441,25 +485,52 @@ class SolidFace(MapWritable):
         if self.material.scale.x == 0 or self.material.scale.y == 0:
             return
 
-        udiv = self.material.material.size.x * self.material.scale.x
-        uadd = self.material.shift.x / self.material.material.size.x
-        vdiv = self.material.material.size.y * self.material.scale.y
-        vadd = self.material.shift.y / self.material.material.size.y
-
         for vert in self.vertices:
             vertPos = vert.getWorldPos()
-            vert.uv.x = vertPos.dot(self.material.uAxis) / udiv + uadd
-            vert.uv.y = vertPos.dot(self.material.vAxis) / vdiv + vadd
+            #
+            # projected s, t (u, v) texture coordinates
+            #
+            s = self.material.uAxis.dot(vertPos) / self.material.scale.x + self.material.shift.x
+            t = self.material.vAxis.dot(vertPos) / self.material.scale.y + self.material.shift.y
+
+            #
+            # "normalize" the texture coordinates
+            #
+            vert.uv.x = s / self.material.material.size.x
+            vert.uv.y = -t / self.material.material.size.y
+
+        self.calcTangentSpaceAxes()
 
         if self.hasGeometry:
             self.modifyGeometryUVs()
 
+    def calcTangentSpaceAxes(self):
+        #
+        # Create the axes from texture space axes
+        #
+        plane = self.getWorldPlane()
+        normal = plane.getNormal()
+        self.material.binormal = Vec3(self.material.vAxis).normalized()
+        self.material.tangent = normal.cross(self.material.binormal).normalized()
+        self.material.binormal = self.material.tangent.cross(normal).normalized()
+
+        #
+        # Adjust tangent for "backwards" mapping if need be
+        #
+        tmp = self.material.uAxis.cross(self.material.vAxis)
+        if normal.dot(tmp) > 0.0:
+            self.material.tangent = -self.material.tangent
+
     def modifyGeometryUVs(self):
         # Modifies the geometry vertex UVs in-place
         twriter = GeomVertexWriter(self.vdata, InternalName.getTexcoord())
+        tanwriter = GeomVertexWriter(self.vdata, InternalName.getTangent())
+        bwriter = GeomVertexWriter(self.vdata, InternalName.getBinormal())
 
         for i in range(len(self.vertices)):
             twriter.setData2f(self.vertices[i].uv)
+            tanwriter.setData3f(self.material.tangent)
+            bwriter.setData3f(self.material.binormal)
 
     def minimizeTextureShiftValues(self):
         if self.material.material is None:
@@ -502,30 +573,28 @@ class SolidFace(MapWritable):
             self.regenerateGeometry()
 
     def regenerateGeometry(self):
-        # Remove existing geometry
-        self.np2D.node().removeAllGeoms()
-        self.np3DLines.node().removeAllGeoms()
-        self.np3D.node().removeAllGeoms()
-        self.np3D.node().setPlane(self.plane)
-
         #
         # Generate vertex data
         #
 
         numVerts = len(self.vertices)
 
-        vdata = GeomVertexData("SolidFace", GeomVertexFormat.getV3n3t2(), GeomEnums.UHStatic)
-        vdata.setNumRows(len(self.vertices))
+        vdata = GeomVertexData("SolidFace", getFaceFormat(), GeomEnums.UHStatic)
+        vdata.uncleanSetNumRows(len(self.vertices))
 
         vwriter = GeomVertexWriter(vdata, InternalName.getVertex())
         twriter = GeomVertexWriter(vdata, InternalName.getTexcoord())
         nwriter = GeomVertexWriter(vdata, InternalName.getNormal())
+        tanwriter = GeomVertexWriter(vdata, InternalName.getTangent())
+        bwriter = GeomVertexWriter(vdata, InternalName.getBinormal())
 
         for i in range(len(self.vertices)):
             vert = self.vertices[i]
-            vwriter.addData3f(vert.pos)
-            twriter.addData2f(vert.uv)
-            nwriter.addData3f(self.plane.getNormal())
+            vwriter.setData3f(vert.pos)
+            twriter.setData2f(vert.uv)
+            nwriter.setData3f(self.plane.getNormal())
+            tanwriter.setData3f(self.material.tangent)
+            bwriter.setData3f(self.material.binormal)
 
         #
         # Generate indices
@@ -533,12 +602,14 @@ class SolidFace(MapWritable):
 
         # Triangles in 3D view
         prim3D = GeomTriangles(GeomEnums.UHStatic)
+        prim3D.reserveNumVertices((numVerts - 2) * 3)
         for i in range(1, numVerts - 1):
             prim3D.addVertices(i + 1, i, 0)
             prim3D.closePrimitive()
 
         # Line loop in 2D view.. using line strips
         prim2D = GeomLinestrips(GeomEnums.UHStatic)
+        prim2D.reserveNumVertices(numVerts + 1)
         for i in range(numVerts):
             prim2D.addVertex(i)
         # Close off the line strip with the first vertex.. creating a line loop
@@ -549,17 +620,27 @@ class SolidFace(MapWritable):
         # Generate mesh objects
         #
 
-        geom3D = Geom(vdata)
+        geom3D = SolidFaceGeom(vdata)
+        geom3D.setDrawMask(VIEWPORT_3D_MASK)
+        geom3D.setPlaneCulled(True)
+        geom3D.setPlane(self.plane)
         geom3D.addPrimitive(prim3D)
-        self.np3D.node().addGeom(geom3D)
+        self.index3D = self.solid.addFaceGeom(geom3D, self.state3D)
 
-        geom3DLines = Geom(vdata)
+        geom3DLines = SolidFaceGeom(vdata)
         geom3DLines.addPrimitive(prim2D)
-        self.np3DLines.node().addGeom(geom3DLines)
+        geom3DLines.setDrawMask(VIEWPORT_3D_MASK)
+        geom3DLines.setDraw(False)
+        self.index3DLines = self.solid.addFaceGeom(geom3DLines, self.state3DLines)
 
-        geom2D = Geom(vdata)
+        geom2D = SolidFaceGeom(vdata)
         geom2D.addPrimitive(prim2D)
-        self.np2D.node().addGeom(geom2D)
+        geom2D.setDrawMask(VIEWPORT_2D_MASK)
+        self.index2D = self.solid.addFaceGeom(geom2D, self.state2D)
+
+        self.geom3D = geom3D
+        self.geom3DLines = geom3DLines
+        self.geom2D = geom2D
 
         self.vdata = vdata
 
@@ -573,14 +654,15 @@ class SolidFace(MapWritable):
         self.material.cleanup()
         self.material = None
         self.color = None
-        self.np3DLines.removeNode()
-        self.np3DLines = None
-        self.np3D.removeNode()
-        self.np3D = None
-        self.np2D.removeNode()
-        self.np2D = None
-        self.np.removeNode()
-        self.np = None
+        self.index2D = None
+        self.index3D = None
+        self.index3DLines = None
+        self.geom3D = None
+        self.geom3DLines = None
+        self.geom2D = None
+        self.state3D = None
+        self.state3DLines = None
+        self.state2D = None
         self.solid = None
         self.isSelected = None
         self.plane = None

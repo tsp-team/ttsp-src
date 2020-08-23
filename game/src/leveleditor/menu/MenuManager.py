@@ -21,6 +21,12 @@ class EditorAction(QtWidgets.QAction):
     def disconnect(self, func):
         self.triggered.disconnect(func)
 
+    def enable(self):
+        self.setEnabled(True)
+
+    def disable(self):
+        self.setEnabled(False)
+
 class MenuManager:
 
     def __init__(self):
@@ -106,8 +112,12 @@ class MenuManager:
             icon="resources/icons/editor-redo.png")
         editMenu.addSeparator()
         self.addAction(KeyBind.Delete, "Delete", "Delete the selected objects", menu=editMenu, enabled=False)
+        self.addAction(KeyBind.Cut, "Cut", "Cut the selected objects", menu=editMenu, enabled=False)
         self.addAction(KeyBind.Copy, "Copy", "Copy the selected objects", menu=editMenu, enabled=False)
-        self.addAction(KeyBind.Paste, "Paste", "Paste the copied objects", menu=editMenu, enabled=False)
+        self.addAction(KeyBind.Paste, "Paste", "Paste objects", menu=editMenu, enabled=False)
+        editMenu.addSeparator()
+        self.addAction(KeyBind.GroupSelected, "Group", "Group the selected objects", menu=editMenu, enabled=False)
+        self.addAction(KeyBind.UngroupSelected, "Ungroup", "Ungroup the selected objects", menu=editMenu, enabled=False)
         editMenu.addSeparator()
         self.addAction(KeyBind.ToggleGridSnap, "Grid Snap", "Toggle snap to grid", menu=editMenu, enabled=False, toolBar=editToolBar, checkable=True,
                         icon="resources/icons/editor-grid-snap.png")

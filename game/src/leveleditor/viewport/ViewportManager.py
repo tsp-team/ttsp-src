@@ -15,7 +15,7 @@ class ViewportManager(DocObject):
         self.acceptGlobal('documentActivated', self.__onDocActivated)
         self.acceptGlobal('documentDeactivated', self.__onDocDeactivated)
 
-        self.tickTask = self.doc.taskMgr.add(self.__update, 'updateViewports')
+        self.tickTask = self.doc.taskMgr.add(self.__update, 'updateViewports', sort = -100)
         self.accept('mouse1', self.m1Down)
         self.accept('mouse1-up', self.m1Up)
         self.accept('mouse2', self.m2Down)

@@ -45,8 +45,8 @@ class Line:
         return PlaneClassification.Spanning
 
     def xform(self, mat):
-        self.start = mat.xformPoint(self.start)
-        self.end = mat.xformPoint(self.end)
+        self.start = mat.xformPointGeneral(self.start)
+        self.end = mat.xformPointGeneral(self.end)
 
     def almostEqual(self, other, delta = 0.0001):
         return (self.start.almostEqual(other.start, delta) and self.end.almostEqual(other.end, delta)) \

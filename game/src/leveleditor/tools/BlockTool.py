@@ -11,9 +11,9 @@ from src.leveleditor.grid.GridSettings import GridSettings
 from src.leveleditor.menu.KeyBind import KeyBind
 from src.leveleditor.IDGenerator import IDGenerator
 
-from src.leveleditor import MaterialPool
+from src.leveleditor import MaterialPool, LEGlobals
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 class BlockToolOptions(ToolOptions):
 
@@ -28,6 +28,8 @@ class BlockToolOptions(ToolOptions):
     def __init__(self):
         ToolOptions.__init__(self)
 
+        self.roundVertices = True
+
         shapeBase = QtWidgets.QWidget(self)
         self.layout().addWidget(shapeBase)
         shapeBase.setLayout(QtWidgets.QFormLayout())
@@ -35,6 +37,10 @@ class BlockToolOptions(ToolOptions):
         self.typeCombo = QtWidgets.QComboBox(shapeBase)
         self.typeCombo.currentIndexChanged.connect(self.__selectBrush)
         shapeBase.layout().addRow(typeLbl, self.typeCombo)
+        self.roundBox = QtWidgets.QCheckBox("Round created vertices", shapeBase)
+        self.roundBox.setChecked(self.roundVertices)
+        self.roundBox.stateChanged.connect(self.__changeRound)
+        shapeBase.layout().addRow(None, self.roundBox)
 
         self.currentControls = None
         self.selectedBrush = base.brushMgr.brushes[0]
@@ -42,9 +48,15 @@ class BlockToolOptions(ToolOptions):
         for brush in base.brushMgr.brushes:
             self.typeCombo.addItem(brush.Name)
 
+    def __changeRound(self, state):
+        self.roundVertices = (state != QtCore.Qt.Unchecked)
+        if self.tool:
+            self.tool.maybeUpdatePreviewBrushes()
+
     def __selectBrush(self, index):
         if self.currentControls:
             self.layout().removeWidget(self.currentControls)
+            self.currentControls.setParent(None)
 
         brush = base.brushMgr.brushes[index]
         self.selectedBrush = brush
@@ -53,6 +65,11 @@ class BlockToolOptions(ToolOptions):
             self.layout().addWidget(self.currentControls)
         else:
             self.currentControls = None
+
+        self.roundBox.setEnabled(self.selectedBrush.CanRound)
+
+        if self.tool:
+            self.tool.maybeUpdatePreviewBrushes()
 
 class BlockTool(BoxTool):
 
@@ -64,7 +81,7 @@ class BlockTool(BoxTool):
 
     def __init__(self, mgr):
         BoxTool.__init__(self, mgr)
-        self.box.setColor(Vec4(51 / 255, 223 / 255, 1.0, 1.0))
+        self.box.setColor(LEGlobals.PreviewBrush2DColor)
         self.lastBox = None
         self.options = BlockToolOptions.getGlobalPtr()
         self.previewBrushes = []
@@ -106,11 +123,7 @@ class BlockTool(BoxTool):
         self.removePreviewBrushes()
 
         self.previewBrushes = self.options.selectedBrush.create(IDGenerator(), self.state.boxStart,
-            self.state.boxEnd, self.determineMaterial(), 2)
-        for brush in self.previewBrushes:
-            brush.np.setTransparency(True, 2)
-            brush.np.setColorScale(1, 1, 1, 0.75, 2)
-            brush.reparentTo(base.render)
+            self.state.boxEnd, self.determineMaterial(), 2 if self.options.roundVertices else 0, True)
 
     def cleanup(self):
         self.lastBox = None
@@ -141,6 +154,8 @@ class BlockTool(BoxTool):
             return
 
         self.updatePreviewBrushes()
+
+        self.doc.updateAllViews()
 
     def determineMaterial(self):
         if MaterialPool.ActiveMaterial:

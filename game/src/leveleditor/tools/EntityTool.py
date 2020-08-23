@@ -190,15 +190,20 @@ class EntityTool(BaseTool):
 
         self.visRoot.setPos(self.pos)
 
+        self.doc.updateAllViews()
+
     def updatePos(self, pos):
         self.pos = pos
         self.visRoot.setPos(pos)
+        self.doc.updateAllViews()
 
     def hideVis(self):
         self.visRoot.reparentTo(NodePath())
+        self.doc.updateAllViews()
 
     def showVis(self):
         self.visRoot.reparentTo(self.doc.render)
+        self.doc.updateAllViews()
 
     def mouseDown(self):
         vp = base.viewportMgr.activeViewport

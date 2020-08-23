@@ -13,7 +13,7 @@ class ModelHelper(MapHelper):
         MapHelper.__init__(self, mapObject)
         self.modelRoot = NodePath(ModelNode("modelHelper"))
         self.modelRoot.setScale(16.0)
-        self.modelRoot.reparentTo(self.mapObject.np)
+        self.modelRoot.reparentTo(self.mapObject.helperRoot)
 
         self.vpRoots = []
 
@@ -65,7 +65,9 @@ class ModelHelper(MapHelper):
         if not modelPath:
             return
 
-        modelNp = base.loader.loadModel(modelPath)
+        modelNp = base.loader.loadModel(modelPath, okMissing = True)
+        if not modelNp:
+            return
 
         # Create a representation in each viewport
         for vp in base.viewportMgr.viewports:

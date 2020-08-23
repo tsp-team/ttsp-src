@@ -42,7 +42,7 @@ class SpriteHelper(MapHelper):
         np.setBillboardPointEye()
         np.setTransparency(True)
         np.hide(~VIEWPORT_3D_MASK)
-        np.reparentTo(self.mapObject.np)
+        np.reparentTo(self.mapObject.helperRoot)
         self.sprite = np
 
     def cleanup(self):

@@ -1,11 +1,12 @@
-from panda3d.core import CollisionBox, CollisionNode, BitMask32, CollisionHandlerQueue
+from panda3d.core import CollisionBox, CollisionNode, BitMask32, CollisionHandlerQueue, TransformState, BitMask32
 
 from src.leveleditor.DocObject import DocObject
 from .SelectionType import SelectionType, SelectionModeTransform
 
 from src.leveleditor.menu.KeyBind import KeyBind
+from src.leveleditor.math.Line import Line
 from src.leveleditor.actions.Select import Select, Deselect
-from src.leveleditor import LEUtils
+from src.leveleditor import LEUtils, LEGlobals
 
 class SelectionMode(DocObject):
 
@@ -31,28 +32,47 @@ class SelectionMode(DocObject):
         self.entryIdx = 0
         self.lastEntries = None
 
-    def toggleSelect(self, obj, appendSelect):
+    def toggleSelect(self, theObj, appendSelect):
+        if isinstance(theObj, list):
+            obj = theObj[0]
+            objs = theObj
+        else:
+            obj = theObj
+            objs = [obj]
+
+        selection = []
+        anyAlreadySelected = False
+        for o in objs:
+            if not appendSelect:
+                if not self.mgr.isSelected(obj):
+                    selection.append(o)
+                else:
+                    anyAlreadySelected = True
+
         if not appendSelect:
-            if not self.mgr.isSelected(obj) or self.mgr.getNumSelectedObjects() > 1:
-                base.actionMgr.performAction("Select %s" % obj.getName(), Select([obj], True))
+            if len(selection) > 0:
+                base.actionMgr.performAction("Select %s" % obj.getName(), Select(selection, True))
         else:
             # In multi-select (shift held), if the object we clicked on has
             # already been selected, deselect it.
-            if self.mgr.isSelected(obj):
-                base.actionMgr.performAction("Deselect %s" % obj.getName(), Deselect([obj]))
-            else:
-                base.actionMgr.performAction("Append select %s" % obj.getName(), Select([obj], False))
+            if anyAlreadySelected:
+                base.actionMgr.performAction("Deselect %s" % obj.getName(), Deselect(objs))
+            elif len(selection) > 0:
+                base.actionMgr.performAction("Append select %s" % obj.getName(), Select(selection, False))
 
-    def getObjectUnderMouse(self, index = 0):
+    def getActualObject(self, obj, entry):
+        return obj
+
+    def getObjectsUnderMouse(self):
         vp = base.viewportMgr.activeViewport
         if not vp:
-            return None
+            return []
 
         entries = vp.click(self.Mask)
         if not entries or len(entries) == 0:
-            return None
+            return []
 
-        objIndex = 0
+        objects = []
         key = self.Key
         for i in range(len(entries)):
             # Our entries have been sorted by distance, so use the first (closest) one.
@@ -60,31 +80,47 @@ class SelectionMode(DocObject):
             np = entry.getIntoNodePath().findNetPythonTag(key)
             if not np.isEmpty():
                 # Don't backface cull if there is a billboard effect on or above this node
-                if not LEUtils.hasNetBillboard(entry.getIntoNodePath()):
+                if entry.hasSurfaceNormal() and not LEUtils.hasNetBillboard(entry.getIntoNodePath()):
                     surfNorm = entry.getSurfaceNormal(vp.cam).normalized()
                     rayDir = entry.getFrom().getDirection().normalized()
                     if surfNorm.dot(rayDir) >= 0:
                         # Backface cull
                         continue
                 obj = np.getPythonTag(key)
-                if index == objIndex:
-                    return [obj, entries]
-                else:
-                    objIndex += 1
 
-        return None
+                actual = self.getActualObject(obj, entry)
+                objects.append((actual, entry))
+
+        return objects
+
+    def cycleNextSelection(self, appendSelect = False):
+        if len(self.lastEntries) == 0:
+            return
+
+        self.entryIdx = (self.entryIdx + 1) % len(self.lastEntries)
+        self.toggleSelect(self.lastEntries[self.entryIdx][0], appendSelect)
+
+    def cyclePreviousSelection(self, appendSelect = False):
+        if len(self.lastEntries) == 0:
+            return
+
+        self.entryIdx = (self.entryIdx - 1) % len(self.lastEntries)
+        self.toggleSelect(self.lastEntries[self.entryIdx][0], appendSelect)
 
     def selectObjectUnderMouse(self, appendSelect = False):
-        ret = self.getObjectUnderMouse()
+        objects = self.getObjectsUnderMouse()
 
-        if ret:
-            self.toggleSelect(ret[0], appendSelect)
-            return ret[0]
+        self.lastEntries = objects
+        self.entryIdx = 0
+
+        if len(objects) > 0:
+            self.toggleSelect(objects[0][0], appendSelect)
+            return objects[0][0]
 
         return None
 
-    def selectObjectsInBox(self, mins, maxs):
-        selection = []
+    def getObjectsInBox(self, mins, maxs):
+        objects = []
 
         # Create a one-off collision box, traverser, and queue to test against all MapObjects
         box = CollisionBox(mins, maxs)
@@ -103,12 +139,22 @@ class SelectionMode(DocObject):
             np = entry.getIntoNodePath().findNetPythonTag(key)
             if not np.isEmpty():
                 obj = np.getPythonTag(key)
-                if not obj in selection:
-                    selection.append(obj)
+                actual = self.getActualObject(obj, entry)
+                if isinstance(actual, list):
+                    for a in actual:
+                        if not any(a == x[0] for x in objects):
+                            objects.append((a, entry))
+                else:
+                    objects.append((actual, entry))
         boxNp.removeNode()
 
-        if len(selection) > 0:
-            base.actionMgr.performAction("Select %i objects" % len(selection), Select(selection, True))
+        return objects
+
+    def selectObjectsInBox(self, mins, maxs):
+        objects = self.getObjectsInBox(mins, maxs)
+
+        if len(objects) > 0:
+            base.actionMgr.performAction("Select %i objects" % len(objects), Select([x[0] for x in objects], True))
 
     def deselectAll(self):
         self.lastEntries = None

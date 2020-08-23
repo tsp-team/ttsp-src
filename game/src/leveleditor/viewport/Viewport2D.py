@@ -19,6 +19,7 @@ class Viewport2D(Viewport):
         self.dragging = False
         self.dragCamStart = Point3()
         self.dragCamMouseStart = Point3()
+        self.lastMouse = Point2()
 
     def cleanup(self):
         self.dragging = None
@@ -30,6 +31,7 @@ class Viewport2D(Viewport):
         base.qtWindow.zoomLabel.setText("Zoom: %.2f" % self.zoom)
 
     def mouseEnter(self):
+        Viewport.mouseEnter(self)
         self.adjustZoomText()
 
     def mouseExit(self):
@@ -52,7 +54,7 @@ class Viewport2D(Viewport):
         if scrolled:
             before = self.viewportToWorld(md, False)
             self.zoom *= math.pow(1.2, float(delta))
-            self.zoom = min(256.0, max(0.01, self.zoom))
+            self.zoom = min(256.0, max(0.0028, self.zoom))
 
         self.fixRatio()
 
@@ -61,6 +63,8 @@ class Viewport2D(Viewport):
             self.camera.setPos(self.camera.getPos() - (after - before))
 
         self.adjustZoomText()
+
+        self.updateView()
 
     def wheelUp(self):
         self.adjustZoom(True, 1)
@@ -82,6 +86,10 @@ class Viewport2D(Viewport):
             worldPos = self.viewportToWorld(mouse, False, True)
             delta = worldPos - self.dragCamMouseStart
             self.camera.setPos(self.dragCamStart - delta)
+
+            if mouse != self.lastMouse:
+                self.updateView()
+            self.lastMouse = Point2(mouse)
 
         world = self.viewportToWorld(self.getMouse(), flatten = False)
         base.qtWindow.coordsLabel.setText("%i %i %i" % (world.x, world.y, world.z))
@@ -117,7 +125,7 @@ class Viewport2D(Viewport):
 
     def makeLens(self):
         lens = OrthographicLens()
-        lens.setNearFar(-10000, 10000)
+        lens.setNearFar(-100000, 100000)
         lens.setViewHpr(self.getViewHpr())
         lens.setFilmSize(100, 100)
 

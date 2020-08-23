@@ -94,6 +94,7 @@ class TransformWidgetAxis(NodePath):
         self.pickNp = self.attachNewNode(cnode)
         self.pickNp.setPythonTag("widgetAxis", self)
 
+        self.state = Ready
         self.setState(Ready)
 
     def cleanup(self):
@@ -125,6 +126,8 @@ class TransformWidgetAxis(NodePath):
         return [Vec3(-1), Vec3(1)]
 
     def setState(self, state):
+        if state != self.state:
+            self.widget.tool.doc.update3DViews()
         self.state = state
         if state == Ready:
             self.setColorScale(self.defaultColor)
@@ -358,6 +361,7 @@ class BaseTransformTool(SelectTool):
                 self.isTransforming = True
                 self.onBeginTransform(vp)
             self.onMouseMoveTransforming3D(vp)
+            self.doc.updateAllViews()
         else:
             if not self.isTransforming and self.state.action in [BoxAction.DownToResize, BoxAction.Resizing]:
                 self.createMoveVis()

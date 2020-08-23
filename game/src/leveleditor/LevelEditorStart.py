@@ -23,6 +23,8 @@ from panda3d.core import loadPrcFile, loadPrcFileData, ConfigVariableString, Con
 loadPrcFile('config/Confauto.prc')
 loadPrcFile('config/config_client.prc')
 loadPrcFileData('', 'model-path ./resources') # Don't require mounting of phases
+loadPrcFileData('', 'model-path ./hl2/materials')
+loadPrcFileData('', 'model-path ./tf/materials')
 loadPrcFileData('', 'window-type none')
 
 from src.coginvasion.settings.SettingsManager import SettingsManager

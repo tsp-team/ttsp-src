@@ -30,6 +30,6 @@ class BrushManager(DirectObject):
         self.addBrush(PyramidBrush())
         self.addBrush(SphereBrush())
         self.addBrush(TetrahedronBrush())
-        self.addBrush(TextBrush())
-        self.addBrush(TorusBrush())
+        #self.addBrush(TextBrush())
+        #self.addBrush(TorusBrush())
         self.addBrush(WedgeBrush())

@@ -1,12 +1,12 @@
-from panda3d.core import LPlanef, Vec3
+from panda3d.core import LPlane, Vec3
 
-class Plane(LPlanef):
+class Plane(LPlane):
 
     @staticmethod
     def fromVertices(p1, p2, p3):
-        ab = p2 - p1
-        ac = p3 - p1
-        normal = ac.cross(ab).normalized()
+        ab = p1 - p2
+        ac = p3 - p2
+        normal = ab.cross(ac).normalized()
         dist = normal.dot(p1)
 
         return Plane(normal[0], normal[1], normal[2], -dist)

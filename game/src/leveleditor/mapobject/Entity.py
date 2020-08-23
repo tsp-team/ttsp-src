@@ -1,4 +1,4 @@
-from panda3d.core import CKeyValues, Vec3, Vec4, Vec2
+from panda3d.core import CKeyValues, Vec3, Vec4, Vec2, NodePath
 
 from .MapObject import MapObject
 from src.leveleditor.maphelper import HelperFactory
@@ -14,6 +14,7 @@ class Entity(MapObject):
     def __init__(self, id):
         MapObject.__init__(self, id)
         self.metaData = None
+        self.helperRoot = self.np.attachNewNode("helpers")
         self.helpers = []
 
     def copy(self, generator):
@@ -50,6 +51,8 @@ class Entity(MapObject):
 
     def delete(self):
         self.removeHelpers()
+        self.helperRoot.removeNode()
+        self.helperRoot = None
         MapObject.delete(self)
 
     def select(self):
@@ -77,6 +80,7 @@ class Entity(MapObject):
             helper = HelperFactory.createHelper(helperInfo, self)
             if helper:
                 self.helpers.append(helper)
+        self.applyCollideMask()
 
     def propertyChanged(self, prop, oldValue, newValue):
         if oldValue != newValue:
@@ -106,18 +110,19 @@ class Entity(MapObject):
     def isPointEntity(self):
         return self.metaData.class_type == 'PointClass'
 
-    def getDescription(self):
-        return self.metaData.description
-
     def setClassname(self, classname):
         MapObject.setClassname(self, classname)
-        self.setupMetaData()
+        if not self.setupMetaData():
+            return
         self.setupEntityData()
         self.updateHelpers()
 
     def setupMetaData(self):
-        self.metaData = base.fgd.entity_by_name(self.classname)
-        assert self.metaData is not None, "Unknown classname %s" % self.classname
+        try:
+            self.metaData = base.fgd.entity_by_name(self.classname)
+        except:
+            self.setClassname("info_null")
+        return True
 
     def setupEntityData(self):
         if not self.metaData:

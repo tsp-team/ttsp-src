@@ -350,6 +350,8 @@ class BoxTool(BaseTool):
                 self.updateHandles(vp)
             self.box.setMinMax(self.state.boxStart, self.state.boxEnd)
 
+        self.doc.updateAllViews()
+
         # TODO: mediator.selectionBoxChanged
 
     def activate(self):

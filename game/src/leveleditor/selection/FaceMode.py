@@ -3,6 +3,7 @@ from .SelectionType import SelectionType, SelectionModeTransform
 from src.leveleditor.ui.FaceEditSheet import FaceEditSheet
 from src.leveleditor import MaterialPool
 from src.leveleditor.menu.KeyBind import KeyBind
+from src.leveleditor.actions.EditFaceMaterial import EditFaceMaterial
 
 from src.leveleditor import LEGlobals
 
@@ -14,7 +15,7 @@ class FaceMode(SelectionMode):
     TransformBits = SelectionModeTransform.Off
     CanDelete = False
     CanDuplicate = False
-    Key = "solidface"
+    Key = "mapobject"
     Mask = LEGlobals.FaceMask
     KeyBind = KeyBind.SelectFaces
     Icon = "resources/icons/editor-select-faces.png"
@@ -24,6 +25,10 @@ class FaceMode(SelectionMode):
     def __init__(self, mgr):
         SelectionMode.__init__(self, mgr)
         self.properties = FaceEditSheet.getGlobalPtr()
+        self.paintButtonDown = False
+
+    def getActualObject(self, obj, entry):
+        return obj.getFaceFromCollisionSolid(entry.getInto())
 
     def getTranslatedSelections(self, mode):
         if mode in [SelectionType.Groups, SelectionType.Objects]:
@@ -41,21 +46,44 @@ class FaceMode(SelectionMode):
 
         self.accept('faceMaterialChanged', self.properties.faceMaterialChanged)
         # Right click on face to apply active material
-        self.accept('mouse3', self.applyActiveMaterial)
+        # Hold right mouse button and drag to paint active material
+        # across faces
+        self.accept('mouse3', self.mouse3Down)
+        self.accept('mouse3-up', self.mouse3Up)
+        self.accept('mouseMoved', self.mouseMove)
+        #self.accept()
+
+    def toolDeactivate(self):
+        SelectionMode.toolDeactivate(self)
+        self.paintButtonDown = False
+
+    def mouse3Down(self):
+        vp = base.viewportMgr.activeViewport
+        if not vp.is3D():
+            return
+
+        self.paintButtonDown = True
+        self.applyActiveMaterial()
+
+    def mouse3Up(self):
+        vp = base.viewportMgr.activeViewport
+        if not vp.is3D():
+            return
+
+        self.paintButtonDown = False
+
+    def mouseMove(self, vp):
+        if not vp.is3D():
+            return
+
+        if self.paintButtonDown:
+            self.applyActiveMaterial()
 
     def applyActiveMaterial(self):
-        vp = base.viewportMgr.activeViewport
-        if not vp or not vp.is3D():
-            return
-
-        entries = vp.click(self.Mask)
-        if not entries or len(entries) == 0:
-            return
-
-        for i in range(len(entries)):
-            entry = entries[i]
-            faceNp = entry.getIntoNodePath().findNetPythonTag(self.Key)
-            if not faceNp.isEmpty():
-                face = faceNp.getPythonTag(self.Key)
-                face.setMaterial(MaterialPool.ActiveMaterial)
-                break
+        objects = self.getObjectsUnderMouse()
+        if len(objects) > 0:
+            face = objects[0][0]
+            if face.material.material != MaterialPool.ActiveMaterial:
+                action = EditFaceMaterial(face)
+                action.material.material = MaterialPool.ActiveMaterial
+                base.actionMgr.performAction("Apply active material", action)

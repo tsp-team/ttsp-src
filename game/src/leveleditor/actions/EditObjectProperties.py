@@ -17,10 +17,12 @@ class EditObjectProperties(Action):
         return True
 
     def do(self):
+        Action.do(self)
         self.obj.updateProperties(self.newProperties)
 
     def undo(self):
         self.obj.updateProperties(self.oldProperties)
+        Action.undo(self)
 
     def cleanup(self):
         self.obj = None
