@@ -22,6 +22,7 @@ class DeleteReference:
             self.parentId = mapObject.parent.id
         else:
             self.parentId = None
+        print(self.parentId)
         self.mapObject = mapObject
 
     def cleanup(self):
@@ -49,7 +50,7 @@ class CreateEditDelete(Action):
     def do(self):
         Action.do(self)
 
-        for delete in self.deleteObjects:
+        for delete in reversed(self.deleteObjects):
             if delete.isSelected:
                 base.selectionMgr.deselect(delete.mapObject)
             delete.mapObject.reparentTo(NodePath())
@@ -62,7 +63,7 @@ class CreateEditDelete(Action):
     def undo(self):
         Action.undo(self)
 
-        for create in self.createObjects:
+        for create in reversed(self.createObjects):
             create.isSelected = create.mapObject.selected
             if create.isSelected:
                 base.selectionMgr.deselect(create.mapObject)
@@ -72,7 +73,7 @@ class CreateEditDelete(Action):
             if delete.parentId is not None:
                 delete.mapObject.reparentTo(base.document.world.findChildByID(delete.parentId))
             else:
-                delete.mapObject.reparentTo(base.render)
+                delete.mapObject.reparentTo(base.document.world)
             if delete.isSelected:
                 base.selectionMgr.select(delete.mapObject)
 
